@@ -1,0 +1,52 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { FolderKanban, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
+import { Button } from '../../components/ui/Button.jsx';
+import { Card } from '../../components/ui/Card.jsx';
+import { MOCK_PROJECTS } from '../../services/mockData/projectsMock.js';
+
+export const ProjectsPublicPage = () => {
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+      <div className="text-center space-y-4 max-w-3xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase">
+          <FolderKanban className="w-3.5 h-3.5" />
+          <span>Sustainability & Green Works</span>
+        </div>
+        <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
+          Collaborative Agri Projects
+        </h1>
+        <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+          Transparent project milestones connecting local gram panchayats, farmers, and certified implementation partners.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {MOCK_PROJECTS.map((prj) => (
+          <Card key={prj.id} className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                {prj.category}
+              </span>
+              <span className="text-xs font-bold text-emerald-700">{prj.progress}% Completed</span>
+            </div>
+            <h3 className="font-bold text-base text-slate-900">{prj.title}</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">{prj.scope}</p>
+
+            <div className="w-full bg-slate-100 rounded-full h-2">
+              <div
+                className="bg-emerald-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${prj.progress}%` }}
+              />
+            </div>
+
+            <div className="pt-2 text-xs text-slate-500 flex justify-between">
+              <span>Location: {prj.location}</span>
+              <span>Partner: {prj.assignedPartner}</span>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};

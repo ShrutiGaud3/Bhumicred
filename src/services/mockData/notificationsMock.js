@@ -1,0 +1,38 @@
+export const MOCK_NOTIFICATIONS = [
+  {
+    id: 'notif_01',
+    title: 'Soil Health Certificate Ready',
+    message: 'Your official soil report for Shree Ram Farm (North Plot) is ready for download.',
+    type: 'SOIL',
+    createdAt: '2026-06-22T15:00:00Z',
+    isRead: false,
+    link: '/farmer/soil',
+  },
+  {
+    id: 'notif_02',
+    title: 'Tree Insurance Policy Active',
+    message: 'Policy #BC-POL-2026-00481 has been underwritten and is active for 180 trees.',
+    type: 'INSURANCE',
+    createdAt: '2026-06-01T00:01:00Z',
+    isRead: true,
+    link: '/farmer/insurance',
+  },
+  {
+    id: 'notif_03',
+    title: 'Carbon Reward Credited',
+    message: '₹4,500 has been credited to your BHUMICRED Wallet for Q2 agroforestry growth.',
+    type: 'WALLET',
+    createdAt: '2026-08-15T11:20:00Z',
+    isRead: false,
+    link: '/wallet',
+  },
+  {
+    id: 'notif_04',
+    title: 'New Government Scheme Notification',
+    message: 'Gujarat State Agroforestry Sapling Subsidy is open for application in Anand.',
+    type: 'SYSTEM',
+    createdAt: '2026-09-01T08:00:00Z',
+    isRead: true,
+    link: '/schemes',
+  },
+];
