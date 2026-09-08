@@ -35,6 +35,7 @@ import { UnauthorizedPage } from '../pages/UnauthorizedPage.jsx';
 // Auth Flow Pages
 import { RoleSelectPage } from '../features/auth/pages/RoleSelectPage.jsx';
 import { LoginPage } from '../features/auth/pages/LoginPage.jsx';
+import { RegisterPage } from '../features/auth/pages/RegisterPage.jsx';
 import { OtpVerifyPage } from '../features/auth/pages/OtpVerifyPage.jsx';
 import { VerificationPendingPage } from '../features/auth/pages/VerificationPendingPage.jsx';
 import { QueryCorrectionPage } from '../features/auth/pages/QueryCorrectionPage.jsx';
@@ -44,6 +45,7 @@ import { SessionExpiredPage } from '../features/auth/pages/SessionExpiredPage.js
 import { FarmerDashboardPage } from '../features/farmer/pages/FarmerDashboardPage.jsx';
 import { FarmerOnboardingPage } from '../features/farmer/pages/FarmerOnboardingPage.jsx';
 import { FarmerProfilePage } from '../features/farmer/pages/FarmerProfilePage.jsx';
+import { FarmerReportsInvoicesPage } from '../features/farmer/pages/FarmerReportsInvoicesPage.jsx';
 
 // Land & GIS Pages
 import { LandListPage } from '../features/land/pages/LandListPage.jsx';
@@ -147,12 +149,14 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Auth Routes (Role Select, Login, OTP, Pending, Query, Session Expired)
+  // Auth Routes (Role Select, Login, Register, OTP, Pending, Query, Session Expired)
   {
     element: <AuthLayout />,
     children: [
       { path: '/role-select', element: <RoleSelectPage /> },
       { path: '/login', element: <LoginPage /> },
+      { path: '/register', element: <RegisterPage /> },
+      { path: '/onboarding', element: <RegisterPage /> },
       { path: '/otp-verify', element: <OtpVerifyPage /> },
       { path: '/verification-pending', element: <VerificationPendingPage /> },
       { path: '/query-correction', element: <QueryCorrectionPage /> },
@@ -175,6 +179,8 @@ export const router = createBrowserRouter([
             element: <RoleProtectedRoute allowedRoles={[ROLES.FARMER]} />,
             children: [
               { path: '/farmer/dashboard', element: <FarmerDashboardPage /> },
+              { path: '/farmer/invoices', element: <FarmerReportsInvoicesPage /> },
+              { path: '/farmer/reports', element: <FarmerReportsInvoicesPage /> },
               { path: '/farmer/onboarding', element: <FarmerOnboardingPage /> },
               { path: '/farmer/profile', element: <FarmerProfilePage /> },
 

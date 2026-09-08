@@ -1,5 +1,6 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Button = ({
   children,
@@ -11,6 +12,7 @@ export const Button = ({
   icon: Icon,
   type = 'button',
   onClick,
+  to,
   ...props
 }) => {
   const baseClasses =
@@ -38,20 +40,36 @@ export const Button = ({
     xl: 'px-8 py-4 text-lg gap-3 font-semibold',
   };
 
-  return (
-    <button
-      type={type}
-      disabled={disabled || isLoading}
-      onClick={onClick}
-      className={`${baseClasses} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
-      {...props}
-    >
+  const combinedClasses = `${baseClasses} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`;
+
+  const content = (
+    <>
       {isLoading ? (
         <Loader2 className="w-4 h-4 animate-spin text-current shrink-0" />
       ) : Icon ? (
         <Icon className="w-4 h-4 text-current shrink-0" />
       ) : null}
       {children}
+    </>
+  );
+
+  if (to && !disabled && !isLoading) {
+    return (
+      <Link to={to} className={combinedClasses} onClick={onClick} {...props}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type={type}
+      disabled={disabled || isLoading}
+      onClick={onClick}
+      className={combinedClasses}
+      {...props}
+    >
+      {content}
     </button>
   );
 };

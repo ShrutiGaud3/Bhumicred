@@ -114,7 +114,7 @@ export const DemoRoleBar = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-neutral-900/95 backdrop-blur-md text-white border-t border-neutral-700 shadow-2xl transition-all duration-300">
+    <div id="demo-role-bar" className="fixed bottom-0 left-0 right-0 z-40 bg-neutral-900/95 backdrop-blur-md text-white border-t border-neutral-700 shadow-2xl transition-all duration-300 print:hidden">
       {/* Collapsed view pill */}
       {isCollapsed ? (
         <div className="max-w-[1600px] mx-auto px-4 py-2 flex items-center justify-between text-xs">

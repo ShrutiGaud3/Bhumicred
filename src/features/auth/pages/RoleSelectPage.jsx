@@ -1,8 +1,8 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setSelectedRole } from '../authSlice.js';
-import { Leaf, Building2, Users, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Leaf, Building2, Users, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
 import { ROLES } from '../../../constants/roles.js';
@@ -83,11 +83,14 @@ export const RoleSelectPage = () => {
         })}
       </div>
 
-      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-        <span className="flex items-center gap-1">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          Single Sign-on Enabled
-        </span>
+      <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+        <Link
+          to="/register"
+          className="font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+          First-time User? Register Here
+        </Link>
         <button
           onClick={() => handleSelectRole(ROLES.SUPER_ADMIN)}
           className="text-xs font-semibold text-slate-600 hover:text-emerald-800 underline"

@@ -113,16 +113,12 @@ export const HomePage = () => {
           </div>
 
           <div className="mt-8 flex items-center justify-center gap-4">
-            <Link to="/role-select">
-              <Button size="lg" variant="primary" icon={ArrowRight}>
-                Get Started Now
-              </Button>
-            </Link>
-            <Link to="/solutions">
-              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
-                Explore Solutions
-              </Button>
-            </Link>
+            <Button to="/role-select" size="lg" variant="primary" icon={ArrowRight}>
+              Get Started Now
+            </Button>
+            <Button to="/solutions" size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
+              Explore Solutions
+            </Button>
           </div>
         </div>
       </section>
@@ -334,11 +330,9 @@ export const HomePage = () => {
         <p className="text-xs sm:text-sm text-slate-500">
           Join thousands of farmers, gram panchayats, and certified agritech service partners on BHUMICRED.
         </p>
-        <Link to="/role-select">
-          <Button size="xl" variant="primary" icon={ArrowRight}>
-            Select Your Role to Begin
-          </Button>
-        </Link>
+        <Button to="/role-select" size="xl" variant="primary" icon={ArrowRight}>
+          Select Your Role to Begin
+        </Button>
       </section>
     </div>
   );

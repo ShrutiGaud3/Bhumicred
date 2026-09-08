@@ -118,11 +118,19 @@ export const LoginPage = () => {
         </div>
       </div>
 
-      <div className="text-center text-xs text-slate-500">
-        Need to change your role?{' '}
-        <Link to="/role-select" className="font-bold text-emerald-700 hover:underline">
-          Select Role
-        </Link>
+      <div className="pt-2 flex flex-col items-center gap-2 text-xs text-slate-500">
+        <div>
+          New to BHUMICRED?{' '}
+          <Link to="/register" className="font-bold text-emerald-700 hover:underline">
+            Register / Create Profile
+          </Link>
+        </div>
+        <div>
+          Need to change your role?{' '}
+          <Link to="/role-select" className="font-bold text-emerald-700 hover:underline">
+            Select Role
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -22,10 +22,13 @@ import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { FormTextarea } from '../../../components/forms/FormTextarea.jsx';
 import { SearchInput } from '../../../components/forms/SearchInput.jsx';
+import { useDispatch } from 'react-redux';
 import { storageService } from '../../../services/storageService.js';
 import { useToast } from '../../../components/ui/ToastContext.jsx';
+import { setUserStatus } from '../../auth/authSlice.js';
 
 export const ApprovalsQueuePage = () => {
+  const dispatch = useDispatch();
   const [items, setItems] = useState(() => storageService.getApprovals());
   const [activeTab, setActiveTab] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,10 +71,14 @@ export const ApprovalsQueuePage = () => {
     );
     setItems(updated);
 
+    if (actionModal.item.type === 'FARMER_KYC' && actionModal.actionType === 'APPROVE') {
+      dispatch(setUserStatus('APPROVED'));
+    }
+
     toast.success(
       `${actionModal.item.title} has been ${
         actionModal.actionType === 'APPROVE'
-          ? 'Approved & Verified'
+          ? 'Approved & Verified! User can now access their full Dashboard.'
           : actionModal.actionType === 'REJECT'
           ? 'Rejected'
           : 'marked for Query Correction'

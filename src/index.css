@@ -38,3 +38,141 @@
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(51, 65, 85, 0.8);
 }
+
+/* ==========================================================================
+   OFFICIAL A4 PRINT & PDF GENERATION STYLES
+   ========================================================================== */
+@page {
+  size: A4 portrait;
+  margin: 8mm 10mm 8mm 10mm;
+}
+
+@media print {
+  /* Hide all app chrome, navigation, headers, sidebars, buttons, AI bars & floating tools */
+  header,
+  aside,
+  nav,
+  footer,
+  .print\:hidden,
+  [class*="print:hidden"],
+  .demo-role-bar,
+  #demo-role-bar,
+  .bhumitra-floating,
+  .bhumitra-drawer,
+  .mobile-bottom-nav,
+  #toast-container,
+  [class*="Toast"],
+  [role="navigation"],
+  button:not(.allow-print) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Reset body and container constraints for clean edge-to-edge printing */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  #root,
+  .min-h-screen,
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+  }
+
+  /* Target invoice specifically for pristine, compact single A4 page formatting */
+  #tax-invoice-printable {
+    box-shadow: none !important;
+    border: 1.5px solid #0f172a !important;
+    border-radius: 6px !important;
+    padding: 16px 18px !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+  }
+
+  #tax-invoice-printable table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 11px !important;
+  }
+
+  #tax-invoice-printable th,
+  #tax-invoice-printable td {
+    padding: 6px 8px !important;
+  }
+
+  /* Keep colors vivid on printed documents */
+  .bg-slate-900 {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+  }
+
+  .bg-emerald-800 {
+    background-color: #065f46 !important;
+    color: #ffffff !important;
+  }
+
+  .bg-emerald-700 {
+    background-color: #047857 !important;
+    color: #ffffff !important;
+  }
+
+  .bg-emerald-100\/70,
+  .bg-emerald-100 {
+    background-color: #d1fae5 !important;
+    color: #064e3b !important;
+  }
+
+  .bg-slate-50 {
+    background-color: #f8fafc !important;
+  }
+
+  .bg-slate-100 {
+    background-color: #f1f5f9 !important;
+  }
+
+  .border-slate-200 {
+    border-color: #e2e8f0 !important;
+  }
+
+  .border-slate-300 {
+    border-color: #cbd5e1 !important;
+  }
+
+  .border-slate-900 {
+    border-color: #0f172a !important;
+  }
+
+  /* Prevent row and section splits */
+  tr,
+  .avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}

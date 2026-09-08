@@ -19,6 +19,7 @@ import {
   X,
   FileCheck2,
   Sparkles,
+  Receipt,
 } from 'lucide-react';
 import { ROLES } from '../../constants/roles.js';
 
@@ -32,6 +33,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { label: 'My Land', path: '/farmer/lands', icon: MapPin },
     { label: 'Tree Insurance', path: '/farmer/insurance', icon: ShieldAlert },
     { label: 'Soil Testing', path: '/farmer/soil', icon: FlaskConical },
+    { label: 'Reports & Invoices', path: '/farmer/invoices', icon: Receipt },
     { label: 'Marketplace', path: '/marketplace', icon: ShoppingBag },
     { label: 'My Projects', path: '/farmer/projects', icon: FolderKanban },
     { label: 'Government Schemes', path: '/schemes', icon: Landmark },

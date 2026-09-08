@@ -202,11 +202,18 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Link
+                  to="/register"
+                  className="hidden sm:inline-flex px-3 py-1.5 rounded-xl border border-emerald-600/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all"
+                >
+                  Register
+                </Link>
                 <Link
                   to="/role-select"
-                  className="px-3.5 py-1.5 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 transition-colors shadow-sm"
+                  className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 transition-all shadow-md shadow-emerald-900/15 flex items-center gap-1.5"
                 >
+                  <UserIcon className="w-3.5 h-3.5" />
                   Sign In
                 </Link>
               </div>

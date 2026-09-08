@@ -38,8 +38,8 @@ export const ToastProvider = ({ children }) => {
     <ToastContext.Provider value={toast}>
       {children}
 
-      {/* Floating Toasts Viewport */}
-      <div className="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+      {/* Floating Toasts Viewport (Always Hidden in Print) */}
+      <div id="toast-container" className="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none print:hidden">
         {toasts.map((t) => {
           const typeStyles = {
             success: 'bg-emerald-800 text-white border-emerald-700 shadow-emerald-950/20',
