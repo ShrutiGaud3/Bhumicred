@@ -5,7 +5,6 @@ import { Sidebar } from '../common/Sidebar.jsx';
 import { MobileBottomNav } from '../common/MobileBottomNav.jsx';
 import { BhumitraAiDrawer } from '../../features/ai/components/BhumitraAiDrawer.jsx';
 import { BhumitraFloatingButton } from '../../features/ai/components/BhumitraFloatingButton.jsx';
-import { DemoRoleBar } from './DemoRoleBar.jsx';
 
 export const AppLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -47,11 +46,6 @@ export const AppLayout = () => {
           isOpen={isAiDrawerOpen}
           onClose={() => setIsAiDrawerOpen(false)}
         />
-      </div>
-
-      {/* Global 1-Click Multi-Role Persona Demo Switcher */}
-      <div className="print:hidden">
-        <DemoRoleBar />
       </div>
     </div>
   );

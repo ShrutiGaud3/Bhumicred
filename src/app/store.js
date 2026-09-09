@@ -4,6 +4,13 @@ import farmerReducer from '../features/farmer/farmerSlice.js';
 import governmentReducer from '../features/government/governmentSlice.js';
 import partnerReducer from '../features/partner/partnerSlice.js';
 import adminReducer from '../features/admin/adminSlice.js';
+import documentsReducer from '../features/documents/documentsSlice.js';
+import gisReducer from '../features/gis/gisSlice.js';
+import insuranceReducer from '../features/insurance/insuranceSlice.js';
+import soilReducer from '../features/soil/soilSlice.js';
+import marketplaceReducer from '../features/marketplace/marketplaceSlice.js';
+import projectReducer from '../features/projects/projectSlice.js';
+import schemesReducer from '../features/schemes/schemesSlice.js';
 
 export const store = configureStore({
   reducer: {
@@ -12,5 +19,13 @@ export const store = configureStore({
     government: governmentReducer,
     partner: partnerReducer,
     admin: adminReducer,
+    documents: documentsReducer,
+    gis: gisReducer,
+    insurance: insuranceReducer,
+    soil: soilReducer,
+    marketplace: marketplaceReducer,
+    projects: projectReducer,
+    schemes: schemesReducer,
   },
 });
+

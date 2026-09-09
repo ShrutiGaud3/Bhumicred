@@ -20,16 +20,16 @@ export const LandDeedModal = ({ isOpen, onClose, landData }) => {
   if (!isOpen) return null;
 
   const data = landData || {
-    id: 'LND-9082',
+    id: 'LND-RECORD',
     khasraNumber: '412/1',
     khataNumber: '88/A',
-    ownerName: 'Ramesh Patel',
-    village: 'Navli',
+    ownerName: 'Citizen Farmer',
+    village: 'Mogri',
     taluka: 'Anand',
     district: 'Anand, Gujarat',
-    totalAreaAcres: 12.4,
+    totalAreaAcres: 5.0,
     soilType: 'Alluvial Loam',
-    irrigationStatus: 'Tube Well & Drip System',
+    irrigationStatus: 'Borewell & Drip Irrigation',
     verificationDate: '24 Jan 2026',
     revenueSealNo: 'REV-GUJ-2026-88190',
     coordinates: [

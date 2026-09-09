@@ -18,7 +18,7 @@ import { MOCK_LANDS } from '../../../services/mockData/landsMock.js';
 
 export const RequestCarbonAuditPage = () => {
   const navigate = useNavigate();
-  const [selectedLandId, setSelectedLandId] = useState(MOCK_LANDS[0].id);
+  const [selectedLandId, setSelectedLandId] = useState(MOCK_LANDS[0]?.id || '');
   const [auditType, setAuditType] = useState('SATELLITE_LIDAR');
   const [preferredDate, setPreferredDate] = useState('2026-09-20');
   const [submitted, setSubmitted] = useState(false);

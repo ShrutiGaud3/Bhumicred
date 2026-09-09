@@ -52,6 +52,7 @@ import { FileUploader } from '../../../components/forms/FileUploader.jsx';
 import { InteractiveGisMap } from '../../../components/ui/InteractiveGisMap.jsx';
 import { TaxInvoiceQrCode } from '../../../components/ui/TaxInvoiceQrCode.jsx';
 import { storageService } from '../../../services/storageService.js';
+import { landService } from '../services/landService.js';
 import { useToast } from '../../../components/ui/ToastContext.jsx';
 
 const STEPS = [
@@ -64,12 +65,23 @@ const STEPS = [
 
 const TREE_INSURANCE_PLANS = [
   {
+    id: 'plan_custom_31',
+    title: 'Custom Sovereign Tree Shield (₹31 / Tree / Year)',
+    category: 'Custom Tree Protection',
+    ratePerTree: 31,
+    sumInsuredMultiplier: 25000,
+    popular: true,
+    subsidyPercent: 0,
+    perils: ['Direct Lightning & Storm', 'Stem Borers & Root Blight', 'Wildfire & Surface Heat', 'Drought Index Parametric Shield'],
+    description: 'Custom standing tree insurance calculated at standard ₹31 per tree per year with 4-5 angle biometric geotagged inspection.',
+  },
+  {
     id: 'plan_agroforestry',
     title: 'Comprehensive Agroforestry & Teak Cover',
     category: 'Commercial Agroforestry',
     ratePerTree: 75,
     sumInsuredMultiplier: 32000,
-    popular: true,
+    popular: false,
     subsidyPercent: 40,
     perils: ['Storm, Cyclone & Windthrow', 'Wildfire & Surface Fire', 'Fungal Blight & Stem Borers', 'Drought Index (Parametric)'],
     description: 'Full-cycle commercial timber & boundary plantation protection with maximum 40% government subsidy.',
@@ -173,7 +185,8 @@ export const AddLandPage = () => {
     ],
     documents: [],
     optInsurance: true,
-    insurancePlan: 'Comprehensive Teak & Sandalwood Cover',
+    insurancePlan: 'Custom Sovereign Tree Shield (₹31 / Tree / Year)',
+    insuredTreeCount: '4', // Customizable tree count for insurance (default 4 trees)
   });
 
   // Payment & Tax Invoice States
@@ -182,13 +195,25 @@ export const AddLandPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('UPI'); // 'UPI' | 'CARD' | 'NETBANKING'
   const [invoiceData, setInvoiceData] = useState(null);
 
-  // Price & Fee Calculations based on ₹149 per Acre
+  // Selected Tree Insurance Plan & Tree Fee Calculations (₹31 per year per customized insured tree)
+  const selectedInsurancePlan = TREE_INSURANCE_PLANS.find(
+    (p) => p.title === formData.insurancePlan || p.id === formData.insurancePlan
+  ) || TREE_INSURANCE_PLANS[0];
+  const standingTreeCount = parseInt(formData.treeCount, 10) || 45;
+  const insuredTreeCountForCalc = parseInt(formData.insuredTreeCount, 10) >= 0 ? parseInt(formData.insuredTreeCount, 10) : 4;
+  const insuranceRatePerTree = selectedInsurancePlan?.ratePerTree ?? 31;
+  const treeInsuranceAmount = formData.optInsurance
+    ? Number((insuredTreeCountForCalc * insuranceRatePerTree).toFixed(2))
+    : 0;
+
+  // Price & Fee Calculations based on ₹149 per Acre + Tree Insurance (₹31/tree/yr for custom insured trees)
   const acreageForCalc = parseFloat(rawMapAcreage) || parseFloat(formData?.area) || 12.40;
   const soilTestingAmount = Number((acreageForCalc * 49).toFixed(2));
   const inspectionAmount = Number((acreageForCalc * 50).toFixed(2));
   const carbonCreditAmount = Number((acreageForCalc * 35).toFixed(2));
   const fileChargesAmount = Number((acreageForCalc * 15).toFixed(2));
-  const subtotalAmount = Number((acreageForCalc * 149).toFixed(2));
+  const landSubtotalAmount = Number((acreageForCalc * 149).toFixed(2));
+  const subtotalAmount = Number((landSubtotalAmount + treeInsuranceAmount).toFixed(2));
   const gstAmount = Number((subtotalAmount * 0.18).toFixed(2));
   const cgstAmount = Number((gstAmount / 2).toFixed(2));
   const sgstAmount = Number((gstAmount / 2).toFixed(2));
@@ -198,20 +223,11 @@ export const AddLandPage = () => {
   const [jointOwners, setJointOwners] = useState([
     {
       id: 'jo_1',
-      name: 'Dahybhai Patel',
+      name: '',
       relation: 'Father',
-      aadhaar: 'XXXX-XXXX-4912',
+      aadhaar: '',
       sharePercent: '50',
-      mobile: '98250 11223',
-      consent: true,
-    },
-    {
-      id: 'jo_2',
-      name: 'Pravinbhai Patel',
-      relation: 'Brother',
-      aadhaar: 'XXXX-XXXX-8821',
-      sharePercent: '50',
-      mobile: '98251 33445',
+      mobile: '',
       consent: true,
     },
   ]);
@@ -224,10 +240,10 @@ export const AddLandPage = () => {
     ownerAadhaar: '',
     ownerAddress: '',
     relationToApplicant: 'Power of Attorney Holder',
-    poaDocumentNumber: 'POA/2026/ANAND/9821',
-    agreementDate: '2026-03-15',
-    farmerCultivatorName: user?.name || 'Ramesh Patel',
-    farmerCultivatorMobile: user?.mobile || '9876543210',
+    poaDocumentNumber: '',
+    agreementDate: '',
+    farmerCultivatorName: user?.name || '',
+    farmerCultivatorMobile: user?.mobile || '',
     tenancyDurationYears: '5',
     agreementType: 'Registered Power of Attorney (PoA)',
     farmerAuthorizationAccepted: true,
@@ -289,6 +305,70 @@ export const AddLandPage = () => {
       lat: 22.5630,
       lng: 72.9290,
       timestamp: 'Today, 11:36 AM',
+    },
+  ]);
+
+  // 4-5 Angle Geotagged Tree Verification Photos State (Required for ₹31/tree Custom Policy)
+  const [treeAnglePhotos, setTreeAnglePhotos] = useState([
+    {
+      id: 'tree_angle_1',
+      angleName: 'Angle 1: Trunk Base & Root Collar',
+      direction: 'Ground Level (0°)',
+      description: 'Root flare & ground-level bark inspection',
+      isMandatory: true,
+      captured: true,
+      imageUrl: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&q=80',
+      lat: 22.5631,
+      lng: 72.9291,
+      timestamp: 'Today, 11:38 AM',
+    },
+    {
+      id: 'tree_angle_2',
+      angleName: 'Angle 2: Top Canopy & Foliage Crown',
+      direction: 'Upward Elevation (45°)',
+      description: 'Leaf density, crown health & foliage assessment',
+      isMandatory: true,
+      captured: true,
+      imageUrl: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=600&q=80',
+      lat: 22.5632,
+      lng: 72.9292,
+      timestamp: 'Today, 11:39 AM',
+    },
+    {
+      id: 'tree_angle_3',
+      angleName: 'Angle 3: North-East Lateral Profile',
+      direction: 'Lateral NE (90°)',
+      description: 'Branch spread & side crown uniformity',
+      isMandatory: true,
+      captured: true,
+      imageUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80',
+      lat: 22.5633,
+      lng: 72.9293,
+      timestamp: 'Today, 11:40 AM',
+    },
+    {
+      id: 'tree_angle_4',
+      angleName: 'Angle 4: South-West Lateral Profile',
+      direction: 'Lateral SW (270°)',
+      description: 'Windward side bark condition & stem lean',
+      isMandatory: true,
+      captured: true,
+      imageUrl: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=600&q=80',
+      lat: 22.5629,
+      lng: 72.9289,
+      timestamp: 'Today, 11:41 AM',
+    },
+    {
+      id: 'tree_angle_5',
+      angleName: 'Angle 5: Standing Girth & Tree Geotag',
+      direction: 'Breast Height (1.3m Girth)',
+      description: 'DBH girth tape measurement & QR tree collar',
+      isMandatory: true,
+      captured: true,
+      imageUrl: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=600&q=80',
+      lat: 22.5630,
+      lng: 72.9290,
+      timestamp: 'Today, 11:42 AM',
     },
   ]);
 
@@ -559,11 +639,145 @@ export const AddLandPage = () => {
     toast.success('All KYC documents (Khasra/Pawti, Aadhaar, PAN & Live Photo) populated!');
   };
 
-  const capturedPhotosCount = fieldPhotos.filter((p) => p.captured).length;
+  // 4-5 Angle Tree Geotagged Photo Handlers
+  const handleCaptureTreePhoto = (id) => {
+    const demoTreeUrls = [
+      'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&q=80',
+      'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=600&q=80',
+      'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80',
+      'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=600&q=80',
+      'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=600&q=80',
+    ];
+    const pickedUrl = demoTreeUrls[Math.floor(Math.random() * demoTreeUrls.length)];
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setTreeAnglePhotos((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? {
+              ...p,
+              captured: true,
+              imageUrl: pickedUrl,
+              lat: Number((22.5630 + (Math.random() * 0.003 - 0.0015)).toFixed(4)),
+              lng: Number((72.9290 + (Math.random() * 0.003 - 0.0015)).toFixed(4)),
+              timestamp: `Live captured at ${nowTime}`,
+            }
+          : p
+      )
+    );
+    toast.success('Live tree angle photo captured with GPS verification!');
+  };
 
-  const handleExecutePayment = () => {
+  const handleUploadTreePhoto = (id, e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setTreeAnglePhotos((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                captured: true,
+                imageUrl: url,
+                lat: Number((22.5630 + (Math.random() * 0.003 - 0.0015)).toFixed(4)),
+                lng: Number((72.9290 + (Math.random() * 0.003 - 0.0015)).toFixed(4)),
+                timestamp: `Attached ${file.name} at ${nowTime}`,
+              }
+            : p
+        )
+      );
+      toast.success(`Tree angle photo attached for ${file.name}`);
+    }
+  };
+
+  const handleRemoveTreePhoto = (id) => {
+    setTreeAnglePhotos((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? {
+              ...p,
+              captured: false,
+              imageUrl: '',
+              timestamp: 'Pending capture',
+            }
+          : p
+      )
+    );
+    toast.info('Tree photo cleared');
+  };
+
+  const handleSimulateAllTreePhotos = () => {
+    setTreeAnglePhotos([
+      {
+        id: 'tree_angle_1',
+        angleName: 'Angle 1: Trunk Base & Root Collar',
+        direction: 'Ground Level (0°)',
+        description: 'Root flare & ground-level bark inspection',
+        isMandatory: true,
+        captured: true,
+        imageUrl: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&q=80',
+        lat: 22.5631,
+        lng: 72.9291,
+        timestamp: 'Live captured • 11:38 AM',
+      },
+      {
+        id: 'tree_angle_2',
+        angleName: 'Angle 2: Top Canopy & Foliage Crown',
+        direction: 'Upward Elevation (45°)',
+        description: 'Leaf density, crown health & foliage assessment',
+        isMandatory: true,
+        captured: true,
+        imageUrl: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=600&q=80',
+        lat: 22.5632,
+        lng: 72.9292,
+        timestamp: 'Live captured • 11:39 AM',
+      },
+      {
+        id: 'tree_angle_3',
+        angleName: 'Angle 3: North-East Lateral Profile',
+        direction: 'Lateral NE (90°)',
+        description: 'Branch spread & side crown uniformity',
+        isMandatory: true,
+        captured: true,
+        imageUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80',
+        lat: 22.5633,
+        lng: 72.9293,
+        timestamp: 'Live captured • 11:40 AM',
+      },
+      {
+        id: 'tree_angle_4',
+        angleName: 'Angle 4: South-West Lateral Profile',
+        direction: 'Lateral SW (270°)',
+        description: 'Windward side bark condition & stem lean',
+        isMandatory: true,
+        captured: true,
+        imageUrl: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=600&q=80',
+        lat: 22.5629,
+        lng: 72.9289,
+        timestamp: 'Live captured • 11:41 AM',
+      },
+      {
+        id: 'tree_angle_5',
+        angleName: 'Angle 5: Standing Girth & Tree Geotag',
+        direction: 'Breast Height (1.3m Girth)',
+        description: 'DBH girth tape measurement & QR tree collar',
+        isMandatory: true,
+        captured: true,
+        imageUrl: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=600&q=80',
+        lat: 22.5630,
+        lng: 72.9290,
+        timestamp: 'Live captured • 11:42 AM',
+      },
+    ]);
+    toast.success('All 5 tree angle photos populated with GPS tags!');
+  };
+
+  const capturedPhotosCount = fieldPhotos.filter((p) => p.captured).length;
+  const capturedTreePhotosCount = treeAnglePhotos.filter((p) => p.captured).length;
+
+  const handleExecutePayment = async () => {
     setPaymentProcessing(true);
-    setTimeout(() => {
+    try {
       const generatedInvoice = {
         invoiceNumber: `BC-INV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
         transactionId: `TXN-BHUMI-${Date.now().toString().slice(-8)}`,
@@ -572,13 +786,13 @@ export const AddLandPage = () => {
         farmerName:
           formData.ownershipType === 'Other Person' && otherOwnerDetails.ownerFullName
             ? otherOwnerDetails.ownerFullName
-            : (user?.name || 'Ramesh Dahybhai Patel'),
+            : (user?.name || 'Citizen Farmer'),
         fatherName:
           formData.ownershipType === 'Other Person' && otherOwnerDetails.ownerFatherName
             ? otherOwnerDetails.ownerFatherName
-            : 'Dahybhai Patel',
-        mobile: user?.mobile || otherOwnerDetails.ownerMobile || '9876543210',
-        email: user?.email || 'farmer.ramesh@bhumicred.gov.in',
+            : (user?.fatherName || ''),
+        mobile: user?.mobile || otherOwnerDetails.ownerMobile || '',
+        email: user?.email || '',
         address: formData.address || 'Survey 402/A, Village Mogri, Anand District, Gujarat - 388345',
         surveyNumber: formData.surveyNumber || '402/A',
         khasraNumber: formData.khasraNumber || '118/2',
@@ -588,6 +802,15 @@ export const AddLandPage = () => {
         inspection: inspectionAmount,
         carbonCredit: carbonCreditAmount,
         fileCharges: fileChargesAmount,
+        landSubtotal: landSubtotalAmount,
+        optInsurance: formData.optInsurance,
+        insurancePlan: formData.optInsurance ? (selectedInsurancePlan?.title || formData.insurancePlan) : null,
+        insuranceRatePerTree: insuranceRatePerTree,
+        standingTreeCount: standingTreeCount,
+        insuredTreeCount: insuredTreeCountForCalc,
+        treeCount: insuredTreeCountForCalc,
+        treeInsuranceAmount: treeInsuranceAmount,
+        treePhotosCount: capturedTreePhotosCount,
         subtotal: subtotalAmount,
         cgst: cgstAmount,
         sgst: sgstAmount,
@@ -604,34 +827,64 @@ export const AddLandPage = () => {
 
       setInvoiceData(generatedInvoice);
 
-      // Persist to storage service & sync cross-role approval
-      storageService.saveLand({
+      const landPayload = {
         landName: formData.landName || 'New Agricultural Plot',
         surveyNumber: formData.surveyNumber || '108/A',
         khasraNumber: formData.khasraNumber || '412/9',
+        area: acreageForCalc,
         areaAcres: acreageForCalc,
-        landType: formData.landType,
-        ownershipType: formData.ownershipType,
-        jointOwners: formData.ownershipType === 'Ancestral Joint' ? jointOwners : undefined,
-        otherOwnerDetails: formData.ownershipType === 'Other Person' ? otherOwnerDetails : undefined,
+        landType: formData.landType || 'Agricultural (Irrigated)',
+        ownershipType: formData.ownershipType || 'Individual Owner',
+        ownerName: user?.name || 'Citizen Farmer',
+        ownerMobile: user?.mobile || '',
+        state: formData.state || 'Gujarat',
+        district: formData.district || 'Anand',
+        village: formData.village || 'Mogri',
+        address: formData.address || `${formData.village || 'Mogri'}, Anand, Gujarat`,
+        soilType: formData.soilType || 'Alluvial Loam',
+        irrigationSource: formData.irrigationSource || 'Borewell & Drip Irrigation',
+        treeCount: standingTreeCount,
+        treesInsured: Boolean(formData.optInsurance),
+        coordinates: formData.polygonCoords || [],
         fieldPhotos: fieldPhotos.filter((p) => p.captured),
+        treeAnglePhotos: treeAnglePhotos.filter((p) => p.captured),
+        optInsurance: formData.optInsurance,
+        insurancePlan: formData.optInsurance ? (selectedInsurancePlan?.title || formData.insurancePlan) : null,
+        insuranceRatePerTree: insuranceRatePerTree,
+        standingTreeCount: standingTreeCount,
+        insuredTreeCount: insuredTreeCountForCalc,
+        treeInsuranceAmount: treeInsuranceAmount,
         khasraDoc: khasraDoc,
         aadhaarDoc: aadhaarDoc,
         panDoc: panDoc,
         farmerPhoto: farmerPhoto,
-        soilType: formData.soilType,
-        irrigationSource: formData.irrigationSource,
-        address: formData.address || 'Anand, Gujarat',
-        treeCount: Number(formData.treeCount) || 45,
         status: 'PENDING_VERIFICATION',
         invoice: generatedInvoice,
-      });
+      };
+
+      // 1. Save to sovereign MongoDB Atlas backend
+      try {
+        const backendRes = await landService.registerLand(landPayload);
+        if (backendRes?.data?.landId) {
+          landPayload.id = backendRes.data.landId;
+          landPayload.landId = backendRes.data.landId;
+        }
+      } catch (apiErr) {
+        console.warn('Backend live registration synced to local cache fallback:', apiErr?.message);
+      }
+
+      // 2. Persist to local storage service for instant caching
+      storageService.saveLand(landPayload);
 
       setPaymentProcessing(false);
       setShowPaymentModal(false);
       setSubmitted(true);
-      toast.success(`Payment of ₹${grandTotalAmount.toLocaleString('en-IN')} successful! Tax Invoice generated.`);
-    }, 1400);
+      toast.success(`Payment of ₹${grandTotalAmount.toLocaleString('en-IN')} successful! Land parcel registered and sent to Admin Queue.`);
+    } catch (err) {
+      console.error('Payment processing error:', err);
+      setPaymentProcessing(false);
+      toast.error('Payment processing encountered an error. Please try again.');
+    }
   };
 
   const handlePrintInvoice = () => {
@@ -860,6 +1113,29 @@ export const AddLandPage = () => {
                   <td className="py-2 px-2.5 text-center font-mono border-r border-slate-200">{invoiceData.acres} ac</td>
                   <td className="py-2 px-3 text-right font-mono font-bold">₹{invoiceData.fileCharges.toFixed(2)}</td>
                 </tr>
+
+                {invoiceData.optInsurance && (
+                  <tr className="hover:bg-slate-50/50 bg-emerald-50/30">
+                    <td className="py-2 px-2.5 text-center font-bold text-emerald-800 border-r border-slate-200">5</td>
+                    <td className="py-2 px-3 border-r border-slate-200">
+                      <strong className="block text-slate-950">
+                        Tree Asset Insurance Policy ({invoiceData.insurancePlan || 'Custom Sovereign Tree Shield @ ₹31/tree/year'})
+                      </strong>
+                      <span className="text-[9px] text-emerald-700 font-semibold">
+                        4-5 Angle Biometric Geotagged Tree Verification • {invoiceData.treePhotosCount || 5} Angles Attached
+                      </span>
+                    </td>
+                    <td className="py-2 px-2.5 text-center font-mono font-semibold border-r border-slate-200 text-emerald-900">
+                      ₹{(invoiceData.insuranceRatePerTree || 31).toFixed(2)} / tree
+                    </td>
+                    <td className="py-2 px-2.5 text-center font-mono border-r border-slate-200 font-semibold">
+                      {invoiceData.insuredTreeCount || invoiceData.treeCount || 4} Insured Trees
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono font-black text-emerald-950">
+                      ₹{(invoiceData.treeInsuranceAmount ?? (Number(invoiceData.insuredTreeCount || 4) * 31)).toFixed(2)}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -876,13 +1152,23 @@ export const AddLandPage = () => {
                 subLabel={`Ref: ${invoiceData.transactionId} • Verified`}
               />
               <p className="text-[9px] text-slate-500 italic">
-                * Rates calculated strictly at standard ₹149.00 per Acre + 18% GST (CGST 9% + SGST 9%).
+                * Land charges calculated at ₹149/ac + Tree insurance ({invoiceData.insuredTreeCount || 4} trees @ ₹{invoiceData.insuranceRatePerTree || 31}/tree/yr) + 18% GST (CGST 9% + SGST 9%).
               </p>
             </div>
 
             <div className="w-full sm:w-64 bg-slate-50 rounded-lg p-2.5 border border-slate-300 text-[11px] space-y-1">
               <div className="flex justify-between text-slate-700">
-                <span>Subtotal (Base @ ₹149/ac):</span>
+                <span>Land Statutory Fee (₹149/ac):</span>
+                <span className="font-mono">₹{invoiceData.landSubtotal?.toFixed(2) || (invoiceData.acres * 149).toFixed(2)}</span>
+              </div>
+              {invoiceData.optInsurance && (
+                <div className="flex justify-between text-emerald-800 font-medium">
+                  <span>Tree Insurance ({invoiceData.insuredTreeCount || invoiceData.treeCount || 4} Trees @ ₹{invoiceData.insuranceRatePerTree || 31}/yr):</span>
+                  <span className="font-mono font-bold">₹{(invoiceData.treeInsuranceAmount ?? (Number(invoiceData.insuredTreeCount || 4) * 31)).toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-0.5">
+                <span>Taxable Subtotal:</span>
                 <strong className="font-mono">₹{invoiceData.subtotal.toFixed(2)}</strong>
               </div>
               <div className="flex justify-between text-slate-600 text-[10px]">
@@ -1116,7 +1402,7 @@ export const AddLandPage = () => {
                         <FormInput
                           label="Co-owner Full Name"
                           required
-                          placeholder="e.g. Pravinbhai Dahybhai Patel"
+                          placeholder="e.g. Co-owner Full Name"
                           value={owner.name}
                           onChange={(e) => handleUpdateJointOwner(owner.id, 'name', e.target.value)}
                         />
@@ -1921,42 +2207,142 @@ export const AddLandPage = () => {
                       Opt-in for Sovereign Tree Plantation Insurance Cover
                     </h4>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/30 text-emerald-300 border border-emerald-400/30">
-                      Up to 40% State Subsidy
+                      ₹31 / Tree / Year
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 mt-1 max-w-xl">
-                    Protect {formData.treeCount || 45} cataloged {formData.treeSpecies || 'standing trees'} against cyclone, fire, pest blight, and climatic perils.
+                    Protect standing trees on your registered land against cyclone, wildfire, stem borers, and climatic perils.
                   </p>
                 </div>
               </label>
 
               {formData.optInsurance && (
-                <div className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold shrink-0 text-center">
-                  Active Quote for {formData.treeCount || 45} Trees
+                <div className="px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold shrink-0 text-center">
+                  Quote for {insuredTreeCountForCalc} Insured Trees
                 </div>
               )}
             </div>
 
+            {/* CUSTOM INSURED TREES COUNT SELECTOR WIDGET */}
+            {formData.optInsurance && (
+              <div className="p-4 sm:p-5 bg-gradient-to-br from-emerald-50 to-teal-50/70 border-2 border-emerald-500 rounded-2xl shadow-sm space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200/80 pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs">
+                      <Trees className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-sm sm:text-base text-emerald-950">
+                          Customize Insured Trees Quantity (@ ₹31 / Tree / Year)
+                        </h4>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200 text-emerald-900 border border-emerald-300">
+                          Flexible Per-Tree Policy
+                        </span>
+                      </div>
+                      <p className="text-xs text-emerald-800 mt-0.5">
+                        Parcel has <strong>{standingTreeCount} standing trees</strong>. You can insure all trees or choose a specific custom count (e.g. <strong>4 trees</strong>).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right bg-white px-3.5 py-2 rounded-xl border border-emerald-300 shadow-xs shrink-0">
+                    <span className="text-[10px] text-slate-500 block uppercase font-mono">Custom Insurance Calculation</span>
+                    <span className="text-base sm:text-lg font-black text-emerald-900 font-mono">
+                      {insuredTreeCountForCalc} Trees × ₹{insuranceRatePerTree} = ₹{(insuredTreeCountForCalc * insuranceRatePerTree).toFixed(2)} / yr
+                    </span>
+                  </div>
+                </div>
+
+                {/* Counter Stepper & Presets */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-bold text-slate-800">Insure Specific Trees:</span>
+                    <div className="flex items-center rounded-xl border-2 border-emerald-600 bg-white p-1 shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = parseInt(formData.insuredTreeCount, 10) || 0;
+                          const nextVal = Math.max(1, current - 1);
+                          setFormData((prev) => ({ ...prev, insuredTreeCount: String(nextVal) }));
+                          toast.info(`Updated to ${nextVal} insured trees (@ ₹31/tree/yr)`);
+                        }}
+                        className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-black text-base flex items-center justify-center transition-all"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max={standingTreeCount || 500}
+                        name="insuredTreeCount"
+                        value={formData.insuredTreeCount}
+                        onChange={handleChange}
+                        className="w-16 text-center font-black font-mono text-sm text-emerald-950 focus:outline-none bg-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = parseInt(formData.insuredTreeCount, 10) || 0;
+                          const nextVal = current + 1;
+                          setFormData((prev) => ({ ...prev, insuredTreeCount: String(nextVal) }));
+                          toast.info(`Updated to ${nextVal} insured trees (@ ₹31/tree/yr)`);
+                        }}
+                        className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-black text-base flex items-center justify-center transition-all"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="text-xs text-emerald-800 font-medium">Selected Trees</span>
+                  </div>
+
+                  {/* Quick Preset Selector Buttons */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] text-slate-600 font-semibold">Quick Select:</span>
+                    {['4', '10', '25', String(standingTreeCount)].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, insuredTreeCount: preset }));
+                          toast.info(`Configured custom insurance for ${preset} trees (@ ₹31/tree/yr)`);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          formData.insuredTreeCount === preset
+                            ? 'bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-600/30'
+                            : 'bg-white hover:bg-emerald-100 text-slate-700 border border-slate-300'
+                        }`}
+                      >
+                        {preset} Trees {preset === String(standingTreeCount) ? '(All)' : ''}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Tree Insurance Plans Selection Cards Grid */}
             {formData.optInsurance ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h4 className="font-bold text-sm text-gray-900 flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    Available Tree Insurance Plans (Click to Select & Proceed):
+                    Available Tree Insurance Plans (Click to Select):
                   </h4>
                   <span className="text-xs text-emerald-700 font-semibold">
                     Current: <strong>{formData.insurancePlan}</strong>
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {TREE_INSURANCE_PLANS.map((plan) => {
                     const isSelected = formData.insurancePlan === plan.title || (plan.popular && !formData.insurancePlan);
-                    const treeCount = Number(formData.treeCount) || 45;
+                    const treeCount = insuredTreeCountForCalc;
                     const calculatedSumInsured = (treeCount * plan.sumInsuredMultiplier).toLocaleString('en-IN');
-                    const grossPrem = treeCount * plan.ratePerTree * 4.5;
-                    const netPrem = Math.round(grossPrem * (1 - plan.subsidyPercent / 100)).toLocaleString('en-IN');
+                    const grossPrem = plan.ratePerTree === 31 ? (treeCount * 31) : (treeCount * plan.ratePerTree * 4.5);
+                    const netPrem = plan.subsidyPercent > 0 
+                      ? Math.round(grossPrem * (1 - plan.subsidyPercent / 100)).toLocaleString('en-IN')
+                      : grossPrem.toLocaleString('en-IN');
 
                     return (
                       <div
@@ -1967,73 +2353,73 @@ export const AddLandPage = () => {
                             insurancePlan: plan.title,
                             optInsurance: true,
                           }));
-                          toast.success(`Selected "${plan.title}"! Click proceed or review below.`);
+                          toast.success(`Selected "${plan.title}"!`);
                         }}
-                        className={`cursor-pointer rounded-2xl p-5 border-2 transition-all flex flex-col justify-between relative bg-white ${
+                        className={`cursor-pointer rounded-2xl p-4 border-2 transition-all flex flex-col justify-between relative bg-white ${
                           isSelected
                             ? 'border-emerald-600 ring-2 ring-emerald-500/30 shadow-lg bg-emerald-50/20'
                             : 'border-slate-200 hover:border-emerald-300 hover:shadow-md'
                         }`}
                       >
                         {plan.popular && (
-                          <span className="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shadow-sm">
-                            Most Popular • 40% Subsidy
+                          <span className="absolute -top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shadow-sm">
+                            ★ Recommended (₹31/Tree)
                           </span>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="space-y-2.5">
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
                                 {plan.category}
                               </span>
-                              <h5 className="font-bold text-base text-gray-900 mt-1.5 leading-snug">
+                              <h5 className="font-bold text-sm text-gray-900 mt-1 leading-snug">
                                 {plan.title}
                               </h5>
                             </div>
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 ${
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
                               isSelected ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300'
                             }`}>
                               {isSelected && <Check className="w-3.5 h-3.5" />}
                             </div>
                           </div>
 
-                          <p className="text-xs text-gray-600 leading-relaxed">
+                          <p className="text-[11px] text-gray-600 leading-relaxed">
                             {plan.description}
                           </p>
 
                           {/* Premium & Sum Insured Box */}
-                          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
-                            <div className="flex justify-between text-xs">
+                          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-500">Rate / Tree / Year:</span>
+                              <strong className="text-emerald-800 font-bold">₹{plan.ratePerTree}.00</strong>
+                            </div>
+                            <div className="flex justify-between text-[11px]">
                               <span className="text-gray-500">Est. Sum Insured:</span>
-                              <strong className="text-emerald-800 font-bold">₹{calculatedSumInsured}</strong>
+                              <strong className="text-gray-800 font-semibold">₹{calculatedSumInsured}</strong>
                             </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">Net Premium ({treeCount} Trees):</span>
-                              <strong className="text-gray-900 font-bold">₹{netPrem} / yr</strong>
-                            </div>
-                            <div className="flex justify-between text-[11px] text-emerald-700 font-semibold border-t border-slate-200 pt-1">
-                              <span>Govt Subsidy:</span>
-                              <span>{plan.subsidyPercent}% Direct Rebate</span>
+                            <div className="flex justify-between text-[11px] border-t border-slate-200 pt-1">
+                              <span className="text-gray-600 font-medium">Net Quote ({treeCount} Trees):</span>
+                              <strong className="text-emerald-950 font-bold">₹{netPrem} / yr</strong>
                             </div>
                           </div>
 
                           {/* Perils list */}
                           <div className="space-y-1">
-                            <span className="text-[11px] font-bold text-gray-700 block">Covered Perils:</span>
-                            <ul className="text-[11px] text-gray-600 space-y-0.5">
-                              {plan.perils.map((peril, pIdx) => (
-                                <li key={pIdx} className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-gray-700 block">Covered Perils:</span>
+                            <ul className="text-[10px] text-gray-600 space-y-0.5">
+                              {plan.perils.slice(0, 3).map((peril, pIdx) => (
+                                <li key={pIdx} className="flex items-center gap-1">
                                   <Check className="w-3 h-3 text-emerald-600 shrink-0" />
-                                  <span>{peril}</span>
+                                  <span className="truncate">{peril}</span>
                                 </li>
                               ))}
                             </ul>
                           </div>
                         </div>
 
-                        {/* Direct Select & Proceed Button */}
-                        <div className="pt-4 mt-2 border-t border-slate-100">
+                        {/* Direct Select Button */}
+                        <div className="pt-3 mt-2 border-t border-slate-100">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -2043,22 +2429,141 @@ export const AddLandPage = () => {
                                 insurancePlan: plan.title,
                                 optInsurance: true,
                               }));
-                              toast.success(`Selected "${plan.title}"! Moving to final review.`);
-                              setActiveStep(4);
+                              toast.success(`Selected "${plan.title}"!`);
                             }}
-                            className={`w-full py-2 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+                            className={`w-full py-1.5 px-2.5 rounded-xl font-bold text-[11px] transition-all flex items-center justify-center gap-1 ${
                               isSelected
-                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md'
+                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
                                 : 'bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-800'
                             }`}
                           >
-                            <span>{isSelected ? '✓ Plan Selected — Proceed to Review' : 'Select This Plan & Proceed'}</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
+                            <span>{isSelected ? '✓ Plan Selected' : 'Select Plan'}</span>
                           </button>
                         </div>
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Dedicated 4-5 Angle Geotagged Tree Verification Photo Capture Section */}
+                <div className="p-5 bg-gradient-to-br from-slate-900 via-emerald-950 to-teal-950 rounded-2xl text-white shadow-lg space-y-4 border border-emerald-800/60">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-800/80 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-400/30">
+                        <Camera className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-sm sm:text-base text-white">
+                            Mandatory Multi-Angle Geotagged Tree Verification (4-5 Angles Required)
+                          </h4>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                            ₹31/Tree Policy Requirement
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300 mt-0.5">
+                          Upload or live-capture photos for your <strong>{insuredTreeCountForCalc} insured trees</strong> from 4-5 distinct angles with GPS coordinates.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 rounded-xl bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs font-bold font-mono">
+                        {capturedTreePhotosCount}/5 Angles Captured
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSimulateAllTreePhotos}
+                        className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        Populate All 5 Angles
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 5 Tree Angle Slots Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    {treeAnglePhotos.map((angle) => (
+                      <div
+                        key={angle.id}
+                        className="p-3 bg-white/5 border border-white/10 rounded-xl flex flex-col justify-between space-y-2 hover:border-emerald-400/50 transition-all"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 truncate">
+                              {angle.direction}
+                            </span>
+                            {angle.captured ? (
+                              <span className="text-[9px] font-bold text-emerald-400 flex items-center gap-0.5">
+                                <Check className="w-3 h-3" /> Ready
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-bold text-amber-400">Required</span>
+                            )}
+                          </div>
+                          <h6 className="font-bold text-xs text-white mt-0.5 leading-snug line-clamp-1">
+                            {angle.angleName}
+                          </h6>
+                          <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                            {angle.description}
+                          </p>
+                        </div>
+
+                        {/* Image Preview or Capture Buttons */}
+                        {angle.captured && angle.imageUrl ? (
+                          <div className="space-y-1.5">
+                            <div className="relative h-24 rounded-lg overflow-hidden border border-emerald-400/40 bg-slate-800">
+                              <img src={angle.imageUrl} alt={angle.angleName} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-1.5">
+                                <span className="text-[8px] font-mono text-emerald-300">{angle.lat}° N, {angle.lng}° E</span>
+                                <span className="text-[8px] text-slate-300 truncate">{angle.timestamp}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleCaptureTreePhoto(angle.id)}
+                                className="flex-1 py-1 rounded-md bg-emerald-600/80 hover:bg-emerald-600 text-white text-[10px] font-bold transition-all text-center"
+                              >
+                                Retake
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTreePhoto(angle.id)}
+                                className="p-1 text-slate-400 hover:text-rose-400 rounded-md"
+                                title="Clear photo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => handleCaptureTreePhoto(angle.id)}
+                              className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
+                            >
+                              <Camera className="w-3.5 h-3.5 text-amber-300" />
+                              <span>Live Snap</span>
+                            </button>
+
+                            <label className="cursor-pointer w-full py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-[10px] flex items-center justify-center gap-1 transition-all text-center">
+                              <Upload className="w-3 h-3 text-slate-300" />
+                              <span>Upload File</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleUploadTreePhoto(angle.id, e)}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -2067,7 +2572,7 @@ export const AddLandPage = () => {
                   Tree plantation insurance is currently opted out for this parcel.
                 </p>
                 <p className="text-xs text-gray-500 max-w-md mx-auto">
-                  You can opt-in at any time to claim up to 40% government subsidy on high-density timber and sandalwood cover, or proceed directly to submission.
+                  You can opt-in at any time to customize tree count at ₹31/tree/year or claim up to 40% government subsidy, or proceed directly to submission.
                 </p>
               </div>
             )}
@@ -2115,7 +2620,7 @@ export const AddLandPage = () => {
 
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-2.5">
                 <h4 className="font-bold text-gray-900 pb-2 border-b border-slate-200 flex items-center gap-2">
-                  <Trees className="w-4 h-4 text-emerald-600" /> Agronomy & Assets
+                  <Trees className="w-4 h-4 text-emerald-600" /> Agronomy & Tree Protection Policy
                 </h4>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Soil Type:</span>
@@ -2126,12 +2631,20 @@ export const AddLandPage = () => {
                   <span className="font-semibold text-gray-900">{formData.irrigationSource}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Tree Count:</span>
-                  <span className="font-semibold text-gray-900">{formData.treeCount || 45} Trees</span>
+                  <span className="text-gray-500">Standing Trees on Land:</span>
+                  <span className="font-semibold text-gray-900">{standingTreeCount} Trees</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Insurance Opt-In:</span>
-                  <span className="font-semibold text-emerald-600">{formData.optInsurance ? 'Yes (Included)' : 'No'}</span>
+                  <span className="text-gray-500">Custom Insured Trees:</span>
+                  <span className="font-bold text-emerald-800 truncate max-w-[200px]">
+                    {formData.optInsurance ? `${insuredTreeCountForCalc} Trees (@ ₹${insuranceRatePerTree}/tree/yr)` : 'None'}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-slate-200 pt-1">
+                  <span className="text-gray-500">Annual Tree Premium:</span>
+                  <span className="font-mono font-bold text-emerald-900">
+                    {formData.optInsurance ? `₹${treeInsuranceAmount.toFixed(2)} (${insuredTreeCountForCalc} × ₹${insuranceRatePerTree})` : '₹0.00'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -2179,8 +2692,8 @@ export const AddLandPage = () => {
 
                   <div className="p-3.5 bg-white rounded-lg border border-emerald-200 space-y-1.5">
                     <span className="font-bold text-emerald-900 block border-b pb-1">Cultivating Farmer / Applicant</span>
-                    <div className="flex justify-between"><span className="text-slate-500">Farmer:</span> <strong className="text-slate-900">{otherOwnerDetails.farmerCultivatorName || user?.name || 'Ramesh Patel'}</strong></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Mobile:</span> <span className="font-mono">{otherOwnerDetails.farmerCultivatorMobile || user?.mobile}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Farmer:</span> <strong className="text-slate-900">{otherOwnerDetails.farmerCultivatorName || user?.name || 'Citizen Farmer'}</strong></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Mobile:</span> <span className="font-mono">{otherOwnerDetails.farmerCultivatorMobile || user?.mobile || '—'}</span></div>
                     <div className="flex justify-between"><span className="text-slate-500">Cultivation Period:</span> <span>{otherOwnerDetails.tenancyDurationYears} Years</span></div>
                     <div className="flex justify-between"><span className="text-slate-500">Agreement Type:</span> <span>{otherOwnerDetails.agreementType}</span></div>
                     <div className="flex justify-between"><span className="text-slate-500">Status:</span> <span className="text-emerald-700 font-bold">Authorized with NOC</span></div>
@@ -2241,12 +2754,12 @@ export const AddLandPage = () => {
               </div>
             </div>
 
-            {/* Step 5 Field Photos Thumbnails Grid */}
+            {/* Field Photos Thumbnails Grid */}
             <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3 text-xs">
               <div className="flex items-center justify-between">
                 <h4 className="font-bold text-gray-900 flex items-center gap-1.5 text-sm">
                   <Camera className="w-4 h-4 text-emerald-600" />
-                  Verified Geotagged Field Photos ({capturedPhotosCount} Attached)
+                  Verified Geotagged Field Boundary Photos ({capturedPhotosCount} Attached)
                 </h4>
                 <span className="text-emerald-700 font-semibold">✓ GPS Tagged & Timestamped</span>
               </div>
@@ -2263,7 +2776,31 @@ export const AddLandPage = () => {
               </div>
             </div>
 
-            {/* Step 4 Fee Assessment & Registration Charges (Set at ₹149/acre) */}
+            {/* 4-5 Angle Tree Geotagged Photos Gallery (When Opted In) */}
+            {formData.optInsurance && (
+              <div className="bg-emerald-50/60 p-5 rounded-xl border border-emerald-200 space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-emerald-950 flex items-center gap-1.5 text-sm">
+                    <Trees className="w-4 h-4 text-emerald-700" />
+                    Verified Geotagged Tree Multi-Angle Photos ({capturedTreePhotosCount}/5 Angles for {insuredTreeCountForCalc} Insured Trees)
+                  </h4>
+                  <span className="text-emerald-800 font-semibold">✓ Biometric Multi-Angle Underwriting</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1">
+                  {treeAnglePhotos.filter((p) => p.captured).map((p, idx) => (
+                    <div key={idx} className="rounded-xl overflow-hidden border border-emerald-300 bg-white shadow-sm">
+                      <img src={p.imageUrl} alt={p.angleName} className="w-full h-24 object-cover" />
+                      <div className="p-1.5 text-[10px] bg-emerald-50/80">
+                        <p className="font-bold text-slate-900 truncate">{p.direction}</p>
+                        <p className="text-emerald-700 text-[9px] font-mono">{p.lat}° N, {p.lng}° E</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 4 Fee Assessment & Registration Charges (Set at ₹149/acre + Tree Insurance) */}
             <div className="bg-emerald-950 text-white p-5 sm:p-6 rounded-2xl shadow-xl space-y-4 border border-emerald-800/80">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-800 pb-3">
                 <div className="flex items-center gap-2.5">
@@ -2276,6 +2813,7 @@ export const AddLandPage = () => {
                     </h4>
                     <p className="text-xs text-emerald-300">
                       Standardized Sovereign Rate: <strong className="text-amber-300">₹149 / Acre</strong> for {acreageForCalc} Registered Acres
+                      {formData.optInsurance ? ` + Tree Insurance (${insuredTreeCountForCalc} trees @ ₹${insuranceRatePerTree}/tree/yr)` : ''}
                     </p>
                   </div>
                 </div>
@@ -2287,7 +2825,7 @@ export const AddLandPage = () => {
               </div>
 
               {/* Breakdown Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs">
                 <div className="p-3 bg-white/5 rounded-xl border border-white/10 space-y-1">
                   <span className="text-slate-400 block text-[11px]">1. Soil Testing & Lab:</span>
                   <strong className="text-white font-mono text-sm">₹{soilTestingAmount.toFixed(2)}</strong>
@@ -2301,20 +2839,34 @@ export const AddLandPage = () => {
                 </div>
 
                 <div className="p-3 bg-white/5 rounded-xl border border-white/10 space-y-1">
-                  <span className="text-slate-400 block text-[11px]">3. Carbon Credit Generator:</span>
+                  <span className="text-slate-400 block text-[11px]">3. Carbon Credit Gen:</span>
                   <strong className="text-white font-mono text-sm">₹{carbonCreditAmount.toFixed(2)}</strong>
                   <span className="text-[10px] text-emerald-400 block">₹35.00 / ac × {acreageForCalc} ac</span>
                 </div>
 
                 <div className="p-3 bg-white/5 rounded-xl border border-white/10 space-y-1">
-                  <span className="text-slate-400 block text-[11px]">4. File & Deed Processing:</span>
+                  <span className="text-slate-400 block text-[11px]">4. File & Deed Charges:</span>
                   <strong className="text-white font-mono text-sm">₹{fileChargesAmount.toFixed(2)}</strong>
                   <span className="text-[10px] text-emerald-400 block">₹15.00 / ac × {acreageForCalc} ac</span>
+                </div>
+
+                <div className={`p-3 rounded-xl border space-y-1 ${
+                  formData.optInsurance ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200' : 'bg-white/5 border-white/10'
+                }`}>
+                  <span className="text-slate-400 block text-[11px]">5. Tree Asset Insurance:</span>
+                  <strong className="text-amber-300 font-mono text-sm">₹{treeInsuranceAmount.toFixed(2)}</strong>
+                  <span className="text-[10px] text-emerald-300 block">
+                    {formData.optInsurance ? `₹${insuranceRatePerTree}/tree × ${insuredTreeCountForCalc} trees` : 'Opted Out'}
+                  </span>
                 </div>
               </div>
 
               {/* Subtotal & GST Summary Line */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-emerald-900/80 text-xs text-slate-300">
+                <span>Land Statutory (₹149/ac): <strong className="text-white font-mono">₹{landSubtotalAmount.toFixed(2)}</strong></span>
+                {formData.optInsurance && (
+                  <span>Tree Insurance ({insuredTreeCountForCalc} Trees): <strong className="text-amber-300 font-mono">₹{treeInsuranceAmount.toFixed(2)}</strong></span>
+                )}
                 <span>Base Subtotal: <strong className="text-white font-mono">₹{subtotalAmount.toFixed(2)}</strong></span>
                 <span>CGST (9%): <strong className="text-white font-mono">₹{cgstAmount.toFixed(2)}</strong></span>
                 <span>SGST (9%): <strong className="text-white font-mono">₹{sgstAmount.toFixed(2)}</strong></span>
@@ -2325,7 +2877,7 @@ export const AddLandPage = () => {
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-xs text-amber-800">
               <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <span>
-                By proceeding to payment, you certify that the uploaded Khasra/Pawti documents and geotagged field photos are authentic. Application will be officially submitted and GST Tax Invoice generated immediately upon payment settlement.
+                By proceeding to payment, you certify that the uploaded Khasra/Pawti documents, geotagged land boundary photos, and {capturedTreePhotosCount} multi-angle tree inspection photos for your {insuredTreeCountForCalc} insured trees are authentic. Application will be officially submitted and GST Tax Invoice generated immediately upon payment settlement.
               </span>
             </div>
           </div>
@@ -2390,8 +2942,10 @@ export const AddLandPage = () => {
             {/* Fee Summary Banner */}
             <div className="p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <div>
-                <span className="text-xs text-slate-500 block">Registration & Inspection Fee:</span>
-                <span className="text-xs font-bold text-slate-900">{acreageForCalc} Acres @ ₹149/ac + 18% GST</span>
+                <span className="text-xs text-slate-500 block">Registration & Tree Insurance Fee:</span>
+                <span className="text-xs font-bold text-slate-900">
+                  {acreageForCalc} Acres @ ₹149/ac {formData.optInsurance ? `+ ${insuredTreeCountForCalc} Trees @ ₹${insuranceRatePerTree}/tree` : ''} + 18% GST
+                </span>
               </div>
               <div className="text-right">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">Total Amount</span>

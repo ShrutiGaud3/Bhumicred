@@ -22,9 +22,12 @@ import { StatusBadge } from '../../../components/ui/StatusBadge.jsx';
 import { Badge } from '../../../components/ui/Badge.jsx';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { MapPlaceholder } from '../../../components/ui/MapPlaceholder.jsx';
+import { useEffect } from 'react';
 import { MOCK_LANDS } from '../../../services/mockData/landsMock.js';
 import { MOCK_POLICIES } from '../../../services/mockData/insuranceMock.js';
 import { MOCK_SOIL_REQUESTS } from '../../../services/mockData/soilMock.js';
+import { storageService } from '../../../services/storageService.js';
+import { landService } from '../services/landService.js';
 import { LandDeedModal } from '../components/LandDeedModal.jsx';
 
 export const LandDetailPage = () => {
@@ -32,10 +35,59 @@ export const LandDetailPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [showDeedModal, setShowDeedModal] = useState(false);
+  const [landData, setLandData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const land = MOCK_LANDS.find((l) => l.id === id) || MOCK_LANDS[0];
-  const linkedPolicy = MOCK_POLICIES.find((p) => p.landId === land.id);
-  const linkedSoil = MOCK_SOIL_REQUESTS.find((s) => s.landId === land.id);
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLand = async () => {
+      setLoading(true);
+      try {
+        const res = await landService.getLandById(id);
+        if (isMounted && res?.data) {
+          const item = res.data;
+          setLandData({
+            id: item.landId || item._id,
+            landName: item.landName,
+            surveyNumber: item.surveyNumber,
+            khasraNumber: item.khasraNumber,
+            landType: item.landType,
+            ownershipType: item.ownershipType,
+            area: item.area,
+            areaUnit: item.areaUnit || 'Acres',
+            address: item.location?.address || `${item.location?.village || ''}, ${item.location?.district || ''}, ${item.location?.state || 'Gujarat'}`,
+            soilType: item.agronomicDetails?.soilType || 'Alluvial Loam',
+            irrigationSource: item.agronomicDetails?.irrigationSource || 'Borewell & Drip Irrigation',
+            primaryCrops: item.agronomicDetails?.primaryCrops || ['Cotton', 'Wheat', 'Groundnut'],
+            status: item.status,
+            treeCount: item.agronomicDetails?.treeCount || 0,
+            treesInsured: item.agronomicDetails?.treesInsured || false,
+            soilReportStatus: item.agronomicDetails?.soilReportStatus || 'NOT_REQUESTED',
+            createdAt: item.createdAt,
+            coordinates: item.boundaries?.simpleCoordinates?.length ? item.boundaries.simpleCoordinates : (item.boundaries?.coordinates?.[0] || []),
+          });
+        }
+      } catch (err) {
+        console.warn('Backend land detail fetch error, using local fallback:', err);
+        if (isMounted) {
+          const stored = storageService.getLands().find((l) => l.id === id || l.landId === id);
+          const mock = MOCK_LANDS.find((l) => l.id === id);
+          setLandData(stored || mock || MOCK_LANDS[0]);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchLand();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  const land = landData || MOCK_LANDS.find((l) => l.id === id) || MOCK_LANDS[0];
+  const linkedPolicy = MOCK_POLICIES.find((p) => p.landId === land.id || p.landId === land.landId);
+  const linkedSoil = MOCK_SOIL_REQUESTS.find((s) => s.landId === land.id || s.landId === land.landId);
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
@@ -422,8 +474,8 @@ export const LandDetailPage = () => {
           id: land.id,
           khasraNumber: land.khasraNumber,
           khataNumber: land.khataNumber || '88/A',
-          ownerName: 'Ramesh Patel',
-          village: land.village || 'Navli',
+          ownerName: land.ownerName || land.farmerName || 'Citizen Farmer',
+          village: land.village || 'Mogri',
           taluka: land.taluka || 'Anand',
           district: land.district || 'Anand, Gujarat',
           totalAreaAcres: land.areaAcres || 12.4,

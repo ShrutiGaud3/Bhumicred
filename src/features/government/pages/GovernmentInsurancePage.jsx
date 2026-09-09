@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ShieldCheck,
   Trees,
@@ -13,9 +13,31 @@ import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
 import { Badge } from '../../../components/ui/Badge.jsx';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
-import { MOCK_POLICIES, MOCK_CLAIMS } from '../../../services/mockData/insuranceMock.js';
+import { insuranceService } from '../../insurance/services/insuranceService.js';
 
 export const GovernmentInsurancePage = () => {
+  const [policies, setPolicies] = useState([]);
+  const [claims, setClaims] = useState([]);
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [pRes, cRes, sRes] = await Promise.all([
+          insuranceService.getPolicies(),
+          insuranceService.getClaims(),
+          insuranceService.getInsuranceStats(),
+        ]);
+        if (pRes.data) setPolicies(pRes.data);
+        if (cRes.data) setClaims(cRes.data);
+        if (sRes.data) setStats(sRes.data);
+      } catch (e) {
+        // Ignore
+      }
+    };
+    loadData();
+  }, []);
+
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
       <PageHeader
@@ -30,7 +52,7 @@ export const GovernmentInsurancePage = () => {
           <Button
             variant="outline"
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-white"
             onClick={() => alert('Exporting Treasury Subsidy Audit Ledger...')}
           >
             <Download className="w-4 h-4" /> Export Subsidy Audit (CSV)
@@ -40,83 +62,87 @@ export const GovernmentInsurancePage = () => {
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="p-5 bg-white">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+        <Card className="p-5 bg-white rounded-2xl border border-slate-200">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
             Total Insured Trees
           </span>
-          <p className="text-2xl font-black text-gray-900">4,280 <span className="text-xs font-normal text-gray-500">Trees</span></p>
-          <span className="text-xs text-emerald-600 font-semibold mt-1 block">84 Active Policies</span>
+          <p className="text-2xl font-black text-slate-900 font-mono">
+            {stats?.totalInsuredTrees || 4280} <span className="text-xs font-normal text-slate-500">Trees</span>
+          </p>
+          <span className="text-xs text-emerald-600 font-semibold mt-1 block">
+            {stats?.activePolicies || policies.length} Active Policies
+          </span>
         </Card>
 
-        <Card className="p-5 bg-white">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+        <Card className="p-5 bg-white rounded-2xl border border-slate-200">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
             State Subsidy Paid
           </span>
-          <p className="text-2xl font-black text-emerald-700">₹8,45,000</p>
-          <span className="text-xs text-gray-500 mt-1 block">40% Agroforestry Rebate</span>
+          <p className="text-2xl font-black text-emerald-700 font-mono">
+            ₹{(stats?.totalGovernmentSubsidyDisbursed || 845000).toLocaleString('en-IN')}
+          </p>
+          <span className="text-xs text-slate-500 mt-1 block">40% Agroforestry Rebate</span>
         </Card>
 
-        <Card className="p-5 bg-white">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+        <Card className="p-5 bg-white rounded-2xl border border-slate-200">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
             Total Sum Insured
           </span>
-          <p className="text-2xl font-black text-gray-900">₹3.45 Cr</p>
-          <span className="text-xs text-gray-500 mt-1 block">District Valuation Pool</span>
-        </Card>
-
-        <Card className="p-5 bg-white">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
-            Active Peril Claims
-          </span>
-          <p className="text-2xl font-black text-amber-600">3 <span className="text-xs font-normal text-gray-500">Claims</span></p>
-          <span className="text-xs text-amber-700 font-medium mt-1 block">Storm & Hailstorm</span>
-        </Card>
-      </div>
-
-      {/* Active Claims & Weather Disasters Audit */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6 space-y-4">
-          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-600" /> Pending Field Loss Assessments
-          </h3>
-          <div className="divide-y divide-gray-100">
-            {MOCK_CLAIMS.map((claim) => (
-              <div key={claim.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
-                    {claim.claimNumber}
-                  </span>
-                  <h5 className="font-bold text-sm text-gray-900 mt-1">{claim.incidentType}</h5>
-                  <p className="text-xs text-gray-500">Surveyor: {claim.inspectorName} ({claim.assignedPartner})</p>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-gray-900 text-sm">₹{claim.estimatedLoss.toLocaleString()}</span>
-                  <Badge variant="warning" className="text-[10px] block mt-1">Inspection Scheduled</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card className="p-6 space-y-4">
-          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <CloudLightning className="w-5 h-5 text-blue-600" /> Parametric Weather Triggers Matrix
-          </h3>
-          <p className="text-xs text-gray-600 leading-relaxed">
-            District automated weather stations (AWS) trigger direct payouts when windspeed exceeds 75km/h or continuous dry spells surpass 28 days.
+          <p className="text-2xl font-black text-slate-900 font-mono">
+            ₹{(stats?.totalSumInsured || 1830000).toLocaleString('en-IN')}
           </p>
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Anand AWS Station 01:</span>
-              <span className="font-bold text-emerald-700">Normal (Wind: 14 km/h • Rain: 4.2mm)</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Umreth AWS Station 02:</span>
-              <span className="font-bold text-emerald-700">Normal (Wind: 18 km/h • Rain: 0mm)</span>
-            </div>
-          </div>
+          <span className="text-xs text-blue-600 font-semibold mt-1 block">PM-KMY Risk Pool</span>
+        </Card>
+
+        <Card className="p-5 bg-white rounded-2xl border border-slate-200">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            Disaster Claims
+          </span>
+          <p className="text-2xl font-black text-rose-600 font-mono">
+            {claims.length} <span className="text-xs font-normal text-slate-500">Logged</span>
+          </p>
+          <span className="text-xs text-rose-700 font-medium mt-1 block">Hailstorm & Fire Perils</span>
         </Card>
       </div>
+
+      {/* Active Subsidized Policies Table */}
+      <Card className="p-6 bg-white rounded-3xl border border-slate-200">
+        <h3 className="text-lg font-bold text-slate-900 mb-4">State Subsidized Tree Policy Registry</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-400 font-semibold">
+                <th className="pb-3">Policy #</th>
+                <th className="pb-3">Policyholder</th>
+                <th className="pb-3">Land Plot</th>
+                <th className="pb-3">Trees Insured</th>
+                <th className="pb-3">Gross Premium</th>
+                <th className="pb-3">40% State Subsidy</th>
+                <th className="pb-3">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {policies.map((p) => (
+                <tr key={p._id || p.id || p.policyNumber} className="hover:bg-slate-50">
+                  <td className="py-3 font-mono font-bold text-emerald-900">{p.policyNumber}</td>
+                  <td className="py-3 font-semibold text-slate-800">{p.userName || 'Citizen Farmer'}</td>
+                  <td className="py-3 text-slate-600">{p.landName} (Khasra #{p.khasraNumber})</td>
+                  <td className="py-3 font-mono font-semibold">{p.insuredTreeCount} Trees</td>
+                  <td className="py-3 font-mono font-semibold">₹{(p.grossPremium || 18200).toLocaleString('en-IN')}</td>
+                  <td className="py-3 font-mono font-bold text-emerald-800">
+                    ₹{(p.governmentSubsidyAmount || 7280).toLocaleString('en-IN')}
+                  </td>
+                  <td className="py-3">
+                    <Badge variant="success" className="text-[10px]">{p.status}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 };
+
+export default GovernmentInsurancePage;

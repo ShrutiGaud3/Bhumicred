@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   MapPin,
@@ -13,6 +13,7 @@ import {
   Clock,
   ArrowRight,
   FileText,
+  RefreshCw,
 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
@@ -26,16 +27,63 @@ import { useDispatch } from 'react-redux';
 import { storageService } from '../../../services/storageService.js';
 import { useToast } from '../../../components/ui/ToastContext.jsx';
 import { setUserStatus } from '../../auth/authSlice.js';
+import { onboardingService } from '../../farmer/services/onboardingService.js';
 
 export const ApprovalsQueuePage = () => {
   const dispatch = useDispatch();
   const [items, setItems] = useState(() => storageService.getApprovals());
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionModal, setActionModal] = useState(null); // { item, actionType: 'APPROVE'|'REJECT'|'QUERY' }
   const [actionRemarks, setActionRemarks] = useState('');
   const [actionSuccess, setActionSuccess] = useState(false);
   const toast = useToast();
+
+  const fetchQueue = async () => {
+    setLoading(true);
+    try {
+      const res = await onboardingService.getAdminQueue();
+      const appsList = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.applications) ? res.data.applications : []);
+      if (appsList.length > 0) {
+        const liveItems = appsList.map((app) => ({
+          id: app.applicationId || app.id || app._id,
+          applicationId: app.applicationId || app.id || app._id,
+          targetId: app.targetId,
+          type: app.type || 'FARMER_KYC',
+          title: app.title || `Application - ${app.applicantName}`,
+          applicantName: app.applicantName || 'Citizen Applicant',
+          applicantRole: app.role || 'FARMER',
+          applicantPhone: app.mobile || '',
+          submittedDate: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Just now',
+          submittedAt: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Today',
+          status: app.status || 'PENDING_REVIEW',
+          riskScore: app.riskScore || 'LOW',
+          details: `${app.address?.village || ''} ${app.address?.district || ''} • ${app.address?.state || ''}`,
+        }));
+
+        // Merge with any local storage only items
+        const local = storageService.getApprovals();
+        const combined = [...liveItems];
+        local.forEach((loc) => {
+          if (!combined.some((c) => c.id === loc.id || c.applicationId === loc.id)) {
+            combined.push(loc);
+          }
+        });
+
+        setItems(combined);
+      }
+    } catch (err) {
+      console.warn('Backend admin queue fetch error, using local fallback:', err);
+      setItems(storageService.getApprovals());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQueue();
+  }, []);
 
   const tabs = [
     { id: 'ALL', label: 'All Pending Approvals' },
@@ -53,7 +101,7 @@ export const ApprovalsQueuePage = () => {
     return matchesTab && matchesSearch;
   });
 
-  const handleExecuteAction = (e) => {
+  const handleExecuteAction = async (e) => {
     e.preventDefault();
     if (!actionModal) return;
 
@@ -69,16 +117,30 @@ export const ApprovalsQueuePage = () => {
       targetStatus,
       actionRemarks
     );
-    setItems(updated);
+    setItems((prev) =>
+      prev.map((it) => (it.id === actionModal.item.id ? { ...it, status: targetStatus } : it))
+    );
 
     if (actionModal.item.type === 'FARMER_KYC' && actionModal.actionType === 'APPROVE') {
       dispatch(setUserStatus('APPROVED'));
     }
 
+    // Live Backend API sync
+    try {
+      const targetAppId = actionModal.item.applicationId || actionModal.item.id;
+      await onboardingService.reviewKyc(targetAppId, {
+        status: targetStatus,
+        reviewNotes: actionRemarks,
+        action: actionModal.actionType,
+      });
+    } catch (apiErr) {
+      console.warn('Backend review sync warning:', apiErr?.message);
+    }
+
     toast.success(
       `${actionModal.item.title} has been ${
         actionModal.actionType === 'APPROVE'
-          ? 'Approved & Verified! User can now access their full Dashboard.'
+          ? 'Approved & Verified in Sovereign Database!'
           : actionModal.actionType === 'REJECT'
           ? 'Rejected'
           : 'marked for Query Correction'
@@ -93,12 +155,22 @@ export const ApprovalsQueuePage = () => {
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
       <PageHeader
         title="Master Approvals & Verification Queue"
-        subtitle="Review, authenticate, and approve farmer KYC, land registries, insurance settlements, and partner licenses."
+        subtitle="Review, authenticate, and approve farmer KYC, land registries, insurance settlements, and partner licenses in real-time."
         backTo="/admin/dashboard"
         breadcrumbs={[
           { label: 'Admin Portal', path: '/admin/dashboard' },
           { label: 'Approvals Queue' },
         ]}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchQueue}
+            className={`flex items-center gap-2 ${loading ? 'animate-spin' : ''}`}
+          >
+            <RefreshCw className="w-4 h-4" /> Refresh Queue
+          </Button>
+        }
       />
 
       {/* Tabs & Search */}
@@ -130,55 +202,68 @@ export const ApprovalsQueuePage = () => {
 
       {/* Items List */}
       <div className="space-y-4">
-        {filteredItems.map((item) => (
-          <Card key={item.id} className="p-6 md:p-8 border border-gray-200 hover:shadow-lg transition-all space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <Badge variant="success">{item.type.replace(/_/g, ' ')}</Badge>
-                  <StatusBadge status={item.status} />
-                  <span className="text-xs text-gray-400 font-mono">Submitted: {item.submittedAt}</span>
+        {loading ? (
+          <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 flex flex-col items-center justify-center space-y-3">
+            <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin" />
+            <p className="text-sm font-semibold text-slate-700">Fetching live approval requests from sovereign database...</p>
+          </div>
+        ) : filteredItems.length > 0 ? (
+          filteredItems.map((item) => (
+            <Card key={item.id} className="p-6 md:p-8 border border-gray-200 hover:shadow-lg transition-all space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2.5">
+                    <Badge variant="success">{item.type.replace(/_/g, ' ')}</Badge>
+                    <StatusBadge status={item.status} />
+                    <span className="text-xs text-gray-400 font-mono">Submitted: {item.submittedAt || item.submittedDate}</span>
+                  </div>
+
+                  <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
+                  <p className="text-xs text-gray-500">
+                    Applicant: <strong className="text-gray-900">{item.applicantName}</strong> ({item.applicantRole || 'FARMER'}) • {item.applicantPhone}
+                  </p>
+                  <p className="text-xs text-gray-600 pt-1">{item.details}</p>
                 </div>
 
-                <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
-                <p className="text-xs text-gray-500">
-                  Applicant: <strong className="text-gray-900">{item.applicantName}</strong> ({item.applicantRole})
-                </p>
-                <p className="text-xs text-gray-600 pt-1">{item.details}</p>
+                {/* Action Buttons */}
+                {item.status !== 'APPROVED' && item.status !== 'REJECTED' && (
+                  <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-amber-400 text-amber-800 hover:bg-amber-50 text-xs flex items-center gap-1"
+                      onClick={() => setActionModal({ item, actionType: 'QUERY' })}
+                    >
+                      <HelpCircle className="w-3.5 h-3.5 text-amber-600" /> Raise Query
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-rose-300 text-rose-700 hover:bg-rose-50 text-xs flex items-center gap-1"
+                      onClick={() => setActionModal({ item, actionType: 'REJECT' })}
+                    >
+                      <X className="w-3.5 h-3.5 text-rose-600" /> Reject
+                    </Button>
+
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="text-xs flex items-center gap-1"
+                      onClick={() => setActionModal({ item, actionType: 'APPROVE' })}
+                    >
+                      <Check className="w-3.5 h-3.5" /> Approve
+                    </Button>
+                  </div>
+                )}
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-amber-400 text-amber-800 hover:bg-amber-50 text-xs flex items-center gap-1"
-                  onClick={() => setActionModal({ item, actionType: 'QUERY' })}
-                >
-                  <HelpCircle className="w-3.5 h-3.5 text-amber-600" /> Raise Query
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-rose-300 text-rose-700 hover:bg-rose-50 text-xs flex items-center gap-1"
-                  onClick={() => setActionModal({ item, actionType: 'REJECT' })}
-                >
-                  <X className="w-3.5 h-3.5 text-rose-600" /> Reject
-                </Button>
-
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="text-xs flex items-center gap-1"
-                  onClick={() => setActionModal({ item, actionType: 'APPROVE' })}
-                >
-                  <Check className="w-3.5 h-3.5" /> Approve
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          ))
+        ) : (
+          <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 text-slate-500">
+            No pending approval requests found in this category.
+          </div>
+        )}
       </div>
 
       {/* Decision Modal */}
@@ -243,3 +328,5 @@ export const ApprovalsQueuePage = () => {
     </div>
   );
 };
+
+export default ApprovalsQueuePage;

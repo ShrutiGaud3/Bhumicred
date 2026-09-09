@@ -1,69 +1,7 @@
-export const MOCK_POLICIES = [
-  {
-    id: 'pol_101',
-    policyNumber: 'BC-POL-2026-00481',
-    planName: 'Comprehensive Teak & Sandalwood Cover',
-    category: 'Commercial Agroforestry',
-    landId: 'lnd_02',
-    landName: 'Green Valley Teak Plantation',
-    insuredTreeCount: 180,
-    speciesSummary: '120 Indian Teak + 60 Red Sandalwood',
-    sumInsured: 1450000,
-    annualPremium: 18200,
-    durationMonths: 36,
-    startDate: '2026-06-01T00:00:00Z',
-    endDate: '2029-05-31T23:59:59Z',
-    status: 'ACTIVE',
-    coverageDetails: [
-      'Storm, Cyclone & Windthrow (>70 km/h)',
-      'Forest & Agro Fire Perils',
-      'Stem Borer Infestation & Root Rot Outbreaks',
-      'Severe Drought Stress (Revenue Trigger)',
-    ],
-  },
-  {
-    id: 'pol_102',
-    policyNumber: 'BC-POL-2026-00892',
-    planName: 'Individual High-Value Tree Guard',
-    category: 'Single Tree Cluster',
-    landId: 'lnd_01',
-    landName: 'Shree Ram Farm (North Plot)',
-    insuredTreeCount: 45,
-    speciesSummary: '45 Alphonso Mango & Sweet Tamarind',
-    sumInsured: 380000,
-    annualPremium: 4200,
-    durationMonths: 12,
-    startDate: '2026-04-10T00:00:00Z',
-    endDate: '2027-04-09T23:59:59Z',
-    status: 'ACTIVE',
-    coverageDetails: [
-      'Frost & Hailstorm Damage to Crown',
-      'Wild Animal Encroachment',
-      'Lightning Strike Damage',
-    ],
-  },
-];
+export const MOCK_POLICIES = [];
+export const MOCK_CLAIMS = [];
 
-export const MOCK_CLAIMS = [
-  {
-    id: 'clm_901',
-    claimNumber: 'CLM-2026-0811',
-    policyId: 'pol_101',
-    policyNumber: 'BC-POL-2026-00481',
-    incidentType: 'Severe Hailstorm & Windthrow',
-    incidentDate: '2026-07-18T16:30:00Z',
-    affectedTreeCount: 18,
-    estimatedLoss: 125000,
-    status: 'INSPECTION_SCHEDULED',
-    assignedPartner: 'AgriTech Field Services',
-    inspectorName: 'Devang Joshi',
-    inspectionDate: '2026-09-12T11:00:00Z',
-    timeline: [
-      { title: 'Claim Submitted', timestamp: '18 Jul 2026', completed: true },
-      { title: 'Desk Review Completed', timestamp: '20 Jul 2026', completed: true },
-      { title: 'Field Partner Assigned', timestamp: '22 Jul 2026', completed: true },
-      { title: 'On-Site GPS Inspection', timestamp: 'Pending', completed: false },
-      { title: 'Settlement Decision', timestamp: 'Pending', completed: false },
-    ],
-  },
-];
+export default {
+  MOCK_POLICIES,
+  MOCK_CLAIMS,
+};

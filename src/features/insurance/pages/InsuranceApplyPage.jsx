@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   ShieldCheck,
   Trees,
@@ -10,6 +11,8 @@ import {
   ArrowRight,
   AlertCircle,
   FileCheck,
+  Check,
+  Award,
 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
@@ -17,47 +20,105 @@ import { FormSelect } from '../../../components/forms/FormSelect.jsx';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
-import { MOCK_LANDS } from '../../../services/mockData/landsMock.js';
+import { useToast } from '../../../components/ui/ToastContext.jsx';
+import { applyPolicy } from '../insuranceSlice.js';
+import { landService } from '../../land/services/landService.js';
 
 export const InsuranceApplyPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const toast = useToast();
 
-  const preselectedTrees = Number(searchParams.get('trees')) || 120;
-  const [selectedLandId, setSelectedLandId] = useState(MOCK_LANDS[0].id);
+  const preselectedTrees = Number(searchParams.get('trees')) || 150;
+  const preselectedSpecies = searchParams.get('species') || 'TEAK';
+
+  const [lands, setLands] = useState([]);
+  const [selectedLandId, setSelectedLandId] = useState('');
   const [planType, setPlanType] = useState('Comprehensive Agroforestry Cover');
   const [treeCount, setTreeCount] = useState(preselectedTrees);
+  const [speciesDistribution, setSpeciesDistribution] = useState('100 Indian Teak (Sagwan), 50 Red Sandalwood');
   const [durationYears, setDurationYears] = useState('3');
-  const [speciesDistribution, setSpeciesDistribution] = useState('Teakwood (80), Red Sandalwood (40)');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  useEffect(() => {
+    const loadLands = async () => {
+      try {
+        const res = await landService.getMyLands();
+        if (res.data && res.data.length > 0) {
+          setLands(res.data);
+          setSelectedLandId(res.data[0]._id || res.data[0].id);
+        }
+      } catch (e) {
+        // Fallback
+      }
+    };
+    loadLands();
+  }, []);
 
   // Financial calculations
   const ratePerTree = 75;
-  const sumInsured = treeCount * 12000; // ₹12k per tree asset valuation
-  const grossPremium = Math.round(treeCount * ratePerTree * Number(durationYears));
-  const subsidyRebate = Math.round(grossPremium * 0.4); // 40% state rebate
+  const sumInsured = treeCount * 11200; // ₹11.2k per tree asset valuation
+  const grossPremium = Math.round(treeCount * ratePerTree * Number(durationYears) * 0.9);
+  const subsidyPercent = 40;
+  const subsidyRebate = Math.round(grossPremium * (subsidyPercent / 100)); // 40% state rebate
   const netPayable = grossPremium - subsidyRebate;
 
-  const handlePay = () => {
-    setPaymentSuccess(true);
-    setTimeout(() => {
-      setShowPaymentModal(false);
-      navigate('/farmer/insurance/pol_101');
-    }, 1800);
+  const handlePay = async () => {
+    if (!selectedLandId) {
+      toast.error('Please select a registered land parcel.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const selectedLand = lands.find((l) => (l._id || l.id) === selectedLandId) || lands[0];
+
+    const payload = {
+      landId: selectedLand?._id || selectedLand?.id || selectedLandId,
+      planName: planType,
+      category: 'Commercial Agroforestry',
+      insuredTreeCount: treeCount,
+      speciesSummary: speciesDistribution,
+      sumInsured,
+      annualPremium: Math.round(grossPremium / Number(durationYears)),
+      grossPremium,
+      farmerNetPayable: netPayable,
+      durationMonths: Number(durationYears) * 12,
+    };
+
+    try {
+      const actionResult = await dispatch(applyPolicy(payload));
+      if (applyPolicy.fulfilled.match(actionResult)) {
+        setPaymentSuccess(true);
+        toast.success('Tree Insurance Policy activated! Bond generated in vault.');
+        setTimeout(() => {
+          setShowPaymentModal(false);
+          const newPolicy = actionResult.payload;
+          navigate(`/farmer/insurance/${newPolicy?._id || newPolicy?.policyNumber || 'active'}`);
+        }, 1500);
+      } else {
+        toast.error(actionResult.payload || 'Policy application failed.');
+        setIsSubmitting(false);
+      }
+    } catch (err) {
+      toast.error('Payment processing failed.');
+      setIsSubmitting(false);
+    }
   };
 
-  const selectedLand = MOCK_LANDS.find((l) => l.id === selectedLandId) || MOCK_LANDS[0];
+  const selectedLand = lands.find((l) => (l._id || l.id) === selectedLandId);
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
       <PageHeader
         title="Apply for Tree Asset Insurance"
-        subtitle="Protect your plantation against natural disasters, fire, and pests with instant policy generation."
-        backTo="/farmer/insurance/catalog"
+        subtitle="Protect your timber & plantation against natural disasters, fire, and pests with 40% government subsidy."
+        backTo="/farmer/insurance"
         breadcrumbs={[
           { label: 'Farmer Portal', path: '/farmer/dashboard' },
-          { label: 'Insurance Catalog', path: '/farmer/insurance/catalog' },
+          { label: 'Insurance Catalog', path: '/farmer/insurance' },
           { label: 'New Policy Application' },
         ]}
       />
@@ -65,20 +126,29 @@ export const InsuranceApplyPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         <div className="lg:col-span-2 space-y-6">
           {/* Form Card */}
-          <Card className="p-6 md:p-8 space-y-6">
-            <h3 className="text-lg font-bold text-gray-900 pb-3 border-b border-gray-100 flex items-center gap-2">
+          <Card className="p-6 md:p-8 space-y-6 rounded-3xl bg-white border border-slate-200">
+            <h3 className="text-lg font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-600" /> Policy Configuration
             </h3>
 
-            <FormSelect
-              label="Select Registered Land Parcel"
-              value={selectedLandId}
-              onChange={(e) => setSelectedLandId(e.target.value)}
-              options={MOCK_LANDS.map((land) => ({
-                value: land.id,
-                label: `${land.landName} (Survey: ${land.surveyNumber} • ${land.area} ${land.areaUnit})`,
-              }))}
-            />
+            {lands.length > 0 ? (
+              <FormSelect
+                label="Select Registered Land Parcel"
+                value={selectedLandId}
+                onChange={(e) => setSelectedLandId(e.target.value)}
+                options={lands.map((land) => ({
+                  value: land._id || land.id,
+                  label: `${land.landName} (Survey: ${land.surveyNumber} • Khasra: ${land.khasraNumber} • ${land.area || land.areaAcres} Acres)`,
+                }))}
+              />
+            ) : (
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-800 flex items-center justify-between">
+                <span>No registered lands found. Register your land first to apply for insurance.</span>
+                <Button size="sm" variant="primary" onClick={() => navigate('/farmer/lands/add')}>
+                  Register Land
+                </Button>
+              </div>
+            )}
 
             <FormSelect
               label="Selected Insurance Protection Plan"
@@ -96,152 +166,155 @@ export const InsuranceApplyPage = () => {
                 label="Number of Standing Trees"
                 type="number"
                 value={treeCount}
-                onChange={(e) => setTreeCount(Number(e.target.value))}
+                onChange={(e) => setTreeCount(Math.max(1, Number(e.target.value)))}
                 min="10"
-                max="5000"
+                max="10000"
                 required
               />
 
               <FormSelect
-                label="Policy Cover Term"
+                label="Policy Duration"
                 value={durationYears}
                 onChange={(e) => setDurationYears(e.target.value)}
                 options={[
-                  { value: '1', label: '1 Year (12 Months)' },
-                  { value: '3', label: '3 Years (36 Months - Recommended)' },
-                  { value: '5', label: '5 Years (60 Months - Multi-Year Discount)' },
+                  { value: '1', label: '1 Year (Standard)' },
+                  { value: '2', label: '2 Years (5% Multi-Year Rebate)' },
+                  { value: '3', label: '3 Years (10% Multi-Year Rebate - Recommended)' },
                 ]}
               />
             </div>
 
             <FormInput
-              label="Tree Species & Count Breakdown"
+              label="Tree Species Breakdown"
               value={speciesDistribution}
               onChange={(e) => setSpeciesDistribution(e.target.value)}
-              placeholder="e.g. Teak (60), Sandalwood (30), Mango (20)"
+              placeholder="e.g. 100 Indian Teak, 50 Red Sandalwood"
+              helperText="Specify species counts for precise parametric valuation"
             />
 
-            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex items-start gap-3 text-xs text-emerald-800">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-              <span>
-                Field verification will be scheduled via BHUMICRED inspection partner within 7 days.
-                Provisional risk cover begins immediately upon digital payment.
-              </span>
+            <div className="pt-4 border-t border-slate-100 flex justify-end">
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full sm:w-auto bg-emerald-700 hover:bg-emerald-800 px-8"
+                onClick={() => setShowPaymentModal(true)}
+                disabled={lands.length === 0}
+              >
+                Proceed to Subsidy & Settlement <ArrowRight className="w-4 h-4 ml-1.5" />
+              </Button>
             </div>
           </Card>
         </div>
 
-        {/* Premium Breakdown Sticky Summary */}
+        {/* Right Summary Card */}
         <div className="space-y-6">
-          <Card className="p-6 space-y-4 bg-white sticky top-6">
-            <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wider">
-              Premium & Valuation
+          <Card className="p-6 space-y-4 rounded-3xl bg-slate-900 text-white shadow-xl">
+            <h4 className="font-bold text-sm text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4" /> Sovereign Coverage Summary
             </h4>
 
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between pb-2 border-b border-gray-100">
-                <span className="text-gray-500">Total Sum Insured</span>
-                <span className="font-bold text-gray-900">₹{sumInsured.toLocaleString()}</span>
+            <div className="space-y-3 text-xs border-b border-white/10 pb-4">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Target Parcel:</span>
+                <span className="font-bold text-white text-right">
+                  {selectedLand?.landName || 'Registered Farm'}
+                </span>
               </div>
-              <div className="flex justify-between pb-2 border-b border-gray-100">
-                <span className="text-gray-500">Gross Premium ({durationYears} Yr)</span>
-                <span className="font-semibold text-gray-900">₹{grossPremium.toLocaleString()}</span>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Total Insured Trees:</span>
+                <span className="font-mono font-bold text-emerald-300">{treeCount} Trees</span>
               </div>
-              <div className="flex justify-between pb-2 border-b border-gray-100">
-                <span className="text-emerald-700 font-medium">Govt Agro Subsidy (40%)</span>
-                <span className="font-bold text-emerald-700">- ₹{subsidyRebate.toLocaleString()}</span>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Duration:</span>
+                <span className="font-semibold text-white">{durationYears} Years (36 Months)</span>
               </div>
-              <div className="flex justify-between pt-2 text-base">
-                <span className="font-bold text-gray-900">Net Payable Premium</span>
-                <span className="font-black text-emerald-600">₹{netPayable.toLocaleString()}</span>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Total Sum Insured:</span>
+                <span className="font-mono font-black text-emerald-400 text-sm">
+                  ₹{sumInsured.toLocaleString('en-IN')}
+                </span>
               </div>
             </div>
 
-            <Button
-              variant="primary"
-              className="w-full flex items-center justify-center gap-2 py-3 mt-4 text-base"
-              onClick={() => setShowPaymentModal(true)}
-            >
-              Proceed to Pay ₹{netPayable.toLocaleString()} <ArrowRight className="w-4 h-4" />
-            </Button>
+            {/* Price Breakdown */}
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between text-slate-400">
+                <span>Gross Actuarial Premium:</span>
+                <span className="font-mono">₹{grossPremium.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between text-emerald-400 font-bold bg-emerald-950/60 p-2 rounded-xl border border-emerald-500/20">
+                <span className="flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5" /> PM-KMY 40% Subsidy:
+                </span>
+                <span className="font-mono">-₹{subsidyRebate.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between text-base font-black text-white pt-2 border-t border-white/10">
+                <span>Net Payable:</span>
+                <span className="font-mono text-emerald-400">₹{netPayable.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
           </Card>
         </div>
       </div>
 
-      {/* Payment Gateway Mock Modal */}
+      {/* Payment / Activation Modal */}
       <Modal
         isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        title="BHUMICRED Secure Payment Checkout"
+        onClose={() => {
+          if (!isSubmitting) setShowPaymentModal(false);
+        }}
+        title="Sovereign Policy Activation & Settlement"
       >
-        <div className="space-y-6 py-2">
+        <div className="space-y-4 py-2">
           {paymentSuccess ? (
             <div className="text-center py-6">
-              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                <CheckCircle2 className="w-10 h-10" />
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-bounce shadow-sm">
+                <CheckCircle2 className="w-9 h-9" />
               </div>
-              <h4 className="text-xl font-bold text-gray-900">Payment Successful!</h4>
-              <p className="text-sm text-gray-500 mt-1">Generating your digital policy certificate...</p>
+              <h4 className="text-xl font-bold text-slate-900">Policy Successfully Activated!</h4>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Attested Policy Bond generated and deposited into your Sovereign Document Vault.
+              </p>
             </div>
           ) : (
-            <>
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Selected Plan:</span>
-                  <span className="font-semibold text-gray-900">{planType}</span>
+            <div className="space-y-4 text-xs">
+              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-2">
+                <div className="flex justify-between font-bold text-slate-900 text-sm">
+                  <span>Net Payable Amount:</span>
+                  <span className="font-mono text-emerald-800">₹{netPayable.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Protected Trees:</span>
-                  <span className="font-semibold text-gray-900">{treeCount} Trees</span>
-                </div>
-                <div className="flex justify-between font-bold text-base pt-2 border-t border-slate-200">
-                  <span>Total Amount Due:</span>
-                  <span className="text-emerald-700">₹{netPayable.toLocaleString()}</span>
-                </div>
+                <p className="text-[11px] text-slate-600">
+                  Includes ₹{subsidyRebate.toLocaleString('en-IN')} direct grant from National Agroforestry Mission.
+                </p>
               </div>
 
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-gray-700 uppercase">
-                  Select Payment Method (Mock Sandbox)
+              <div className="space-y-2 border border-slate-200 p-3.5 rounded-2xl">
+                <span className="font-bold text-slate-800 block">Select Payment Channel:</span>
+                <label className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl cursor-pointer">
+                  <input type="radio" name="paymentMethod" defaultChecked className="text-emerald-700" />
+                  <span className="font-semibold text-slate-900">BHUMICRED Smart Wallet / UPI</span>
                 </label>
-                <div className="space-y-2">
-                  {[
-                    { id: 'upi', label: 'UPI / QR Code (GPay, PhonePe, Paytm)', desc: 'Fastest 0% gateway fee' },
-                    { id: 'wallet', label: 'BHUMICRED Farmer Wallet Balance (₹8,450 available)', desc: 'Instant deduction' },
-                    { id: 'kcc', label: 'Kisan Credit Card / Net Banking', desc: 'Direct bank debit' },
-                  ].map((m, idx) => (
-                    <label
-                      key={m.id}
-                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer ${
-                        idx === 0 ? 'border-emerald-500 bg-emerald-50/40' : 'border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="payMethod"
-                        defaultChecked={idx === 0}
-                        className="mt-1 text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <div>
-                        <span className="font-semibold text-sm text-gray-900">{m.label}</span>
-                        <p className="text-xs text-gray-500">{m.desc}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
+                <label className="flex items-center gap-2 p-2 rounded-xl cursor-pointer">
+                  <input type="radio" name="paymentMethod" className="text-emerald-700" />
+                  <span className="font-semibold text-slate-700">Kisan Credit Card (KCC) Direct Debit</span>
+                </label>
               </div>
 
               <Button
                 variant="primary"
-                className="w-full flex items-center justify-center gap-2 py-3"
+                size="lg"
+                className="w-full bg-emerald-700 hover:bg-emerald-800 font-bold py-3 text-sm"
                 onClick={handlePay}
+                isLoading={isSubmitting}
               >
-                Confirm & Pay ₹{netPayable.toLocaleString()}
+                Confirm Settlement & Activate Policy
               </Button>
-            </>
+            </div>
           )}
         </div>
       </Modal>
     </div>
   );
 };
+
+export default InsuranceApplyPage;

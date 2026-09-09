@@ -310,18 +310,6 @@ export const RegisterPage = () => {
         <p className="text-[11px] sm:text-xs text-slate-500 mt-1 max-w-md mx-auto leading-relaxed">
           Create your verified sovereign profile for GIS land mapping, tree insurance & smart agricultural services.
         </p>
-
-        {/* Quick Demo Pre-fill */}
-        <div className="mt-2.5 flex justify-center">
-          <button
-            type="button"
-            onClick={handleAutoFillDemo}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-100 hover:bg-emerald-200/80 px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            Auto-fill Sample Farmer Data
-          </button>
-        </div>
       </div>
 
       {/* Stepper with full responsive adjustments */}

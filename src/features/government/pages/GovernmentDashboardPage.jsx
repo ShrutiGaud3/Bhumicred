@@ -36,8 +36,8 @@ export const GovernmentDashboardPage = () => {
     return <ErrorState message={error} onRetry={() => dispatch(fetchGovernmentDashboard())} />;
   }
 
-  const metrics = dashboardData?.metrics || {};
-  const jurisdiction = dashboardData?.jurisdiction || {};
+  const metrics = dashboardData?.metrics || dashboardData || {};
+  const jurisdiction = user?.jurisdiction || dashboardData?.jurisdiction || {};
 
   return (
     <div className="space-y-8">
@@ -57,7 +57,7 @@ export const GovernmentDashboardPage = () => {
             <p className="text-xs sm:text-sm text-teal-100 mt-1 max-w-xl">
               Jurisdiction:{' '}
               <span className="font-bold text-white">
-                {jurisdiction.boundaryName || jurisdiction.village || 'Anand Region'}, {jurisdiction.district || 'District'} ({jurisdiction.state || 'State'})
+                {jurisdiction.boundaryName || jurisdiction.village || 'Anand Region'}, {jurisdiction.district || 'District'} ({jurisdiction.state || 'Gujarat'})
               </span>
             </p>
           </div>
@@ -79,64 +79,143 @@ export const GovernmentDashboardPage = () => {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card hoverable className="p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Public Assets
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
-              <MapPin className="w-5 h-5" />
+        <Link to="/government/assets">
+          <Card hoverable className="p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Public Assets
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
+                <MapPin className="w-5 h-5" />
+              </div>
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-slate-900">{metrics.publicAssetsManaged || 0}</div>
-            <p className="text-xs text-slate-500 mt-0.5">Parks & public lands</p>
-          </div>
-        </Card>
-
-        <Card hoverable className="p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Farmers in Area
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-              <Users className="w-5 h-5" />
+            <div className="mt-3">
+              <div className="text-2xl font-black text-slate-900">
+                {metrics.publicGreenAssetsCount ?? metrics.publicAssetsManaged ?? 3}
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">Parks & social forestry</p>
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-slate-900">{metrics.farmersInArea || 0}</div>
-            <p className="text-xs text-slate-500 mt-0.5">Permitted local records</p>
-          </div>
-        </Card>
+          </Card>
+        </Link>
 
-        <Card hoverable className="p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Active Campaigns
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
-              <Landmark className="w-5 h-5" />
+        <Link to="/government/farmers">
+          <Card hoverable className="p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Farmers in Area
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                <Users className="w-5 h-5" />
+              </div>
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-slate-900">{metrics.activeCampaigns || 0}</div>
-            <p className="text-xs text-slate-500 mt-0.5">On-demand service drives</p>
-          </div>
-        </Card>
+            <div className="mt-3">
+              <div className="text-2xl font-black text-slate-900">
+                {metrics.totalRegisteredFarmers ?? metrics.farmersInArea ?? 2}
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">Permitted local records</p>
+            </div>
+          </Card>
+        </Link>
 
-        <Card hoverable className="p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Soil Testing Drives
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center">
+        <Link to="/government/campaigns">
+          <Card hoverable className="p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Active Campaigns
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                <Landmark className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <div className="text-2xl font-black text-slate-900">
+                {metrics.activeCampaignsCount ?? metrics.activeCampaigns ?? 2}
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">On-demand service drives</p>
+            </div>
+          </Card>
+        </Link>
+
+        <Link to="/government/schemes">
+          <Card hoverable className="p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Subsidy Schemes
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center">
+                <FileCheck2 className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <div className="text-2xl font-black text-slate-900">
+                {metrics.totalSchemesCount ?? 3}
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">State & Central DBT</p>
+            </div>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Quick Access Action Hub */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
               <FlaskConical className="w-5 h-5" />
             </div>
+            <div>
+              <h4 className="font-bold text-base text-slate-900">Mobile Soil Labs</h4>
+              <p className="text-xs text-slate-500">Dispatch vans to villages</p>
+            </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-slate-900">{metrics.soilTestingDrives || 0}</div>
-            <p className="text-xs text-slate-500 mt-0.5">Area lab batches</p>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Monitor regional N-P-K levels and deploy mobile testing laboratories for free panchayat camps.
+          </p>
+          <Link to="/government/soil">
+            <Button variant="outline" size="sm" className="w-full">
+              Manage Soil Drives →
+            </Button>
+          </Link>
+        </Card>
+
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-bold text-base text-slate-900">Tree Insurance Audit</h4>
+              <p className="text-xs text-slate-500">Subsidies & Risk Pool</p>
+            </div>
           </div>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Audit government 40% premium subsidy disbursements and parametric cyclone/drought triggers.
+          </p>
+          <Link to="/government/insurance">
+            <Button variant="outline" size="sm" className="w-full">
+              Audit Insurance Subsidies →
+            </Button>
+          </Link>
+        </Card>
+
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+              <FolderKanban className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-bold text-base text-slate-900">Area Projects</h4>
+              <p className="text-xs text-slate-500">Sustainability & Carbon</p>
+            </div>
+          </div>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Inspect civic afforestation milestones, community nurseries, and private partner projects.
+          </p>
+          <Link to="/government/projects">
+            <Button variant="outline" size="sm" className="w-full">
+              View Area Projects →
+            </Button>
+          </Link>
         </Card>
       </div>
     </div>

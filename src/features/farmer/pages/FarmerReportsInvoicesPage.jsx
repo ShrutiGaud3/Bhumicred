@@ -463,11 +463,11 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
                       Billed To / Applicant Farmer Particulars
                     </span>
                     <div className="pt-0.5 space-y-0.5 text-slate-700 leading-tight">
-                      <p><span className="text-slate-500 w-24 inline-block">Farmer Name:</span> <strong className="text-slate-950">{selectedInvoice.farmerName || user?.name || 'Ramesh Patel'}</strong></p>
-                      <p><span className="text-slate-500 w-24 inline-block">Father/Husband:</span> <strong className="text-slate-800">{selectedInvoice.fatherName || 'Dahybhai Patel'}</strong></p>
-                      <p><span className="text-slate-500 w-24 inline-block">Mobile:</span> <span className="font-mono text-slate-800">{selectedInvoice.mobile || '+91 98765 43210'}</span></p>
-                      <p><span className="text-slate-500 w-24 inline-block">Email:</span> <span className="text-slate-800">{selectedInvoice.email || 'farmer.ramesh@bhumicred.gov.in'}</span></p>
-                      <p><span className="text-slate-500 w-24 inline-block">Address:</span> <span className="text-slate-800">{selectedInvoice.address || 'Anand, Gujarat'}</span></p>
+                      <p><span className="text-slate-500 w-24 inline-block">Farmer Name:</span> <strong className="text-slate-950">{user?.name || selectedInvoice.farmerName || 'Farmer'}</strong></p>
+                      <p><span className="text-slate-500 w-24 inline-block">Father/Husband:</span> <strong className="text-slate-800">{user?.fatherName || selectedInvoice.fatherName || ''}</strong></p>
+                      <p><span className="text-slate-500 w-24 inline-block">Mobile:</span> <span className="font-mono text-slate-800">{user?.mobile || selectedInvoice.mobile || ''}</span></p>
+                      <p><span className="text-slate-500 w-24 inline-block">Email:</span> <span className="text-slate-800">{user?.email || selectedInvoice.email || 'farmer@bhumicred.gov.in'}</span></p>
+                      <p><span className="text-slate-500 w-24 inline-block">Address:</span> <span className="text-slate-800">{user?.address ? `${user.address.gramPanchayat || user.address.city || ''}, ${user.address.district || ''}, ${user.address.state || ''}` : selectedInvoice.address || 'Anand, Gujarat'}</span></p>
                     </div>
                   </div>
 
@@ -549,6 +549,29 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
                         <td className="py-2 px-2.5 text-center font-mono border-r border-slate-200">{selectedInvoice.acres || 12.4} ac</td>
                         <td className="py-2 px-3 text-right font-mono font-bold">₹{(selectedInvoice.fileCharges || 186.0).toFixed(2)}</td>
                       </tr>
+
+                      {(selectedInvoice.optInsurance || selectedInvoice.treeInsuranceAmount) && (
+                        <tr className="hover:bg-slate-50/50 bg-emerald-50/30">
+                          <td className="py-2 px-2.5 text-center font-bold text-emerald-800 border-r border-slate-200">5</td>
+                          <td className="py-2 px-3 border-r border-slate-200">
+                            <strong className="block text-slate-950">
+                              Tree Asset Insurance Policy ({selectedInvoice.insurancePlan || 'Custom Sovereign Tree Shield @ ₹31/tree/year'})
+                            </strong>
+                            <span className="text-[9px] text-emerald-700 font-semibold">
+                              4-5 Angle Biometric Geotagged Tree Verification • {selectedInvoice.treePhotosCount || 5} Angles Attached
+                            </span>
+                          </td>
+                          <td className="py-2 px-2.5 text-center font-mono font-semibold border-r border-slate-200 text-emerald-900">
+                            ₹{(selectedInvoice.insuranceRatePerTree || 31).toFixed(2)} / tree
+                          </td>
+                          <td className="py-2 px-2.5 text-center font-mono border-r border-slate-200 font-semibold">
+                            {selectedInvoice.insuredTreeCount || selectedInvoice.treeCount || 4} Insured Trees
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono font-black text-emerald-950">
+                            ₹{(selectedInvoice.treeInsuranceAmount || (Number(selectedInvoice.insuredTreeCount || selectedInvoice.treeCount || 4) * (selectedInvoice.insuranceRatePerTree || 31))).toFixed(2)}
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -565,13 +588,23 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
                       subLabel={`Ref: ${selectedInvoice.transactionId} • Verified`}
                     />
                     <p className="text-[9px] text-slate-500 italic">
-                      * Rates calculated strictly at standard ₹149.00 per Acre + 18% GST (CGST 9% + SGST 9%).
+                      * Land charges calculated at ₹149/ac + Tree insurance at ₹{selectedInvoice.insuranceRatePerTree || 31}/tree/year + 18% GST (CGST 9% + SGST 9%).
                     </p>
                   </div>
 
                   <div className="w-full sm:w-64 bg-slate-50 rounded-lg p-2.5 border border-slate-300 text-[11px] space-y-1">
                     <div className="flex justify-between text-slate-700">
-                      <span>Subtotal (Base @ ₹149/ac):</span>
+                      <span>Land Statutory Fee (₹149/ac):</span>
+                      <span className="font-mono">₹{(selectedInvoice.landSubtotal || (selectedInvoice.acres ? selectedInvoice.acres * 149 : 1847.6)).toFixed(2)}</span>
+                    </div>
+                    {(selectedInvoice.optInsurance || selectedInvoice.treeInsuranceAmount) && (
+                      <div className="flex justify-between text-emerald-800 font-medium">
+                        <span>Tree Insurance ({selectedInvoice.insuredTreeCount || selectedInvoice.treeCount || 4} Trees @ ₹{selectedInvoice.insuranceRatePerTree || 31}/yr):</span>
+                        <span className="font-mono font-bold">₹{(selectedInvoice.treeInsuranceAmount || (Number(selectedInvoice.insuredTreeCount || selectedInvoice.treeCount || 4) * (selectedInvoice.insuranceRatePerTree || 31))).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-0.5">
+                      <span>Taxable Subtotal:</span>
                       <strong className="font-mono">₹{(selectedInvoice.subtotal || 1847.6).toFixed(2)}</strong>
                     </div>
                     <div className="flex justify-between text-slate-600 text-[10px]">

@@ -50,8 +50,14 @@ export const OtpVerifyPage = () => {
     if (verifyLoginOtp.fulfilled.match(result)) {
       const user = result.payload.user;
 
-      // Role-based destination routing
-      if (user.role === ROLES.SUPER_ADMIN || user.role === ROLES.ADMIN_STAFF) {
+      // Role-based destination routing based on real DB role
+      if (
+        user.role === ROLES.SUPER_ADMIN ||
+        user.role === ROLES.OPERATIONS_ADMIN ||
+        user.role === ROLES.VERIFICATION_ADMIN ||
+        user.role === ROLES.FINANCE_ADMIN ||
+        user.role === ROLES.ADMIN_STAFF
+      ) {
         navigate('/admin/dashboard');
       } else if (user.role === ROLES.GOVERNMENT) {
         navigate('/government/dashboard');

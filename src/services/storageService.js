@@ -22,7 +22,7 @@ export const storageService = {
     } catch (e) {
       console.warn('Storage read error:', e);
     }
-    return MOCK_LANDS;
+    return [];
   },
 
   saveLand: (newLand) => {
@@ -40,14 +40,14 @@ export const storageService = {
     storageService.addApprovalItem({
       id: `APP-LND-${landWithMeta.id}`,
       type: 'LAND_REGISTRATION',
-      title: `Land Title Registration - Khasra ${landWithMeta.khasraNumber}`,
-      applicantName: 'Ramesh Patel',
+      title: `Land Title Registration - Khasra ${landWithMeta.khasraNumber || '412/9'} (Survey ${landWithMeta.surveyNumber || '108/A'})`,
+      applicantName: landWithMeta.ownerName || landWithMeta.farmerName || landWithMeta.applicantName || 'Citizen Farmer',
       applicantRole: 'FARMER',
-      applicantPhone: '+91 98765 43210',
+      applicantPhone: landWithMeta.ownerMobile || landWithMeta.mobile || '',
       submittedDate: 'Just now',
       status: 'PENDING_REVIEW',
       riskScore: 'LOW',
-      details: `${landWithMeta.areaAcres || 8.5} Acres in ${landWithMeta.village || 'Navli'}, ${landWithMeta.district || 'Anand'}`,
+      details: `${landWithMeta.areaAcres || landWithMeta.area || 8.5} Acres in ${landWithMeta.village || 'Mogri'}, ${landWithMeta.district || 'Anand'}`,
       targetId: landWithMeta.id
     });
 
@@ -70,6 +70,36 @@ export const storageService = {
     return updated;
   },
 
+  // Registered Users Directory
+  getRegisteredUsers: () => {
+    try {
+      const stored = localStorage.getItem('bhumicred_data_users');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.warn('Storage read error for users:', e);
+    }
+    return [];
+  },
+
+  saveRegisteredUser: (user) => {
+    if (!user) return;
+    const current = storageService.getRegisteredUsers();
+    const cleanMobile = user.mobile?.replace(/\D/g, '') || '';
+    const filtered = current.filter(
+      (u) => (u.mobile?.replace(/\D/g, '') !== cleanMobile && u.id !== user.id && u.applicationId !== user.applicationId)
+    );
+    const updated = [{ ...user, updatedAt: new Date().toISOString() }, ...filtered];
+    localStorage.setItem('bhumicred_data_users', JSON.stringify(updated));
+    return user;
+  },
+
+  getRegisteredUserByMobile: (mobile) => {
+    const cleanMobile = mobile?.replace(/\D/g, '') || '';
+    if (!cleanMobile) return null;
+    const users = storageService.getRegisteredUsers();
+    return users.find((u) => u.mobile?.replace(/\D/g, '') === cleanMobile) || null;
+  },
+
   updateApprovalStatus: (id, status, notes = '') => {
     const current = storageService.getApprovals();
     const targetItem = current.find(a => a.id === id);
@@ -83,13 +113,35 @@ export const storageService = {
       localStorage.setItem(STORAGE_KEYS.LANDS, JSON.stringify(updatedLands));
     }
 
-    // If Farmer KYC was approved, update current user session if it matches
+    // If Farmer KYC was approved, update the registered users list and current session
     if (targetItem && targetItem.type === 'FARMER_KYC') {
       try {
+        const users = storageService.getRegisteredUsers();
+        const targetCleanPhone = targetItem.applicantPhone?.replace(/\D/g, '');
+        const updatedUsers = users.map((u) => {
+          if (
+            u.id === targetItem.targetId ||
+            u.mobile?.replace(/\D/g, '') === targetCleanPhone ||
+            u.applicationId === targetItem.applicationId
+          ) {
+            return {
+              ...u,
+              status: status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'REJECTED' : 'QUERY_PENDING',
+              kycStatus: status === 'APPROVED' ? 'APPROVED' : 'PENDING',
+            };
+          }
+          return u;
+        });
+        localStorage.setItem('bhumicred_data_users', JSON.stringify(updatedUsers));
+
         const currentUserData = localStorage.getItem('bhumicred_user_data');
         if (currentUserData) {
           const parsed = JSON.parse(currentUserData);
-          if (parsed.id === targetItem.targetId || parsed.mobile === targetItem.applicantPhone || parsed.applicationId === targetItem.applicationId) {
+          if (
+            parsed.id === targetItem.targetId ||
+            parsed.mobile?.replace(/\D/g, '') === targetCleanPhone ||
+            parsed.applicationId === targetItem.applicationId
+          ) {
             const updatedUser = {
               ...parsed,
               status: status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'REJECTED' : 'QUERY_PENDING',

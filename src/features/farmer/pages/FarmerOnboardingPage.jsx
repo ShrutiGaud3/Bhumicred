@@ -27,23 +27,41 @@ export const FarmerOnboardingPage = () => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    fullName: user?.name || 'Ramesh Patel',
-    fatherName: 'Dahybhai Patel',
-    gender: 'MALE',
-    mobile: user?.mobile || '9123456780',
-    email: user?.email || 'ramesh.patel@bhumicred.in',
-    street: 'Station Road, Near Old Post Office',
-    locality: 'Mogri',
-    taluk: 'Anand',
-    district: 'Anand',
-    state: 'Gujarat',
-    pincode: '388345',
-    deviceLat: 22.5645,
-    deviceLng: 72.9281,
+    fullName: user?.name || '',
+    fatherName: user?.fatherName || '',
+    gender: user?.gender || 'MALE',
+    mobile: user?.mobile || '',
+    email: user?.email || '',
+    street: user?.address?.fullAddress || '',
+    locality: user?.address?.gramPanchayat || user?.address?.village || '',
+    taluk: user?.address?.city || user?.address?.taluk || '',
+    district: user?.address?.district || '',
+    state: user?.address?.state || 'Gujarat',
+    pincode: user?.address?.pincode || '',
+    deviceLat: user?.location?.lat || 22.5645,
+    deviceLng: user?.location?.lng || 72.9281,
     locationCaptured: true,
     photoUploaded: true,
     consentAccepted: true,
   });
+
+  React.useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: user.name || prev.fullName,
+        fatherName: user.fatherName || prev.fatherName,
+        gender: user.gender || prev.gender,
+        mobile: user.mobile || prev.mobile,
+        email: user.email || prev.email,
+        locality: user.address?.gramPanchayat || user.address?.village || prev.locality,
+        taluk: user.address?.city || user.address?.taluk || prev.taluk,
+        district: user.address?.district || prev.district,
+        state: user.address?.state || prev.state,
+        pincode: user.address?.pincode || prev.pincode,
+      }));
+    }
+  }, [user]);
 
   const steps = [
     { title: 'Identity' },

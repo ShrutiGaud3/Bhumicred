@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { Card, CardHeader, CardContent } from '../../../components/ui/Card.jsx';
@@ -7,29 +7,69 @@ import { StatusBadge } from '../../../components/ui/StatusBadge.jsx';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
 import { User, MapPin, ShieldCheck, Phone, Mail, Award, CheckCircle2, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { setUser } from '../../auth/authSlice.js';
+import { storageService } from '../../../services/storageService.js';
 
 export const FarmerProfilePage = () => {
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [isEditing, setIsEditing] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const [profile, setProfile] = useState({
-    name: user?.name || 'Ramesh Patel',
-    mobile: user?.mobile || '9123456780',
-    email: user?.email || 'ramesh.patel@bhumicred.in',
-    fatherName: 'Dahybhai Patel',
-    gender: 'Male',
-    village: 'Mogri',
-    taluk: 'Anand',
-    district: 'Anand',
-    state: 'Gujarat',
-    pincode: '388345',
-    referralCode: user?.referralCode || 'RAMESH26',
-    kycStatus: 'VERIFIED',
+    name: user?.name || 'Citizen Farmer',
+    mobile: user?.mobile || '',
+    email: user?.email || '',
+    fatherName: user?.fatherName || '',
+    gender: user?.gender || 'Male',
+    village: user?.address?.gramPanchayat || user?.address?.village || user?.address?.city || 'Anand',
+    taluk: user?.address?.city || user?.address?.district || 'Anand',
+    district: user?.address?.district || 'Anand',
+    state: user?.address?.state || 'Gujarat',
+    pincode: user?.address?.pincode || '388345',
+    referralCode: user?.referralCode || `${(user?.name || 'BHUMI').slice(0, 4).toUpperCase()}26`,
+    kycStatus: user?.kycStatus || user?.status || 'APPROVED',
   });
+
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        name: user.name || 'Citizen Farmer',
+        mobile: user.mobile || '',
+        email: user.email || '',
+        fatherName: user.fatherName || '',
+        gender: user.gender || 'Male',
+        village: user.address?.gramPanchayat || user.address?.village || user.address?.city || 'Anand',
+        taluk: user.address?.city || user.address?.district || 'Anand',
+        district: user.address?.district || 'Anand',
+        state: user.address?.state || 'Gujarat',
+        pincode: user.address?.pincode || '388345',
+        referralCode: user.referralCode || `${(user.name || 'BHUMI').slice(0, 4).toUpperCase()}26`,
+        kycStatus: user.kycStatus || user.status || 'APPROVED',
+      });
+    }
+  }, [user]);
 
   const handleSave = (e) => {
     e.preventDefault();
+    if (user) {
+      const updatedUser = {
+        ...user,
+        name: profile.name,
+        fatherName: profile.fatherName,
+        email: profile.email,
+        address: {
+          ...user.address,
+          gramPanchayat: profile.village,
+          city: profile.taluk,
+          district: profile.district,
+          state: profile.state,
+          pincode: profile.pincode,
+        },
+      };
+      dispatch(setUser(updatedUser));
+      storageService.saveRegisteredUser(updatedUser);
+    }
     setIsEditing(false);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2500);

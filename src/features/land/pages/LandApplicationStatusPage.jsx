@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
+import { useSelector } from 'react-redux';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { Timeline } from '../../../components/ui/Timeline.jsx';
 import { StatusBadge } from '../../../components/ui/StatusBadge.jsx';
@@ -19,14 +20,15 @@ import { StatusBadge } from '../../../components/ui/StatusBadge.jsx';
 export const LandApplicationStatusPage = () => {
   const { applicationId } = useParams();
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
 
   const appId = applicationId || 'BC-LND-2026-9810';
 
   const timelineEvents = [
     {
       title: 'Application Submitted Online',
-      description: 'Revenue details, 7/12 extract, and GIS boundary submitted by Farmer Ramesh Patel.',
-      timestamp: '07 Sep 2026, 11:30 AM',
+      description: `Revenue details, 7/12 extract, and GIS boundary submitted by Farmer ${user?.name || 'Citizen'}.`,
+      timestamp: 'Recently submitted',
       completed: true,
     },
     {

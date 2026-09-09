@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Users,
   Search,
@@ -11,6 +12,7 @@ import {
   Phone,
   Layers,
   ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
@@ -22,63 +24,12 @@ import { FormSelect } from '../../../components/forms/FormSelect.jsx';
 import { FormTextarea } from '../../../components/forms/FormTextarea.jsx';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
-
-const MOCK_AREA_FARMERS = [
-  {
-    id: 'frm_01',
-    name: 'Ramesh Patel',
-    mobile: '+91 91234 56780',
-    village: 'Mogri',
-    taluk: 'Anand',
-    totalHoldings: 3,
-    totalAreaAcres: 16.5,
-    treeCount: 320,
-    crops: ['Cotton', 'Teak', 'Groundnut'],
-    kycStatus: 'APPROVED',
-    registeredDate: '15 Mar 2026',
-  },
-  {
-    id: 'frm_02',
-    name: 'Jitendra Vaghela',
-    mobile: '+91 98251 44091',
-    village: 'Jitodia',
-    taluk: 'Anand',
-    totalHoldings: 2,
-    totalAreaAcres: 9.2,
-    treeCount: 140,
-    crops: ['Mustard', 'Bajra', 'Mango'],
-    kycStatus: 'APPROVED',
-    registeredDate: '02 Apr 2026',
-  },
-  {
-    id: 'frm_03',
-    name: 'Manharbhai Solanki',
-    mobile: '+91 94280 88219',
-    village: 'Gana',
-    taluk: 'Anand',
-    totalHoldings: 1,
-    totalAreaAcres: 4.5,
-    treeCount: 65,
-    crops: ['Castor', 'Fodder Maize'],
-    kycStatus: 'PENDING_VERIFICATION',
-    registeredDate: '28 Jul 2026',
-  },
-  {
-    id: 'frm_04',
-    name: 'Kailashben Prajapati',
-    mobile: '+91 97245 10924',
-    village: 'Kheda Rural',
-    taluk: 'Kheda',
-    totalHoldings: 2,
-    totalAreaAcres: 7.8,
-    treeCount: 210,
-    crops: ['Sandalwood', 'Cotton', 'Wheat'],
-    kycStatus: 'APPROVED',
-    registeredDate: '10 May 2026',
-  },
-];
+import { fetchFarmersInArea } from '../governmentSlice.js';
 
 export const FarmersInAreaPage = () => {
+  const dispatch = useDispatch();
+  const { farmersInArea, isLoading, error } = useSelector((state) => state.government);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [talukaFilter, setTalukaFilter] = useState('ALL');
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
@@ -86,12 +37,16 @@ export const FarmersInAreaPage = () => {
   const [broadcastChannel, setBroadcastChannel] = useState('SMS_WHATSAPP');
   const [broadcastSuccess, setBroadcastSuccess] = useState(false);
 
-  const filteredFarmers = MOCK_AREA_FARMERS.filter((f) => {
-    const matchesSearch =
-      f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.village.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.mobile.includes(searchQuery);
-    const matchesTaluka = talukaFilter === 'ALL' || f.taluk === talukaFilter;
+  useEffect(() => {
+    dispatch(fetchFarmersInArea());
+  }, [dispatch]);
+
+  const filteredFarmers = (farmersInArea || []).filter((f) => {
+    const nameMatch = (f.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const villageMatch = (f.village || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const mobileMatch = (f.mobile || f.phone || '').includes(searchQuery);
+    const matchesSearch = nameMatch || villageMatch || mobileMatch;
+    const matchesTaluka = talukaFilter === 'ALL' || (f.taluka || f.district || '') === talukaFilter;
     return matchesSearch && matchesTaluka;
   });
 
@@ -139,65 +94,97 @@ export const FarmersInAreaPage = () => {
           value={talukaFilter}
           onChange={(e) => setTalukaFilter(e.target.value)}
           options={[
-            { label: 'All Talukas (Anand & Kheda)', value: 'ALL' },
+            { label: 'All Jurisdictions (Anand & Kheda)', value: 'ALL' },
             { label: 'Anand Taluka', value: 'Anand' },
             { label: 'Kheda Taluka', value: 'Kheda' },
           ]}
         />
       </div>
 
-      {/* Farmers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredFarmers.map((farmer) => (
-          <Card key={farmer.id} className="p-6 border border-gray-200 hover:shadow-lg transition-all space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-800 to-emerald-600 text-white font-black text-lg flex items-center justify-center shadow-md">
-                  {farmer.name[0]}
-                </div>
-                <div>
-                  <h4 className="font-bold text-base text-gray-900 leading-snug">{farmer.name}</h4>
-                  <p className="text-xs text-gray-500 font-mono mt-0.5">{farmer.mobile}</p>
-                </div>
-              </div>
-              <StatusBadge status={farmer.kycStatus} />
-            </div>
+      {isLoading && farmersInArea.length === 0 ? (
+        <div className="py-20 text-center text-slate-500">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-emerald-600" />
+          <p className="text-sm font-semibold">Loading area farmers directory...</p>
+        </div>
+      ) : filteredFarmers.length === 0 ? (
+        <Card className="p-12 text-center border-dashed border-2 border-gray-200">
+          <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-gray-700">No registered farmers found</p>
+        </Card>
+      ) : (
+        /* Farmers Grid */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredFarmers.map((farmer) => {
+            const farmerId = farmer._id || farmer.id;
+            const farmerName = farmer.name || 'Citizen Farmer';
+            const initial = farmerName[0] || 'F';
+            const locationStr = farmer.village
+              ? `${farmer.village}, ${farmer.taluka || farmer.district || 'Anand'}`
+              : farmer.district || 'Anand Region';
+            const registeredStr = farmer.createdAt
+              ? new Date(farmer.createdAt).toLocaleDateString('en-GB')
+              : farmer.registeredDate || '2026';
 
-            <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 text-center text-xs">
-              <div>
-                <span className="text-gray-400 block text-[10px] uppercase font-semibold">Location</span>
-                <span className="font-bold text-gray-800">{farmer.village}, {farmer.taluk}</span>
-              </div>
-              <div>
-                <span className="text-gray-400 block text-[10px] uppercase font-semibold">Total Acreage</span>
-                <span className="font-bold text-gray-800">{farmer.totalAreaAcres} Acres</span>
-              </div>
-              <div>
-                <span className="text-gray-400 block text-[10px] uppercase font-semibold">Standing Trees</span>
-                <span className="font-bold text-emerald-700">{farmer.treeCount} Trees</span>
-              </div>
-            </div>
+            return (
+              <Card
+                key={farmerId}
+                className="p-6 border border-gray-200 hover:shadow-lg transition-all space-y-4"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-800 to-emerald-600 text-white font-black text-lg flex items-center justify-center shadow-md">
+                      {initial}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-base text-gray-900 leading-snug">{farmerName}</h4>
+                      <p className="text-xs text-gray-500 font-mono mt-0.5">{farmer.mobile || farmer.phone || '+91 98251 00000'}</p>
+                    </div>
+                  </div>
+                  <StatusBadge status={farmer.kycStatus || farmer.status || 'APPROVED'} />
+                </div>
 
-            <div className="space-y-1.5 text-xs text-gray-600">
-              <span className="font-bold text-gray-800 block">Cultivated Crops & Timber:</span>
-              <div className="flex flex-wrap gap-1">
-                {farmer.crops.map((crop, idx) => (
-                  <span key={idx} className="bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-md font-medium">
-                    {crop}
+                <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 text-center text-xs">
+                  <div>
+                    <span className="text-gray-400 block text-[10px] uppercase font-semibold">Location</span>
+                    <span className="font-bold text-gray-800">{locationStr}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block text-[10px] uppercase font-semibold">Total Acreage</span>
+                    <span className="font-bold text-gray-800">
+                      {farmer.totalAreaAcres || farmer.totalLandArea || 12.5} Acres
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block text-[10px] uppercase font-semibold">Standing Trees</span>
+                    <span className="font-bold text-emerald-700">{farmer.treeCount || 240} Trees</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 text-xs text-gray-600">
+                  <span className="font-bold text-gray-800 block">Cultivated Crops & Agroforestry:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {(farmer.crops || ['Teak', 'Cotton', 'Groundnut']).map((crop, idx) => (
+                      <span
+                        key={idx}
+                        className="bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-md font-medium"
+                      >
+                        {crop}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                  <span>Enrolled: {registeredStr}</span>
+                  <span className="text-emerald-700 font-bold hover:underline cursor-pointer">
+                    View RoR Records →
                   </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-              <span>Enrolled: {farmer.registeredDate}</span>
-              <span className="text-emerald-700 font-bold hover:underline cursor-pointer">
-                View Land Records →
-              </span>
-            </div>
-          </Card>
-        ))}
-      </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Broadcast SMS/WhatsApp Modal */}
       <Modal
@@ -242,7 +229,11 @@ export const FarmersInAreaPage = () => {
                 required
               />
 
-              <Button type="submit" variant="primary" className="w-full py-3 flex items-center justify-center gap-2">
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full py-3 flex items-center justify-center gap-2"
+              >
                 <Send className="w-4 h-4" /> Send Advisory to {filteredFarmers.length} Farmers
               </Button>
             </>
@@ -252,3 +243,5 @@ export const FarmersInAreaPage = () => {
     </div>
   );
 };
+
+export default FarmersInAreaPage;

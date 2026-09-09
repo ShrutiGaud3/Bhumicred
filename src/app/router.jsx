@@ -52,6 +52,7 @@ import { LandListPage } from '../features/land/pages/LandListPage.jsx';
 import { AddLandPage } from '../features/land/pages/AddLandPage.jsx';
 import { LandDetailPage } from '../features/land/pages/LandDetailPage.jsx';
 import { LandApplicationStatusPage } from '../features/land/pages/LandApplicationStatusPage.jsx';
+import { GisCadastralExplorerPage } from '../features/gis/pages/GisCadastralExplorerPage.jsx';
 
 // Insurance Pages
 import { InsuranceCatalogPage } from '../features/insurance/pages/InsuranceCatalogPage.jsx';
@@ -188,6 +189,7 @@ export const router = createBrowserRouter([
               { path: '/farmer/lands', element: <LandListPage /> },
               { path: '/farmer/lands/add', element: <AddLandPage /> },
               { path: '/farmer/lands/:id', element: <LandDetailPage /> },
+              { path: '/farmer/gis', element: <GisCadastralExplorerPage /> },
               { path: '/farmer/application-status/:applicationId', element: <LandApplicationStatusPage /> },
 
               // Insurance & Claims
@@ -209,6 +211,10 @@ export const router = createBrowserRouter([
               { path: '/farmer/carbon', element: <CarbonOpportunitiesPage /> },
               { path: '/farmer/carbon/request-audit', element: <RequestCarbonAuditPage /> },
               { path: '/farmer/wallet', element: <WalletPage /> },
+              { path: '/farmer/rewards', element: <RewardsReferralPage /> },
+              // Schemes, Documents & Common
+              { path: '/farmer/schemes', element: <SchemesListPage /> },
+              { path: '/farmer/documents', element: <DocumentCenterPage /> },
             ],
           },
 
@@ -221,8 +227,11 @@ export const router = createBrowserRouter([
               { path: '/government/farmers', element: <FarmersInAreaPage /> },
               { path: '/government/campaigns', element: <CampaignsPage /> },
               { path: '/government/projects', element: <AreaProjectsPage /> },
+              { path: '/government/projects/:id', element: <ProjectDetailPage /> },
               { path: '/government/insurance', element: <GovernmentInsurancePage /> },
               { path: '/government/soil', element: <GovernmentSoilPage /> },
+              { path: '/government/schemes', element: <SchemesListPage /> },
+              { path: '/government/documents', element: <DocumentCenterPage /> },
             ],
           },
 
@@ -237,6 +246,7 @@ export const router = createBrowserRouter([
               { path: '/partner/lab', element: <LabSampleQueuePage /> },
               { path: '/partner/reports', element: <ReportsUploadPage /> },
               { path: '/partner/invoices', element: <PartnerInvoicesPage /> },
+              { path: '/partner/documents', element: <DocumentCenterPage /> },
             ],
           },
 
@@ -251,14 +261,19 @@ export const router = createBrowserRouter([
               { path: '/admin/soil', element: <AdminSoilPage /> },
               { path: '/admin/marketplace', element: <AdminMarketplacePage /> },
               { path: '/admin/projects', element: <AdminProjectsPage /> },
+              { path: '/admin/projects/:id', element: <ProjectDetailPage /> },
+              { path: '/admin/schemes', element: <SchemesListPage /> },
               { path: '/admin/carbon', element: <AdminCarbonPage /> },
               { path: '/admin/finance', element: <AdminFinancePage /> },
               { path: '/admin/audit', element: <AdminAuditLogsPage /> },
               { path: '/admin/settings', element: <AdminSettingsPage /> },
+              { path: '/admin/documents', element: <DocumentCenterPage /> },
             ],
           },
 
           // Common / Shared Modules across roles
+          { path: '/projects', element: <ProjectsListPage /> },
+          { path: '/projects/:id', element: <ProjectDetailPage /> },
           { path: '/marketplace', element: <MarketplacePage /> },
           { path: '/marketplace/product/:id', element: <ProductDetailPage /> },
           { path: '/marketplace/cart', element: <CartPage /> },
@@ -271,6 +286,7 @@ export const router = createBrowserRouter([
           { path: '/wallet', element: <WalletPage /> },
           { path: '/rewards', element: <RewardsReferralPage /> },
           { path: '/documents', element: <DocumentCenterPage /> },
+          { path: '/gis', element: <GisCadastralExplorerPage /> },
           { path: '/support', element: <ContactPage /> },
           { path: '/profile', element: <FarmerProfilePage /> },
         ],

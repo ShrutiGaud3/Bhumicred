@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Clock, CheckCircle2, ShieldCheck, MapPin, Phone, User, ArrowRight, Sparkles, Building } from 'lucide-react';
 import { Button } from '../ui/Button.jsx';
-import { setUserStatus, setUser } from '../../features/auth/authSlice.js';
+import { setUserStatus, setUser, fetchCurrentUser } from '../../features/auth/authSlice.js';
 import { storageService } from '../../services/storageService.js';
 import { useToast } from '../ui/ToastContext.jsx';
 import { ROLES, ROLE_LABELS } from '../../constants/roles.js';
@@ -18,7 +18,44 @@ export const PendingApproval = ({
   const toast = useToast();
   const { user } = useSelector((state) => state.auth);
 
+  React.useEffect(() => {
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
+
   const isAlreadyApproved = user?.status === 'APPROVED' || user?.status === 'ACTIVE';
+
+  // Automatically navigate to dashboard if already approved
+  React.useEffect(() => {
+    if (isAlreadyApproved) {
+      const timer = setTimeout(() => {
+        if (user?.role === ROLES.GOVERNMENT) {
+          navigate('/government/dashboard');
+        } else if (user?.role === ROLES.PARTNER) {
+          navigate('/partner/dashboard');
+        } else {
+          navigate('/farmer/dashboard');
+        }
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isAlreadyApproved, user?.role, navigate]);
+
+  const handleRefreshStatus = async () => {
+    try {
+      const resultAction = await dispatch(fetchCurrentUser());
+      if (fetchCurrentUser.fulfilled.match(resultAction)) {
+        const u = resultAction.payload?.user || resultAction.payload;
+        if (u?.status === 'APPROVED' || u?.status === 'ACTIVE') {
+          toast.success('Your profile has been Approved & Activated! Opening dashboard...');
+          navigate('/farmer/dashboard');
+          return;
+        }
+      }
+      toast.info('Application is still pending review by the Administration.');
+    } catch {
+      window.location.reload();
+    }
+  };
 
   const handleSimulateAdminApproval = () => {
     // 1. Update current user status to APPROVED
@@ -99,7 +136,7 @@ export const PendingApproval = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 border-b border-slate-200">
           <div>
             <span className="text-slate-500 block text-[11px]">Applicant Name:</span>
-            <span className="font-bold text-slate-900">{user?.name || 'Ramesh Patel'}</span>
+            <span className="font-bold text-slate-900">{user?.name || 'Citizen Applicant'}</span>
           </div>
           {user?.fatherName && (
             <div>
@@ -109,7 +146,7 @@ export const PendingApproval = ({
           )}
           <div>
             <span className="text-slate-500 block text-[11px]">Registered Mobile:</span>
-            <span className="font-mono font-semibold text-slate-900">{user?.mobile || '+91 98765 43210'}</span>
+            <span className="font-mono font-semibold text-slate-900">{user?.mobile || 'Verified Mobile'}</span>
           </div>
           <div>
             <span className="text-slate-500 block text-[11px]">Portal Role:</span>
@@ -179,7 +216,7 @@ export const PendingApproval = ({
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
-              <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+              <Button onClick={handleRefreshStatus} variant="outline" size="sm">
                 Refresh Status
               </Button>
               <Button onClick={() => navigate('/login')} variant="outline" size="sm">

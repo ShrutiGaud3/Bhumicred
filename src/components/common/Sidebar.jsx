@@ -20,6 +20,7 @@ import {
   FileCheck2,
   Sparkles,
   Receipt,
+  Layers,
 } from 'lucide-react';
 import { ROLES } from '../../constants/roles.js';
 
@@ -31,6 +32,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { label: 'Dashboard', path: '/farmer/dashboard', icon: LayoutDashboard },
     { label: 'Bhumitra AI', path: '/bhumitra-ai', icon: Sparkles, highlight: true },
     { label: 'My Land', path: '/farmer/lands', icon: MapPin },
+    { label: 'GIS Cadastral Explorer', path: '/farmer/gis', icon: Layers },
     { label: 'Tree Insurance', path: '/farmer/insurance', icon: ShieldAlert },
     { label: 'Soil Testing', path: '/farmer/soil', icon: FlaskConical },
     { label: 'Reports & Invoices', path: '/farmer/invoices', icon: Receipt },
@@ -48,6 +50,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { label: 'Dashboard', path: '/government/dashboard', icon: LayoutDashboard },
     { label: 'Bhumitra AI', path: '/bhumitra-ai', icon: Sparkles, highlight: true },
     { label: 'Public Assets', path: '/government/assets', icon: MapPin },
+    { label: 'GIS Cadastral Explorer', path: '/gis', icon: Layers },
     { label: 'Farmers In Area', path: '/government/farmers', icon: Users },
     { label: 'On-Demand Campaigns', path: '/government/campaigns', icon: Landmark },
     { label: 'Area Projects', path: '/government/projects', icon: FolderKanban },
@@ -61,6 +64,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const partnerNavItems = [
     { label: 'Dashboard', path: '/partner/dashboard', icon: LayoutDashboard },
     { label: 'Bhumitra AI', path: '/bhumitra-ai', icon: Sparkles, highlight: true },
+    { label: 'GIS Cadastral Explorer', path: '/gis', icon: Layers },
     { label: 'Assigned Tasks', path: '/partner/tasks', icon: FolderKanban },
     { label: 'Field Visits', path: '/partner/visits', icon: MapPin },
     { label: 'Inspections Queue', path: '/partner/inspections', icon: FileCheck2 },
@@ -76,6 +80,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { label: 'Bhumitra AI', path: '/bhumitra-ai', icon: Sparkles, highlight: true },
     { label: 'Onboarding Approvals', path: '/admin/approvals', icon: Users },
     { label: 'Land & GIS Review', path: '/admin/lands', icon: MapPin },
+    { label: 'GIS Cadastral Explorer', path: '/gis', icon: Layers },
     { label: 'Tree Insurance & Claims', path: '/admin/insurance', icon: ShieldAlert },
     { label: 'Soil & Lab Central', path: '/admin/soil', icon: FlaskConical },
     { label: 'Agri Marketplace', path: '/admin/marketplace', icon: ShoppingBag },

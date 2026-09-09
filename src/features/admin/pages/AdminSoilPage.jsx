@@ -14,7 +14,6 @@ import { Badge } from '../../../components/ui/Badge.jsx';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
-import { MOCK_SOIL_REQUESTS } from '../../../services/mockData/soilMock.js';
 
 export const AdminSoilPage = () => {
   return (

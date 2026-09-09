@@ -1,23 +1,75 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { MOCK_USERS } from '../../services/mockData/usersMock.js';
-import { MOCK_PROJECTS } from '../../services/mockData/projectsMock.js';
+import governmentService from './services/governmentService.js';
 
 export const fetchGovernmentDashboard = createAsyncThunk(
   'government/fetchDashboard',
-  async () => {
-    return {
-      jurisdiction: MOCK_USERS.GOVERNMENT.jurisdiction,
-      metrics: {
-        publicAssetsManaged: 12,
-        farmersInArea: 348,
-        activeCampaigns: 3,
-        areaProjects: MOCK_PROJECTS.length,
-        soilTestingDrives: 4,
-      },
-      status: 'APPROVED',
-      activeCampaignsList: [],
-      recentPublicAssets: [],
-    };
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await governmentService.getDashboardStats();
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to fetch government dashboard stats');
+    }
+  }
+);
+
+export const fetchPublicAssets = createAsyncThunk(
+  'government/fetchPublicAssets',
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await governmentService.getPublicAssets(params);
+      return response.data || [];
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to fetch public assets');
+    }
+  }
+);
+
+export const createPublicAsset = createAsyncThunk(
+  'government/createPublicAsset',
+  async (assetData, { rejectWithValue }) => {
+    try {
+      const response = await governmentService.createPublicAsset(assetData);
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to create public asset');
+    }
+  }
+);
+
+export const fetchCampaigns = createAsyncThunk(
+  'government/fetchCampaigns',
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await governmentService.getCampaigns(params);
+      return response.data || [];
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to fetch campaigns');
+    }
+  }
+);
+
+export const createCampaign = createAsyncThunk(
+  'government/createCampaign',
+  async (campaignData, { rejectWithValue }) => {
+    try {
+      const response = await governmentService.createCampaign(campaignData);
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to create campaign');
+    }
+  }
+);
+
+export const fetchFarmersInArea = createAsyncThunk(
+  'government/fetchFarmersInArea',
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await governmentService.getFarmersInArea(params);
+      return response.data || [];
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to fetch farmers in area');
+    }
   }
 );
 
@@ -25,14 +77,25 @@ const governmentSlice = createSlice({
   name: 'government',
   initialState: {
     dashboardData: null,
+    publicAssets: [],
+    campaigns: [],
+    farmersInArea: [],
     isLoading: false,
     error: null,
+    successMessage: null,
   },
-  reducers: {},
+  reducers: {
+    clearGovernmentErrors: (state) => {
+      state.error = null;
+      state.successMessage = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
+      // Dashboard stats
       .addCase(fetchGovernmentDashboard.pending, (state) => {
         state.isLoading = true;
+        state.error = null;
       })
       .addCase(fetchGovernmentDashboard.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -40,9 +103,77 @@ const governmentSlice = createSlice({
       })
       .addCase(fetchGovernmentDashboard.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.error?.message;
+        state.error = action.payload;
+      })
+      // Public Assets
+      .addCase(fetchPublicAssets.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPublicAssets.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.publicAssets = action.payload;
+      })
+      .addCase(fetchPublicAssets.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Create Public Asset
+      .addCase(createPublicAsset.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(createPublicAsset.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.publicAssets.unshift(action.payload);
+        state.successMessage = 'Public Asset registered successfully!';
+      })
+      .addCase(createPublicAsset.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Campaigns
+      .addCase(fetchCampaigns.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchCampaigns.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.campaigns = action.payload;
+      })
+      .addCase(fetchCampaigns.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Create Campaign
+      .addCase(createCampaign.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(createCampaign.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.campaigns.unshift(action.payload);
+        state.successMessage = 'District Campaign launched successfully!';
+      })
+      .addCase(createCampaign.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Farmers In Area
+      .addCase(fetchFarmersInArea.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchFarmersInArea.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.farmersInArea = action.payload;
+      })
+      .addCase(fetchFarmersInArea.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });
 
+export const { clearGovernmentErrors } = governmentSlice.actions;
 export default governmentSlice.reducer;

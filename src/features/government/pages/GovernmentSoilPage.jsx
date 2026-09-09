@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   TestTube,
   FlaskConical,
@@ -9,6 +10,7 @@ import {
   Download,
   Calendar,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
@@ -17,6 +19,7 @@ import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
 import { FormSelect } from '../../../components/forms/FormSelect.jsx';
+import { dispatchMobileVan, fetchMobileVanDispatches, fetchSoilStats } from '../../soil/soilSlice.js';
 
 const SOIL_ZONES = [
   { zone: 'Mogri - Anand Central', organicCarbon: '0.82% (High)', nitrogenDeficiency: 'Medium (18%)', status: 'FERTILE', recommendedCrop: 'Cotton, Pulses' },
@@ -25,6 +28,9 @@ const SOIL_ZONES = [
 ];
 
 export const GovernmentSoilPage = () => {
+  const dispatch = useDispatch();
+  const { dispatches, stats, isDispatching } = useSelector((state) => state.soil);
+
   const [showVanModal, setShowVanModal] = useState(false);
   const [vanSuccess, setVanSuccess] = useState(false);
   const [vanForm, setVanForm] = useState({
@@ -33,13 +39,28 @@ export const GovernmentSoilPage = () => {
     vanId: 'GUJ-SOIL-VAN-04',
   });
 
-  const handleDispatchVan = (e) => {
+  useEffect(() => {
+    dispatch(fetchMobileVanDispatches());
+    dispatch(fetchSoilStats());
+  }, [dispatch]);
+
+  const handleDispatchVan = async (e) => {
     e.preventDefault();
-    setVanSuccess(true);
-    setTimeout(() => {
-      setVanSuccess(false);
-      setShowVanModal(false);
-    }, 1800);
+    const payload = {
+      vanId: vanForm.vanId,
+      targetVillage: vanForm.village,
+      scheduledDate: vanForm.date,
+    };
+
+    const actionResult = await dispatch(dispatchMobileVan(payload));
+    if (dispatchMobileVan.fulfilled.match(actionResult)) {
+      setVanSuccess(true);
+      setTimeout(() => {
+        setVanSuccess(false);
+        setShowVanModal(false);
+        dispatch(fetchMobileVanDispatches());
+      }, 1600);
+    }
   };
 
   return (
@@ -98,10 +119,49 @@ export const GovernmentSoilPage = () => {
         </div>
       </div>
 
+      {/* Active Mobile Van Dispatches */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-gray-900">Active Mobile Soil Testing Lab Deployments</h3>
+          <span className="text-xs text-gray-500 font-mono">{dispatches.length} Active Camps</span>
+        </div>
+
+        {dispatches.length === 0 ? (
+          <Card className="p-8 text-center border-dashed border border-slate-200">
+            <Truck className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-700">No mobile testing vans dispatched yet</p>
+            <p className="text-xs text-slate-500 mt-1">Dispatch a mobile testing van to reach remote gram panchayat farming clusters.</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {dispatches.map((d) => (
+              <Card key={d._id || d.id} className="p-5 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-emerald-600" />
+                    <span className="font-bold text-sm text-slate-900">{d.vanId}</span>
+                  </div>
+                  <Badge variant="success">{d.status}</Badge>
+                </div>
+                <p className="text-xs text-slate-600">
+                  Target Location: <strong className="text-slate-900">{d.targetVillage}</strong>
+                </p>
+                <div className="flex justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+                  <span>Scheduled: {d.scheduledDate}</span>
+                  <span>District: {d.district || 'Anand'}</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Mobile Van Dispatch Modal */}
       <Modal
         isOpen={showVanModal}
-        onClose={() => setShowVanModal(false)}
+        onClose={() => {
+          if (!isDispatching) setShowVanModal(false);
+        }}
         title="Dispatch Mobile Soil Testing Van"
       >
         <form onSubmit={handleDispatchVan} className="space-y-6 py-2">
@@ -142,7 +202,12 @@ export const GovernmentSoilPage = () => {
                 required
               />
 
-              <Button type="submit" variant="primary" className="w-full py-3">
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full py-3"
+                isLoading={isDispatching}
+              >
                 Confirm & Route Mobile Van
               </Button>
             </>
@@ -152,3 +217,5 @@ export const GovernmentSoilPage = () => {
     </div>
   );
 };
+
+export default GovernmentSoilPage;

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Calendar,
   Plus,
@@ -10,6 +11,8 @@ import {
   Target,
   ArrowRight,
   TrendingUp,
+  RefreshCw,
+  Landmark,
 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
@@ -20,92 +23,55 @@ import { Modal } from '../../../components/ui/Modal.jsx';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
 import { FormSelect } from '../../../components/forms/FormSelect.jsx';
 import { FormTextarea } from '../../../components/forms/FormTextarea.jsx';
-
-const MOCK_CAMPAIGNS = [
-  {
-    id: 'cmp_01',
-    title: 'Anand District Green Canopy & Teak Plantation Drive 2026',
-    category: 'Tree Plantation Drive',
-    targetQuota: '50,000 Saplings',
-    achieved: 38500,
-    targetCount: 50000,
-    budgetAllocated: '₹25,00,000',
-    budgetSpent: '₹18,20,000',
-    status: 'IN_PROGRESS',
-    startDate: '01 Jun 2026',
-    endDate: '31 Oct 2026',
-    participatingFarmers: 412,
-    leadDepartment: 'Gujarat State Social Forestry Division',
-  },
-  {
-    id: 'cmp_02',
-    title: 'Kharif Pre-Sowing Free Soil Health Testing Camp',
-    category: 'Soil Testing Campaign',
-    targetQuota: '2,500 Soil Cards',
-    achieved: 2150,
-    targetCount: 2500,
-    budgetAllocated: '₹8,50,000',
-    budgetSpent: '₹7,10,000',
-    status: 'IN_PROGRESS',
-    startDate: '15 May 2026',
-    endDate: '30 Sep 2026',
-    participatingFarmers: 1840,
-    leadDepartment: 'District Agriculture Office, Anand',
-  },
-  {
-    id: 'cmp_03',
-    title: 'Solar Micro-Drip Subsidy Enrollment Mission',
-    category: 'Subsidy Onboarding',
-    targetQuota: '1,000 Ha Drip Installed',
-    achieved: 1000,
-    targetCount: 1000,
-    budgetAllocated: '₹45,00,000',
-    budgetSpent: '₹44,50,000',
-    status: 'COMPLETED',
-    startDate: '01 Jan 2026',
-    endDate: '30 Jun 2026',
-    participatingFarmers: 620,
-    leadDepartment: 'Gujarat Green Revolution Company (GGRC)',
-  },
-];
+import { fetchCampaigns, createCampaign, clearGovernmentErrors } from '../governmentSlice.js';
 
 export const CampaignsPage = () => {
-  const [campaigns, setCampaigns] = useState(MOCK_CAMPAIGNS);
+  const dispatch = useDispatch();
+  const { campaigns, isLoading, error, successMessage } = useSelector((state) => state.government);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createSuccess, setCreateSuccess] = useState(false);
+  const [actionError, setActionError] = useState(null);
   const [newCampaign, setNewCampaign] = useState({
     title: '',
     category: 'Tree Plantation Drive',
     targetQuota: '',
-    budgetAllocated: '',
+    budgetAllocated: '1500000',
     startDate: '2026-09-15',
     endDate: '2026-12-31',
     description: '',
+    leadDepartment: 'Gujarat State Social Forestry Division',
   });
-  const [createSuccess, setCreateSuccess] = useState(false);
 
-  const handleCreate = (e) => {
+  useEffect(() => {
+    dispatch(fetchCampaigns());
+  }, [dispatch]);
+
+  const handleCreate = async (e) => {
     e.preventDefault();
-    const created = {
-      id: `cmp_${Date.now()}`,
-      title: newCampaign.title || 'New District Mission',
-      category: newCampaign.category,
-      targetQuota: newCampaign.targetQuota || '10,000 Units',
-      achieved: 0,
-      targetCount: 10000,
-      budgetAllocated: `₹${Number(newCampaign.budgetAllocated || 500000).toLocaleString()}`,
-      budgetSpent: '₹0',
-      status: 'IN_PROGRESS',
-      startDate: newCampaign.startDate,
-      endDate: newCampaign.endDate,
-      participatingFarmers: 0,
-      leadDepartment: 'District Collectorate Office',
-    };
-    setCampaigns([created, ...campaigns]);
-    setCreateSuccess(true);
-    setTimeout(() => {
-      setCreateSuccess(false);
-      setShowCreateModal(false);
-    }, 1500);
+    setActionError(null);
+    const actionResult = await dispatch(createCampaign(newCampaign));
+    if (createCampaign.fulfilled.match(actionResult)) {
+      setCreateSuccess(true);
+      setTimeout(() => {
+        setCreateSuccess(false);
+        setShowCreateModal(false);
+        setNewCampaign({
+          title: '',
+          category: 'Tree Plantation Drive',
+          targetQuota: '',
+          budgetAllocated: '1500000',
+          startDate: '2026-09-15',
+          endDate: '2026-12-31',
+          description: '',
+          leadDepartment: 'Gujarat State Social Forestry Division',
+        });
+        dispatch(clearGovernmentErrors());
+        dispatch(fetchCampaigns());
+      }, 1500);
+    } else {
+      setActionError(actionResult.payload || 'Failed to create campaign. Please verify input fields.');
+    }
   };
 
   return (
@@ -122,76 +88,119 @@ export const CampaignsPage = () => {
           <Button
             variant="primary"
             className="flex items-center gap-2"
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              setActionError(null);
+              setShowCreateModal(true);
+            }}
           >
             <Plus className="w-4 h-4" /> Create New Campaign
           </Button>
         }
       />
 
-      {/* Campaigns List */}
-      <div className="space-y-6">
-        {campaigns.map((camp) => {
-          const progressPercent = Math.min(100, Math.round((camp.achieved / camp.targetCount) * 100));
+      {isLoading && campaigns.length === 0 ? (
+        <div className="py-20 text-center text-slate-500">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-emerald-600" />
+          <p className="text-sm font-semibold">Loading district campaigns...</p>
+        </div>
+      ) : campaigns.length === 0 ? (
+        <Card className="p-12 text-center border-dashed border-2 border-gray-200">
+          <Landmark className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-gray-700">No active campaigns in this district</p>
+          <Button
+            variant="primary"
+            size="sm"
+            className="mt-4"
+            onClick={() => {
+              setActionError(null);
+              setShowCreateModal(true);
+            }}
+          >
+            Launch First Campaign
+          </Button>
+        </Card>
+      ) : (
+        /* Campaigns List */
+        <div className="space-y-6">
+          {campaigns.map((camp) => {
+            const campId = camp._id || camp.id;
+            const targetCount = camp.targetCount || 10000;
+            const achieved = camp.achievedCount ?? camp.achieved ?? 0;
+            const progressPercent = Math.min(100, Math.round((achieved / targetCount) * 100));
 
-          return (
-            <Card key={camp.id} className="p-6 md:p-8 border border-gray-200 hover:shadow-lg transition-all space-y-6">
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="success">{camp.category}</Badge>
-                    <StatusBadge status={camp.status} />
+            const allocatedFormatted = camp.budget?.allocated
+              ? `₹${camp.budget.allocated.toLocaleString('en-IN')}`
+              : camp.budgetAllocated || '₹15,00,000';
+
+            const spentFormatted = camp.budget?.spent
+              ? `₹${camp.budget.spent.toLocaleString('en-IN')}`
+              : camp.budgetSpent || '₹0';
+
+            const startDateStr = camp.startDate ? new Date(camp.startDate).toLocaleDateString('en-GB') : 'Sep 2026';
+            const endDateStr = camp.endDate ? new Date(camp.endDate).toLocaleDateString('en-GB') : 'Dec 2026';
+
+            return (
+              <Card
+                key={campId}
+                className="p-6 md:p-8 border border-gray-200 hover:shadow-lg transition-all space-y-6"
+              >
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="success">{camp.categoryLabel || camp.category}</Badge>
+                      <StatusBadge status={camp.status || 'IN_PROGRESS'} />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">{camp.title}</h3>
+                    <p className="text-xs text-gray-500">
+                      Lead Body: <strong className="text-gray-800">{camp.leadDepartment || 'District Agriculture Office'}</strong> • Duration: {startDateStr} to {endDateStr}
+                    </p>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">{camp.title}</h3>
-                  <p className="text-xs text-gray-500">
-                    Lead Body: <strong className="text-gray-800">{camp.leadDepartment}</strong> • Duration: {camp.startDate} to {camp.endDate}
-                  </p>
+
+                  <div className="text-left lg:text-right space-y-1">
+                    <span className="text-xs text-gray-400 block">Allocated State Budget</span>
+                    <span className="text-2xl font-black text-gray-900">{allocatedFormatted}</span>
+                    <span className="text-xs text-emerald-700 font-semibold block">
+                      {spentFormatted} Disbursed
+                    </span>
+                  </div>
                 </div>
 
-                <div className="text-left lg:text-right space-y-1">
-                  <span className="text-xs text-gray-400 block">Allocated State Budget</span>
-                  <span className="text-2xl font-black text-gray-900">{camp.budgetAllocated}</span>
-                  <span className="text-xs text-emerald-700 font-semibold block">
-                    {camp.budgetSpent} Disbursed
+                {/* Progress & Target Section */}
+                <div className="space-y-2 pt-2 border-t border-gray-100">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-gray-600 flex items-center gap-1.5">
+                      <Target className="w-4 h-4 text-emerald-600" /> Target Quota: {camp.targetQuota || `${targetCount.toLocaleString()} Units`}
+                    </span>
+                    <span className="text-emerald-800 font-bold">
+                      {achieved.toLocaleString()} Achieved ({progressPercent}%)
+                    </span>
+                  </div>
+
+                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-600 rounded-full transition-all duration-500"
+                      style={{ width: `${progressPercent}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-600 pt-2">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Users className="w-4 h-4 text-emerald-600" /> {camp.participatingFarmersCount ?? camp.participatingFarmers ?? 0} Farmers Participating
                   </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => alert(`Opening inspection log for ${camp.title}...`)}
+                  >
+                    View Quota Report
+                  </Button>
                 </div>
-              </div>
-
-              {/* Progress & Target Section */}
-              <div className="space-y-2 pt-2 border-t border-gray-100">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-gray-600 flex items-center gap-1.5">
-                    <Target className="w-4 h-4 text-emerald-600" /> Target Quota: {camp.targetQuota}
-                  </span>
-                  <span className="text-emerald-800 font-bold">
-                    {camp.achieved.toLocaleString()} Achieved ({progressPercent}%)
-                  </span>
-                </div>
-
-                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-600 rounded-full transition-all duration-500"
-                    style={{ width: `${progressPercent}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-gray-600 pt-2">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Users className="w-4 h-4 text-emerald-600" /> {camp.participatingFarmers} Farmers Participating
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => alert(`Opening inspection log for ${camp.title}...`)}
-                >
-                  View Quota Report
-                </Button>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Create Campaign Modal */}
       <Modal
@@ -199,7 +208,7 @@ export const CampaignsPage = () => {
         onClose={() => setShowCreateModal(false)}
         title="Launch New District Campaign / Drive"
       >
-        <form onSubmit={handleCreate} className="space-y-6 py-2">
+        <form onSubmit={handleCreate} className="space-y-5 py-2">
           {createSuccess ? (
             <div className="text-center py-6">
               <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
@@ -212,6 +221,12 @@ export const CampaignsPage = () => {
             </div>
           ) : (
             <>
+              {actionError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs">
+                  {actionError}
+                </div>
+              )}
+
               <FormInput
                 label="Campaign Title"
                 placeholder="e.g. Anand South Agroforestry Sapling Distribution 2026"
@@ -234,7 +249,7 @@ export const CampaignsPage = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <FormInput
-                  label="Target Target / Count"
+                  label="Target Quota Description"
                   placeholder="e.g. 25,000 Saplings"
                   value={newCampaign.targetQuota}
                   onChange={(e) => setNewCampaign({ ...newCampaign, targetQuota: e.target.value })}
@@ -242,7 +257,6 @@ export const CampaignsPage = () => {
                 />
                 <FormInput
                   label="Budget Allocation (₹)"
-                  type="number"
                   placeholder="e.g. 1500000"
                   value={newCampaign.budgetAllocated}
                   onChange={(e) => setNewCampaign({ ...newCampaign, budgetAllocated: e.target.value })}
@@ -275,7 +289,7 @@ export const CampaignsPage = () => {
                 onChange={(e) => setNewCampaign({ ...newCampaign, description: e.target.value })}
               />
 
-              <Button type="submit" variant="primary" className="w-full py-3">
+              <Button type="submit" variant="primary" className="w-full py-3" isLoading={isLoading}>
                 Publish & Dispatch Campaign
               </Button>
             </>
@@ -285,3 +299,5 @@ export const CampaignsPage = () => {
     </div>
   );
 };
+
+export default CampaignsPage;

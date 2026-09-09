@@ -1,124 +1,104 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { tokenStorage } from '../../utils/tokenStorage.js';
-import { MOCK_USERS } from '../../services/mockData/usersMock.js';
 import { ROLES } from '../../constants/roles.js';
 import { storageService } from '../../services/storageService.js';
+import { authService } from './services/authService.js';
 
-// Frontend Mock Async Thunks for OTP and Authentication
+// Real Database-Driven Async Thunks
 export const sendLoginOtp = createAsyncThunk(
   'auth/sendOtp',
   async ({ mobile, role }, { rejectWithValue }) => {
-    // Frontend mock delay (400ms)
-    await new Promise((r) => setTimeout(r, 400));
-    const cleanMobile = mobile.replace(/\D/g, '');
-    if (!cleanMobile || cleanMobile.length !== 10) {
-      return rejectWithValue({ message: 'Please enter a valid 10-digit mobile number' });
+    const cleanMobile = (mobile || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '');
+    try {
+      const res = await authService.sendOtp(cleanMobile, role);
+      return res;
+    } catch (err) {
+      return rejectWithValue({
+        message: err.response?.data?.message || err.message || 'Failed to send OTP. Please check your mobile number.',
+      });
     }
-    return {
-      success: true,
-      message: 'OTP sent successfully',
-      data: { devOtp: '123456', expiresAt: new Date(Date.now() + 5 * 60000).toISOString() },
-    };
   }
 );
 
 export const verifyLoginOtp = createAsyncThunk(
   'auth/verifyOtp',
   async ({ mobile, otp, role }, { rejectWithValue }) => {
-    await new Promise((r) => setTimeout(r, 500));
-    if (otp !== '123456') {
-      return rejectWithValue({ message: 'Invalid OTP code. Please enter 123456 for demo verification.' });
+    const cleanMobile = (mobile || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '');
+
+    try {
+      const res = await authService.verifyOtp(cleanMobile, otp, role);
+      const { user, accessToken, refreshToken } = res.data;
+
+      // Sync with local registered user storage
+      if (user) {
+        storageService.saveRegisteredUser(user);
+      }
+
+      tokenStorage.setAccessToken(accessToken);
+      if (refreshToken) tokenStorage.setRefreshToken(refreshToken);
+      tokenStorage.setUser(user);
+
+      return { user, accessToken, refreshToken };
+    } catch (err) {
+      return rejectWithValue({
+        message:
+          err.response?.data?.message ||
+          'Authentication failed. Please verify your registered mobile number and OTP (123456).',
+      });
     }
-
-    // Match role from mock users or create session
-    const matchedRole = role || ROLES.FARMER;
-    const baseMock = MOCK_USERS[matchedRole] || MOCK_USERS.FARMER;
-    const user = {
-      ...baseMock,
-      mobile,
-      role: matchedRole,
-    };
-
-    const accessToken = 'mock_jwt_token_bhumicred_2026';
-    const refreshToken = 'mock_refresh_token_bhumicred_2026';
-
-    tokenStorage.setAccessToken(accessToken);
-    tokenStorage.setRefreshToken(refreshToken);
-    tokenStorage.setUser(user);
-
-    return { user, accessToken, refreshToken };
   }
 );
 
 export const registerUser = createAsyncThunk(
   'auth/registerUser',
   async (formData, { rejectWithValue }) => {
-    await new Promise((r) => setTimeout(r, 500));
-    if (!formData.fullName || !formData.mobile) {
-      return rejectWithValue({ message: 'Full name and mobile are required' });
+    try {
+      const res = await authService.register(formData);
+      const { user, accessToken, refreshToken } = res.data;
+
+      storageService.saveRegisteredUser(user);
+      tokenStorage.setAccessToken(accessToken);
+      if (refreshToken) tokenStorage.setRefreshToken(refreshToken);
+      tokenStorage.setUser(user);
+
+      // Enqueue to Admin Approvals in local state as well
+      storageService.addApprovalItem({
+        id: `APP-KYC-${(user.applicationId || '982143').slice(-6)}`,
+        type: 'FARMER_KYC',
+        title: `Citizen KYC & Registration - ${user.name}`,
+        applicantName: user.name,
+        applicantRole: user.role,
+        applicantPhone: user.mobile,
+        submittedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        status: user.status || 'PENDING_VERIFICATION',
+        riskScore: 'LOW',
+        details: `${formData.gramPanchayat || ''}, ${formData.city || ''}, ${formData.district || ''}, ${formData.state || ''}`,
+        targetId: user.id,
+        applicationId: user.applicationId,
+        userObject: user,
+      });
+
+      return { user, accessToken, refreshToken };
+    } catch (err) {
+      return rejectWithValue({
+        message: err.response?.data?.message || 'Registration failed. Please verify your form inputs.',
+      });
     }
-
-    const matchedRole = formData.role || ROLES.FARMER;
-    const appId = `BC-APP-${Math.floor(100000 + Math.random() * 900000)}`;
-
-    const newUser = {
-      id: `usr_${Date.now()}`,
-      applicationId: appId,
-      name: formData.fullName,
-      fatherName: formData.fatherName,
-      gender: formData.gender || 'MALE',
-      mobile: formData.mobile,
-      email: formData.email || '',
-      role: matchedRole,
-      status: 'PENDING_APPROVAL',
-      kycStatus: 'PENDING_VERIFICATION',
-      address: {
-        country: formData.country || 'India',
-        state: formData.state || 'Gujarat',
-        district: formData.district || 'Anand',
-        city: formData.city || 'Anand',
-        gramPanchayat: formData.gramPanchayat || 'Mogri Gram Panchayat',
-        pincode: formData.pincode || '388345',
-      },
-      location: {
-        lat: formData.deviceLat || 22.5645,
-        lng: formData.deviceLng || 72.9281,
-      },
-      photoName: formData.photoName || 'profile_kyc.jpg',
-      submittedAt: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-    };
-
-    const accessToken = `mock_jwt_token_${newUser.id}`;
-    const refreshToken = `mock_refresh_token_${newUser.id}`;
-
-    tokenStorage.setAccessToken(accessToken);
-    tokenStorage.setRefreshToken(refreshToken);
-    tokenStorage.setUser(newUser);
-
-    // Automatically enqueue to Admin Approvals Queue in storageService
-    storageService.addApprovalItem({
-      id: `APP-KYC-${appId.slice(-6)}`,
-      type: 'FARMER_KYC',
-      title: `Citizen KYC & Registration - ${formData.fullName}`,
-      applicantName: formData.fullName,
-      applicantRole: matchedRole,
-      applicantPhone: formData.mobile,
-      submittedAt: newUser.submittedAt,
-      status: 'PENDING_VERIFICATION',
-      riskScore: 'LOW',
-      details: `${formData.gramPanchayat}, ${formData.city}, ${formData.district}, ${formData.state} (PIN: ${formData.pincode})`,
-      targetId: newUser.id,
-      applicationId: appId,
-      userObject: newUser,
-    });
-
-    return { user: newUser, accessToken, refreshToken };
   }
 );
 
 export const fetchCurrentUser = createAsyncThunk(
   'auth/fetchCurrentUser',
   async (_, { rejectWithValue }) => {
+    try {
+      const res = await authService.getMe();
+      if (res.data) {
+        tokenStorage.setUser(res.data);
+        return res.data;
+      }
+    } catch (e) {
+      // Return local token user if valid
+    }
     const user = tokenStorage.getUser();
     if (user) return user;
     return rejectWithValue({ message: 'No stored session' });
@@ -128,6 +108,11 @@ export const fetchCurrentUser = createAsyncThunk(
 export const logoutUser = createAsyncThunk(
   'auth/logout',
   async (_, { dispatch }) => {
+    try {
+      await authService.logout();
+    } catch (e) {
+      // Ignore
+    }
     tokenStorage.clearAll();
   }
 );
@@ -177,6 +162,7 @@ const authSlice = createSlice({
           state.user.kycStatus = 'APPROVED';
         }
         tokenStorage.setUser(state.user);
+        storageService.saveRegisteredUser(state.user);
       }
     },
   },
