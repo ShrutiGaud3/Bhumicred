@@ -324,14 +324,18 @@ export const storageService = {
   getPolicies: (userIdOrMobile = null) => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.POLICIES);
-      let policies = stored ? JSON.parse(stored) : [];
-      if (!policies || policies.length === 0) {
-        policies = MOCK_POLICIES;
-        localStorage.setItem(STORAGE_KEYS.POLICIES, JSON.stringify(policies));
-      }
-      return policies;
+      const policies = stored ? JSON.parse(stored) : [];
+      if (!userIdOrMobile) return policies;
+      const cleanMobile = String(userIdOrMobile).replace(/\D/g, '');
+      return policies.filter((p) => {
+        const pMobile = (p.userMobile || p.ownerMobile || '').replace(/\D/g, '');
+        if (cleanMobile && pMobile && (pMobile === cleanMobile || cleanMobile.includes(pMobile))) return true;
+        if (p.userId && String(p.userId) === String(userIdOrMobile)) return true;
+        if (p.ownerId && String(p.ownerId) === String(userIdOrMobile)) return true;
+        return false;
+      });
     } catch (e) {
-      return MOCK_POLICIES;
+      return [];
     }
   },
 
@@ -339,11 +343,12 @@ export const storageService = {
     const current = storageService.getPolicies();
     const policyWithId = {
       ...policy,
-      id: policy.id || `POL-TREE-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString(),
+      id: policy.id || `BC-POL-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+      policyNumber: policy.policyNumber || `BC-POL-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+      status: policy.status || 'ACTIVE',
+      createdAt: policy.createdAt || new Date().toISOString(),
     };
-    const updated = [policyWithId, ...current];
+    const updated = [policyWithId, ...current.filter((p) => p.id !== policyWithId.id && p.policyNumber !== policyWithId.policyNumber)];
     localStorage.setItem(STORAGE_KEYS.POLICIES, JSON.stringify(updated));
     return policyWithId;
   },

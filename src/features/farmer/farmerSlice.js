@@ -25,9 +25,9 @@ export const fetchFarmerDashboard = createAsyncThunk(
     const totalCarbonTons = Number((totalTrees * 0.125).toFixed(1));
     const carbonValuation = Math.round(totalCarbonTons * 1450);
 
-    const activePoliciesCount = userLands.filter(l => l.treesInsured || l.optInsurance).length || userPolicies.length || 1;
-    const soilCount = userSoil.length || userLands.length || 1;
-    const carbonCount = userAudits.length || 1;
+    const activePoliciesCount = userPolicies.length || userLands.filter(l => l.treesInsured || l.optInsurance).length || 0;
+    const soilCount = userSoil.length || 0;
+    const carbonCount = userAudits.length || 0;
 
     return {
       overview: {
