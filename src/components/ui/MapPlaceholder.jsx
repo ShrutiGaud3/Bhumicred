@@ -24,6 +24,10 @@ export const MapPlaceholder = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [calculatedArea, setCalculatedArea] = useState(initialArea);
 
+  const isCssValue = typeof height === 'string' && (height.endsWith('px') || height.endsWith('%') || height.endsWith('vh') || height.endsWith('rem'));
+  const heightClass = isCssValue ? '' : height;
+  const heightStyle = isCssValue ? { height, minHeight: height } : {};
+
   const handleSimulateDraw = () => {
     setIsDrawing(true);
     setTimeout(() => {
@@ -40,7 +44,10 @@ export const MapPlaceholder = ({
   };
 
   return (
-    <div className={`relative rounded-3xl border border-slate-200 overflow-hidden shadow-sm bg-slate-900 ${height} ${className}`}>
+    <div
+      style={heightStyle}
+      className={`relative w-full rounded-3xl border border-slate-200 overflow-hidden shadow-sm bg-slate-900 ${heightClass || 'min-h-[380px] h-96'} ${className}`}
+    >
       {/* Background simulated satellite grid overlay */}
       <div
         className={`absolute inset-0 transition-opacity duration-300 ${

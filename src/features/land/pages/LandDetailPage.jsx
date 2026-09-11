@@ -220,7 +220,8 @@ export const LandDetailPage = () => {
               <MapPlaceholder
                 mode="POLYGON"
                 polygonCoords={land.coordinates || []}
-                height="400px"
+                initialArea={Number(land.area || land.areaAcres || 5.0)}
+                height="h-[400px] min-h-[400px]"
               />
 
               <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-600">
