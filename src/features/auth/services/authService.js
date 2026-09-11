@@ -26,6 +26,11 @@ export const authService = {
     return response.data;
   },
 
+  updateProfile: async (profileData) => {
+    const response = await api.put('/auth/profile', profileData);
+    return response.data;
+  },
+
   getRoleMatrix: async () => {
     const response = await api.get('/auth/roles-matrix');
     return response.data;

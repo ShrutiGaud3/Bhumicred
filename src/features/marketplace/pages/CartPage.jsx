@@ -50,6 +50,12 @@ export const CartPage = () => {
     couponDiscount = Math.min(100, rawSubtotal);
   } else if (appliedCoupon === 'HARVEST15') {
     couponDiscount = Math.round(rawSubtotal * 0.15);
+  } else if (
+    appliedCoupon?.startsWith('BHUMI-') ||
+    appliedCoupon?.includes('REWARD') ||
+    appliedCoupon?.includes('REFERRAL')
+  ) {
+    couponDiscount = Math.min(320, rawSubtotal);
   }
 
   const deliveryFee = rawSubtotal > 1500 || rawSubtotal === 0 ? 0 : 120;
@@ -60,11 +66,18 @@ export const CartPage = () => {
     e.preventDefault();
     setCouponError('');
     const code = couponInput.trim().toUpperCase();
-    if (code === 'BHUMI10' || code === 'KISAN100' || code === 'HARVEST15') {
+    if (
+      code === 'BHUMI10' ||
+      code === 'KISAN100' ||
+      code === 'HARVEST15' ||
+      code.startsWith('BHUMI-') ||
+      code.includes('REWARD') ||
+      code.includes('REFERRAL')
+    ) {
       dispatch(applyCoupon(code));
       setCouponInput('');
     } else {
-      setCouponError('Invalid coupon code. Try BHUMI10 or KISAN100');
+      setCouponError('Invalid coupon code. Try BHUMI10, KISAN100, or your Referral Code (e.g. BHUMI-RAMESH-402)');
     }
   };
 
@@ -206,7 +219,7 @@ export const CartPage = () => {
                     </Button>
                   </div>
                   {couponError && <p className="text-[11px] text-rose-500 font-medium">{couponError}</p>}
-                  <p className="text-[11px] text-gray-400">Available: BHUMI10 (10% off), KISAN100 (₹100 off)</p>
+                  <p className="text-[11px] text-gray-400">Available: BHUMI10 (10% off), KISAN100 (₹100 off), or Referral Code (₹320 off)</p>
                 </form>
               )}
             </Card>

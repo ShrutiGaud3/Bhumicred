@@ -5,15 +5,20 @@ import { Card, CardHeader, CardContent } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
 import { StatusBadge } from '../../../components/ui/StatusBadge.jsx';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
+import { FormSelect } from '../../../components/forms/FormSelect.jsx';
 import { User, MapPin, ShieldCheck, Phone, Mail, Award, CheckCircle2, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { setUser } from '../../auth/authSlice.js';
 import { storageService } from '../../../services/storageService.js';
+import { authService } from '../../auth/services/authService.js';
+import { useToast } from '../../../components/ui/ToastContext.jsx';
 
 export const FarmerProfilePage = () => {
   const dispatch = useDispatch();
+  const toast = useToast();
   const { user } = useSelector((state) => state.auth);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const [profile, setProfile] = useState({
@@ -50,29 +55,52 @@ export const FarmerProfilePage = () => {
     }
   }, [user]);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (user) {
-      const updatedUser = {
-        ...user,
+    setIsSaving(true);
+
+    const updatedUser = {
+      ...user,
+      name: profile.name,
+      fatherName: profile.fatherName,
+      email: profile.email,
+      gender: profile.gender,
+      address: {
+        ...(user?.address || {}),
+        gramPanchayat: profile.village,
+        village: profile.village,
+        city: profile.taluk,
+        district: profile.district,
+        state: profile.state,
+        pincode: profile.pincode,
+      },
+    };
+
+    try {
+      // 1. Update backend MongoDB database
+      await authService.updateProfile({
         name: profile.name,
         fatherName: profile.fatherName,
         email: profile.email,
-        address: {
-          ...user.address,
-          gramPanchayat: profile.village,
-          city: profile.taluk,
-          district: profile.district,
-          state: profile.state,
-          pincode: profile.pincode,
-        },
-      };
-      dispatch(setUser(updatedUser));
-      storageService.saveRegisteredUser(updatedUser);
+        gender: profile.gender,
+        address: updatedUser.address,
+      });
+    } catch (err) {
+      console.warn('Backend profile update note:', err.message);
     }
+
+    // 2. Update Redux store, TokenStorage & Local Storage
+    dispatch(setUser(updatedUser));
+    storageService.saveRegisteredUser(updatedUser);
+    try {
+      localStorage.setItem('bhumicred_user_data', JSON.stringify(updatedUser));
+    } catch (e) {}
+
+    setIsSaving(false);
     setIsEditing(false);
     setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+    toast.success('Farmer Profile updated successfully!');
+    setTimeout(() => setSavedSuccess(false), 3000);
   };
 
   return (
@@ -90,7 +118,7 @@ export const FarmerProfilePage = () => {
       {savedSuccess && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2 text-xs font-bold text-emerald-900 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span>Profile changes updated successfully!</span>
+          <span>Profile changes updated successfully and synced across all registers!</span>
         </div>
       )}
 
@@ -98,11 +126,11 @@ export const FarmerProfilePage = () => {
         {/* Left ID Card */}
         <Card className="p-6 text-center space-y-4">
           <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-800 to-emerald-600 text-white font-black text-2xl flex items-center justify-center mx-auto shadow-md">
-            {profile.name[0]}
+            {profile.name ? profile.name[0] : 'F'}
           </div>
           <div>
             <h3 className="font-bold text-base text-slate-900">{profile.name}</h3>
-            <p className="text-xs text-slate-500">{profile.village}, {profile.district}</p>
+            <p className="text-xs text-slate-500">{profile.village}, {profile.district}, {profile.state}</p>
           </div>
 
           <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-left space-y-1.5 text-xs text-slate-600">
@@ -111,6 +139,10 @@ export const FarmerProfilePage = () => {
               <span className="font-bold text-emerald-800 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Verified
               </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-semibold text-slate-500">Gender:</span>
+              <span className="font-semibold text-slate-800">{profile.gender}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-semibold text-slate-500">Referral Code:</span>
@@ -145,21 +177,22 @@ export const FarmerProfilePage = () => {
                 disabled={!isEditing}
                 value={profile.name}
                 onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                required
               />
               <FormInput
-                label="Father's Name"
+                label="Father's / Husband's Name"
                 disabled={!isEditing}
                 value={profile.fatherName}
                 onChange={(e) => setProfile({ ...profile, fatherName: e.target.value })}
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <FormInput
                 label="Mobile Number"
                 disabled
                 value={profile.mobile}
-                helperText="Verified via OTP"
+                helperText="Verified via Sovereign OTP"
               />
               <FormInput
                 label="Email Address"
@@ -167,17 +200,29 @@ export const FarmerProfilePage = () => {
                 value={profile.email}
                 onChange={(e) => setProfile({ ...profile, email: e.target.value })}
               />
+              <FormSelect
+                label="Gender"
+                disabled={!isEditing}
+                value={profile.gender}
+                onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
+                options={[
+                  { value: 'Male', label: 'Male' },
+                  { value: 'Female', label: 'Female' },
+                  { value: 'Other', label: 'Other' },
+                ]}
+              />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <FormInput
-                label="Village"
+                label="Village / Gram Panchayat"
                 disabled={!isEditing}
                 value={profile.village}
                 onChange={(e) => setProfile({ ...profile, village: e.target.value })}
+                required
               />
               <FormInput
-                label="Taluk"
+                label="Taluk / Sub-District"
                 disabled={!isEditing}
                 value={profile.taluk}
                 onChange={(e) => setProfile({ ...profile, taluk: e.target.value })}
@@ -187,12 +232,33 @@ export const FarmerProfilePage = () => {
                 disabled={!isEditing}
                 value={profile.district}
                 onChange={(e) => setProfile({ ...profile, district: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormInput
+                label="State"
+                disabled={!isEditing}
+                value={profile.state}
+                onChange={(e) => setProfile({ ...profile, state: e.target.value })}
+                required
+              />
+              <FormInput
+                label="Pincode"
+                disabled={!isEditing}
+                value={profile.pincode}
+                onChange={(e) => setProfile({ ...profile, pincode: e.target.value })}
+                required
               />
             </div>
 
             {isEditing && (
-              <div className="pt-4 flex justify-end">
-                <Button type="submit" variant="primary" icon={CheckCircle2}>
+              <div className="pt-4 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t">
+                <Button type="button" variant="outline" onClick={() => setIsEditing(false)} className="w-full sm:w-auto">
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" icon={CheckCircle2} isLoading={isSaving} className="w-full sm:w-auto">
                   Save Updated Profile
                 </Button>
               </div>

@@ -16,12 +16,15 @@ import {
 import { Button } from '../../../components/ui/Button.jsx';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
 import { useToast } from '../../../components/ui/ToastContext.jsx';
+import { useDispatch } from 'react-redux';
+import { topupWallet } from '../walletSlice.js';
 
 export const WalletTopupModal = ({ isOpen, onClose, onTopupSuccess }) => {
   const toast = useToast();
+  const dispatch = useDispatch();
   const [amount, setAmount] = useState('5000');
   const [paymentMethod, setPaymentMethod] = useState('UPI_GPAY'); // 'UPI_GPAY', 'UPI_PHONEPE', 'UPI_ID', 'CARD', 'NETBANK'
-  const [upiId, setUpiId] = useState('rameshpatel@okhdfcbank');
+  const [upiId, setUpiId] = useState('farmer@okhdfcbank');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [txDetails, setTxDetails] = useState(null);
@@ -30,7 +33,7 @@ export const WalletTopupModal = ({ isOpen, onClose, onTopupSuccess }) => {
 
   const quickAmounts = ['1000', '2500', '5000', '10000', '25000'];
 
-  const handleProcessPayment = (e) => {
+  const handleProcessPayment = async (e) => {
     e.preventDefault();
     const numAmount = Number(amount);
     if (!numAmount || numAmount <= 0) {
@@ -39,25 +42,35 @@ export const WalletTopupModal = ({ isOpen, onClose, onTopupSuccess }) => {
     }
 
     setIsProcessing(true);
+    try {
+      const res = await dispatch(
+        topupWallet({
+          amount: numAmount,
+          paymentMethod,
+          upiId,
+          paymentReference: `UPI-RR-${Math.floor(100000000 + Math.random() * 900000000)}`,
+        })
+      ).unwrap();
 
-    setTimeout(() => {
       setIsProcessing(false);
       setIsSuccess(true);
-      const generatedTx = {
-        txId: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-        refNo: `UPI-RR-${Math.floor(100000000 + Math.random() * 900000000)}`,
+      setTxDetails({
+        txId: res.transaction?.transactionId || `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+        refNo: res.transaction?.referenceId || `UPI-RR-${Math.floor(100000000 + Math.random() * 900000000)}`,
         amount: numAmount,
         date: new Date().toLocaleString(),
         method: paymentMethod.replace('UPI_', ''),
-        status: 'SUCCESS'
-      };
-      setTxDetails(generatedTx);
+        status: 'SUCCESS',
+      });
       toast.success(`₹${numAmount.toLocaleString()} successfully credited to your Smart Wallet!`);
 
       if (onTopupSuccess) {
         onTopupSuccess(numAmount);
       }
-    }, 1200);
+    } catch (err) {
+      setIsProcessing(false);
+      toast.error(err || 'Failed to process top-up');
+    }
   };
 
   const handleReset = () => {

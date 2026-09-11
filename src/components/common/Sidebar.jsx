@@ -88,6 +88,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { label: 'Carbon & Green Credits', path: '/admin/carbon', icon: Leaf },
     { label: 'Wallet & Payouts', path: '/admin/finance', icon: Wallet },
     { label: 'RBAC & Audit Logs', path: '/admin/audit', icon: FileText },
+    { label: 'Support & Grievances', path: '/support', icon: LifeBuoy },
     { label: 'System Settings', path: '/admin/settings', icon: Settings },
   ];
 

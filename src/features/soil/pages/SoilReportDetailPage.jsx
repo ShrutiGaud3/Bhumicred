@@ -190,7 +190,7 @@ export const SoilReportDetailPage = () => {
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
               Diagnostic Testing Lifecycle
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
               <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
                 <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs">
                   <CheckCircle2 className="w-4 h-4" /> 1. Booking Scheduled
@@ -229,7 +229,7 @@ export const SoilReportDetailPage = () => {
             </div>
           </div>
 
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between text-xs text-slate-600">
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-600">
             <span>
               Lab analysis report will unlock automatically as soon as laboratory enters test readings.
             </span>
@@ -237,7 +237,7 @@ export const SoilReportDetailPage = () => {
               variant="outline"
               size="sm"
               onClick={() => dispatch(fetchSoilRequestById(id))}
-              className="flex items-center gap-1.5"
+              className="flex items-center gap-1.5 w-full sm:w-auto justify-center"
             >
               <RefreshCw className="w-3.5 h-3.5" /> Check Status
             </Button>
@@ -245,11 +245,11 @@ export const SoilReportDetailPage = () => {
         </Card>
       ) : (
         /* Main Soil Report Card when Status is REPORT_READY */
-        <Card className="p-8 md:p-10 border-2 border-emerald-600 bg-white space-y-8 shadow-sm">
+        <Card className="p-5 sm:p-8 md:p-10 border-2 border-emerald-600 bg-white space-y-6 sm:space-y-8 shadow-sm">
           {/* Header summary */}
           <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b-2 border-emerald-100 gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="text-xs font-black text-emerald-800 uppercase tracking-wider">
                   GOVERNMENT ACCREDITED NABL LAB REPORT
                 </span>
@@ -258,7 +258,7 @@ export const SoilReportDetailPage = () => {
                   Score: {soilReq.healthScore || 84}/100
                 </span>
               </div>
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
                 12-Parameter Nutrient Diagnostic Health Card
               </h2>
               <p className="text-xs text-gray-500 mt-1">
@@ -266,10 +266,10 @@ export const SoilReportDetailPage = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
               <button
                 onClick={() => setShowCertificate(true)}
-                className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2.5 rounded-xl border border-emerald-200 transition-colors flex items-center gap-1.5 shadow-sm"
+                className="w-full sm:w-auto text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2.5 rounded-xl border border-emerald-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <FileText className="w-4 h-4" /> View Signed Certificate
               </button>
@@ -277,7 +277,7 @@ export const SoilReportDetailPage = () => {
           </div>
 
           {/* Diagnostic Nutrient Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
             {nutrientCards.map((n, idx) => (
               <div key={idx} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                 <span className="text-xs font-semibold text-gray-500 block truncate">{n.name}</span>

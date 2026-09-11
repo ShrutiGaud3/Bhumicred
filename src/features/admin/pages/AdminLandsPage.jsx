@@ -29,11 +29,13 @@ export const AdminLandsPage = () => {
   const fetchLands = async () => {
     setLoading(true);
     try {
-      const res = await landService.getAllLands();
-      const list = Array.isArray(res?.data) ? res.data : (res?.data?.lands || []);
-      if (list.length > 0) {
-        const mapped = list.map((item) => ({
+      let liveList = [];
+      try {
+        const res = await landService.getAllLands();
+        const list = Array.isArray(res?.data) ? res.data : (res?.data?.lands || []);
+        liveList = list.map((item) => ({
           id: item.landId || item._id,
+          landId: item.landId || item._id,
           landName: item.landName,
           surveyNumber: item.surveyNumber,
           khasraNumber: item.khasraNumber,
@@ -48,15 +50,23 @@ export const AdminLandsPage = () => {
             ? item.boundaries.simpleCoordinates
             : (item.boundaries?.coordinates?.[0] || []),
         }));
-        setLands(mapped);
-        setSelectedLand(mapped[0]);
-      } else {
-        const local = storageService.getLands();
-        setLands(local);
-        if (local.length > 0) setSelectedLand(local[0]);
+      } catch (backendErr) {
+        console.warn('Backend admin lands fetch error:', backendErr);
       }
+
+      // Merge with local storage
+      const local = storageService.getLands();
+      const combined = [...liveList];
+      local.forEach((loc) => {
+        if (!combined.some((c) => c.id === loc.id || c.landId === loc.id || (c.surveyNumber === loc.surveyNumber && c.khasraNumber === loc.khasraNumber))) {
+          combined.push(loc);
+        }
+      });
+
+      setLands(combined);
+      if (combined.length > 0) setSelectedLand(combined[0]);
     } catch (err) {
-      console.warn('Backend admin lands fetch error, using local fallback:', err);
+      console.warn('Admin lands error:', err);
       const local = storageService.getLands();
       setLands(local);
       if (local.length > 0) setSelectedLand(local[0]);
@@ -158,7 +168,7 @@ export const AdminLandsPage = () => {
                     <div>
                       <h5 className="font-bold text-sm text-gray-900 leading-snug">{land.landName}</h5>
                       <p className="text-xs text-gray-500 font-mono mt-0.5">
-                        Owner: {land.ownerName} • Survey: {land.surveyNumber} • {land.area} {land.areaUnit}
+                        Owner: {land.ownerName} • Survey: {land.surveyNumber} • Khasra: {land.khasraNumber} • {land.area} {land.areaUnit}
                       </p>
                     </div>
                     <StatusBadge status={land.status} />

@@ -239,7 +239,7 @@ export const InsuranceCatalogPage = () => {
 
           {/* Real-time Calculation Badge */}
           {calculatedQuote && (
-            <div className="bg-white p-5 rounded-2xl border border-emerald-200/80 shadow-md text-right space-y-2 shrink-0 min-w-[260px]">
+            <div className="bg-white p-5 rounded-2xl border border-emerald-200/80 shadow-md text-left sm:text-right space-y-2 w-full md:w-auto shrink-0 min-w-0 sm:min-w-[260px]">
               <div>
                 <span className="text-[11px] text-slate-400 block font-medium">Total Sum Insured</span>
                 <span className="font-mono font-black text-2xl text-slate-900">
@@ -248,14 +248,14 @@ export const InsuranceCatalogPage = () => {
               </div>
               <div className="border-t border-slate-100 pt-2 flex items-center justify-between text-xs">
                 <span className="text-emerald-700 font-semibold">40% Govt Grant:</span>
-                <span className="font-mono font-bold text-emerald-800">
-                  -₹{calculatedQuote.governmentSubsidyAmount?.toLocaleString('en-IN')}
+                <span className="font-bold text-emerald-800">
+                  -₹{calculatedQuote.subsidyRebate?.toLocaleString('en-IN')}
                 </span>
               </div>
               <div className="border-t border-slate-100 pt-2 flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700">Net Payable (3 Yrs):</span>
-                <span className="font-mono font-black text-lg text-emerald-900">
-                  ₹{calculatedQuote.farmerNetPayable?.toLocaleString('en-IN')}
+                <span className="text-xs text-slate-500 font-bold">Farmer Net Payable:</span>
+                <span className="font-mono font-black text-xl text-emerald-900">
+                  ₹{calculatedQuote.netPayable?.toLocaleString('en-IN')}
                 </span>
               </div>
               <Button
@@ -274,7 +274,7 @@ export const InsuranceCatalogPage = () => {
       {/* Available Plans Grid */}
       <div>
         <h3 className="text-lg font-bold text-slate-900 mb-4">Available Sovereign Insurance Plans</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {PLANS.map((plan) => (
             <Card
               key={plan.id}

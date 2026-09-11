@@ -71,68 +71,8 @@ export const SovereignGisMap = ({
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
 
-  // Standard Demo Parcels if none provided
-  const displayParcels =
-    parcels.length > 0
-      ? parcels
-      : [
-          {
-            id: 'LND-84091',
-            khasraNumber: '118/2',
-            surveyNumber: '402/A',
-            landName: 'Sovereign Wheat & Teak Holding',
-            ownerName: 'Simran Sonaniya',
-            area: 12.4,
-            soilType: 'Alluvial Loam',
-            treeCount: 80,
-            ndviScore: 0.78,
-            status: 'APPROVED',
-            svgPolygon: '120,80 340,95 380,260 140,240',
-            centroid: [240, 170],
-          },
-          {
-            id: 'LND-27718',
-            khasraNumber: '92/1',
-            surveyNumber: '508/B',
-            landName: 'Mahi Canal Agro-Bund',
-            ownerName: 'Simran Sonaniya',
-            area: 8.6,
-            soilType: 'Clay Loam',
-            treeCount: 50,
-            ndviScore: 0.84,
-            status: 'APPROVED',
-            svgPolygon: '410,110 620,130 650,290 440,270',
-            centroid: [530, 200],
-          },
-          {
-            id: 'LND-RAJESH-01',
-            khasraNumber: '44/A',
-            surveyNumber: '219',
-            landName: 'Rajesh Sharma Organic Orchard',
-            ownerName: 'Rajesh Sharma',
-            area: 6.2,
-            soilType: 'Black Cotton',
-            treeCount: 35,
-            ndviScore: 0.69,
-            status: 'APPROVED',
-            svgPolygon: '160,300 360,310 330,440 130,410',
-            centroid: [245, 370],
-          },
-          {
-            id: 'LND-COMMUNITY-01',
-            khasraNumber: '500/PUB',
-            surveyNumber: '99',
-            landName: 'Uruli Kanchan Gram Panchayat Social Forest',
-            ownerName: 'Gram Panchayat Public Asset',
-            area: 24.8,
-            soilType: 'Sandy Loam',
-            treeCount: 320,
-            ndviScore: 0.91,
-            status: 'APPROVED',
-            svgPolygon: '460,330 720,340 760,480 490,460',
-            centroid: [610, 405],
-          },
-        ];
+  // Only display real parcels provided
+  const displayParcels = parcels || [];
 
   // Handle Drawing Click on SVG
   const handleSvgClick = (e) => {

@@ -15,14 +15,21 @@ import { Button } from '../../../components/ui/Button.jsx';
 import { Badge } from '../../../components/ui/Badge.jsx';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
+import { useDispatch, useSelector } from 'react-redux';
+import { applyCoupon } from '../../marketplace/marketplaceSlice.js';
 
 export const RewardsReferralPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const { wallet } = useSelector((state) => state.wallet);
+
   const [copied, setCopied] = useState(false);
   const [invitePhone, setInvitePhone] = useState('');
   const [invitedSuccess, setInvitedSuccess] = useState(false);
 
-  const referralCode = 'BHUMI-RAMESH-402';
+  const cleanName = (user?.name || user?.fullName || 'FARMER').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  const referralCode = `BHUMI-${cleanName}-402`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralCode);
@@ -36,6 +43,11 @@ export const RewardsReferralPage = () => {
     setInvitedSuccess(true);
     setInvitePhone('');
     setTimeout(() => setInvitedSuccess(false), 3000);
+  };
+
+  const handleRedeemPoints = () => {
+    dispatch(applyCoupon(referralCode));
+    navigate('/marketplace');
   };
 
   return (
@@ -86,14 +98,16 @@ export const RewardsReferralPage = () => {
             <label className="block text-xs font-bold text-gray-700 uppercase">
               Send SMS Invite to Farmer's Mobile
             </label>
-            <div className="flex gap-2">
-              <FormInput
-                placeholder="Enter 10-digit mobile number"
-                value={invitePhone}
-                onChange={(e) => setInvitePhone(e.target.value)}
-                className="text-sm"
-              />
-              <Button type="submit" variant="primary" className="shrink-0">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <FormInput
+                  placeholder="Enter 10-digit mobile number"
+                  value={invitePhone}
+                  onChange={(e) => setInvitePhone(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+              <Button type="submit" variant="primary" className="w-full sm:w-auto shrink-0 justify-center">
                 Send Invite
               </Button>
             </div>
@@ -110,16 +124,16 @@ export const RewardsReferralPage = () => {
           <div className="space-y-3">
             <Sparkles className="w-8 h-8 text-emerald-400" />
             <h4 className="text-sm font-semibold text-emerald-200 uppercase">Reward Points Balance</h4>
-            <p className="text-4xl font-black">3,200 <span className="text-sm font-medium text-emerald-300">Pts</span></p>
+            <p className="text-4xl font-black">{(wallet?.rewardPoints || 3200).toLocaleString()} <span className="text-sm font-medium text-emerald-300">Pts</span></p>
             <p className="text-xs text-emerald-200">
-              Worth <strong>₹320</strong> discount at checkout or 1 Free Standard Soil Test.
+              Worth <strong>₹{Math.round((wallet?.rewardPoints || 3200) / 10)}</strong> discount at checkout or 1 Free Standard Soil Test.
             </p>
           </div>
 
           <Button
             variant="secondary"
             className="w-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold mt-6"
-            onClick={() => navigate('/marketplace')}
+            onClick={handleRedeemPoints}
           >
             Redeem at Marketplace
           </Button>

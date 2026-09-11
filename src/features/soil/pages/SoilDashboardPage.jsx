@@ -70,7 +70,7 @@ export const SoilDashboardPage = () => {
       />
 
       {/* Featured Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         <Card className="p-6 bg-gradient-to-br from-emerald-900 to-teal-950 text-white border-0 shadow-md">
           <FlaskConical className="w-8 h-8 text-emerald-400 mb-3" />
           <h4 className="text-sm font-semibold text-emerald-200">Active Tested Parcels</h4>

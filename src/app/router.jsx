@@ -143,10 +143,13 @@ export const router = createBrowserRouter([
       { path: '/schemes-overview', element: <SchemesPublicPage /> },
       { path: '/faq', element: <FaqPage /> },
       { path: '/contact', element: <ContactPage /> },
+      { path: '/support', element: <ContactPage /> },
+      { path: '/help', element: <ContactPage /> },
+      { path: '/help-desk', element: <ContactPage /> },
+      { path: '/support-desk', element: <ContactPage /> },
       { path: '/terms', element: <TermsPage /> },
       { path: '/privacy', element: <PrivacyPolicyPage /> },
       { path: '/unauthorized', element: <UnauthorizedPage /> },
-      { path: '*', element: <NotFoundPage /> },
     ],
   },
 
@@ -212,9 +215,12 @@ export const router = createBrowserRouter([
               { path: '/farmer/carbon/request-audit', element: <RequestCarbonAuditPage /> },
               { path: '/farmer/wallet', element: <WalletPage /> },
               { path: '/farmer/rewards', element: <RewardsReferralPage /> },
-              // Schemes, Documents & Common
+              // Schemes, Documents, Support & Common
               { path: '/farmer/schemes', element: <SchemesListPage /> },
               { path: '/farmer/documents', element: <DocumentCenterPage /> },
+              { path: '/farmer/support', element: <ContactPage /> },
+              { path: '/farmer/help', element: <ContactPage /> },
+              { path: '/farmer/faq', element: <FaqPage /> },
             ],
           },
 
@@ -232,6 +238,8 @@ export const router = createBrowserRouter([
               { path: '/government/soil', element: <GovernmentSoilPage /> },
               { path: '/government/schemes', element: <SchemesListPage /> },
               { path: '/government/documents', element: <DocumentCenterPage /> },
+              { path: '/government/support', element: <ContactPage /> },
+              { path: '/government/help', element: <ContactPage /> },
             ],
           },
 
@@ -247,6 +255,8 @@ export const router = createBrowserRouter([
               { path: '/partner/reports', element: <ReportsUploadPage /> },
               { path: '/partner/invoices', element: <PartnerInvoicesPage /> },
               { path: '/partner/documents', element: <DocumentCenterPage /> },
+              { path: '/partner/support', element: <ContactPage /> },
+              { path: '/partner/help', element: <ContactPage /> },
             ],
           },
 
@@ -268,6 +278,8 @@ export const router = createBrowserRouter([
               { path: '/admin/audit', element: <AdminAuditLogsPage /> },
               { path: '/admin/settings', element: <AdminSettingsPage /> },
               { path: '/admin/documents', element: <DocumentCenterPage /> },
+              { path: '/admin/support', element: <ContactPage /> },
+              { path: '/admin/help', element: <ContactPage /> },
             ],
           },
 
@@ -281,16 +293,34 @@ export const router = createBrowserRouter([
           { path: '/marketplace/order-success', element: <OrderSuccessPage /> },
           { path: '/marketplace/orders', element: <OrdersListPage /> },
 
+          { path: '/lands', element: <Navigate to="/farmer/lands" replace /> },
+          { path: '/lands/add', element: <Navigate to="/farmer/lands/add" replace /> },
           { path: '/schemes', element: <SchemesListPage /> },
           { path: '/carbon', element: <CarbonOpportunitiesPage /> },
+          { path: '/carbon/opportunities', element: <CarbonOpportunitiesPage /> },
+          { path: '/carbon/request-audit', element: <RequestCarbonAuditPage /> },
+          { path: '/carbon/audits', element: <AdminCarbonPage /> },
+          { path: '/carbon/admin', element: <AdminCarbonPage /> },
+          { path: '/government/carbon', element: <AdminCarbonPage /> },
           { path: '/wallet', element: <WalletPage /> },
           { path: '/rewards', element: <RewardsReferralPage /> },
           { path: '/documents', element: <DocumentCenterPage /> },
           { path: '/gis', element: <GisCadastralExplorerPage /> },
           { path: '/support', element: <ContactPage /> },
+          { path: '/help', element: <ContactPage /> },
+          { path: '/faq', element: <FaqPage /> },
+          { path: '/contact', element: <ContactPage /> },
+          { path: '/help-desk', element: <ContactPage /> },
+          { path: '/support-desk', element: <ContactPage /> },
           { path: '/profile', element: <FarmerProfilePage /> },
         ],
       },
     ],
   },
-]);
+  { path: '*', element: <NotFoundPage /> },
+], {
+  future: {
+    v7_startTransition: true,
+    v7_relativeSplatPath: true,
+  },
+});

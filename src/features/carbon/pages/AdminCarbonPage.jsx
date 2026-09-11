@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  Leaf,
-  Sparkles,
-  ShieldCheck,
-  CheckCircle2,
-  Download,
-  TrendingUp,
-  DollarSign,
   Satellite,
+  ShieldCheck,
   Award,
-  Clock,
-  Eye,
+  Sparkles,
+  TrendingUp,
+  Leaf,
   Activity,
+  CheckCircle2,
+  Clock,
+  Filter,
+  Eye,
+  DollarSign,
   Layers,
 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card.jsx';
@@ -26,8 +26,8 @@ import {
   fetchCarbonStats,
   mintCarbonCredits,
   retireCarbonCredit,
-} from '../../carbon/carbonSlice.js';
-import { CarbonCertificateModal } from '../../carbon/components/CarbonCertificateModal.jsx';
+} from '../carbonSlice.js';
+import { CarbonCertificateModal } from '../components/CarbonCertificateModal.jsx';
 
 export const AdminCarbonPage = () => {
   const navigate = useNavigate();
@@ -38,10 +38,11 @@ export const AdminCarbonPage = () => {
   );
   const { user } = useSelector((state) => state.auth);
 
-  const [activeTab, setActiveTab] = useState('AUDITS');
+  const [activeTab, setActiveTab] = useState('AUDITS'); // AUDITS or CREDITS
+  const [selectedAudit, setSelectedAudit] = useState(null);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [showCertificate, setShowCertificate] = useState(false);
-  const [actionMessage, setActionMessage] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     dispatch(fetchCarbonAudits());
@@ -49,7 +50,7 @@ export const AdminCarbonPage = () => {
     dispatch(fetchCarbonStats());
   }, [dispatch]);
 
-  const handleMint = async (audit) => {
+  const handleMintCredits = async (audit) => {
     try {
       const res = await dispatch(
         mintCarbonCredits({
@@ -58,17 +59,17 @@ export const AdminCarbonPage = () => {
           pricePerCredit: 1450,
         })
       ).unwrap();
-      setActionMessage(`Minted ${res.tCO2e} Sovereign Carbon Credits (${res.creditId}) successfully!`);
+      setSuccessMsg(`Minted ${res.tCO2e} Sovereign Carbon Credits (${res.creditId}) successfully!`);
       dispatch(fetchCarbonAudits());
       dispatch(fetchCarbonCredits());
       dispatch(fetchCarbonStats());
-      setTimeout(() => setActionMessage(''), 5000);
+      setTimeout(() => setSuccessMsg(''), 5000);
     } catch (err) {
       console.error('Minting error:', err);
     }
   };
 
-  const handleRetire = async (credit) => {
+  const handleRetireCredit = async (credit) => {
     try {
       const res = await dispatch(
         retireCarbonCredit({
@@ -79,77 +80,77 @@ export const AdminCarbonPage = () => {
           },
         })
       ).unwrap();
-      setActionMessage(`Credit ${res.creditId} successfully retired for Corporate ESG Offsetting.`);
+      setSuccessMsg(`Credit ${res.creditId} retired for Corporate ESG Offsetting.`);
       dispatch(fetchCarbonCredits());
-      setTimeout(() => setActionMessage(''), 5000);
+      setTimeout(() => setSuccessMsg(''), 5000);
     } catch (err) {
-      console.error('Retirement error:', err);
+      console.error('Retire error:', err);
     }
   };
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
       <PageHeader
-        title="Sovereign Carbon Credit Registry & MRV Tokenization"
-        subtitle="Issue verified tCO2e carbon credits, manage Sentinel-2 satellite MRV scans, and authorize corporate ESG retirements."
-        backTo="/admin/dashboard"
+        title="Sovereign Carbon Registry & MRV Control Center"
+        subtitle="National Agro-Biomass Satellite MRV verification, green credit minting & ESG retirement ledger."
+        backTo="/government/dashboard"
         breadcrumbs={[
-          { label: 'Admin Portal', path: '/admin/dashboard' },
+          { label: 'Government Portal', path: '/government/dashboard' },
           { label: 'Carbon Registry Control Center' },
         ]}
       />
 
-      {actionMessage && (
+      {successMsg && (
         <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 text-sm font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>{actionMessage}</span>
+          <span>{successMsg}</span>
         </div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="p-5 bg-white border border-gray-100 shadow-sm space-y-1">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-            Total Minted Credits
-          </span>
-          <p className="text-2xl font-black text-emerald-700">
+      {/* Top Stats Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-5 border border-gray-100 space-y-2 bg-gradient-to-br from-emerald-50 to-teal-50/20">
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-900 uppercase">
+            <Leaf className="w-4 h-4 text-emerald-700" /> Minted Green Credits
+          </div>
+          <div className="text-3xl font-black text-emerald-950">
             {stats?.totalCreditsMinted || credits?.length || 1} <span className="text-xs font-normal text-gray-500">Batches</span>
-          </p>
-          <span className="text-xs text-gray-500 block">Standard: VCS VM0042</span>
+          </div>
+          <span className="text-xs text-emerald-700 font-semibold">Standard: VCS VM0042</span>
         </Card>
 
-        <Card className="p-5 bg-white border border-gray-100 shadow-sm space-y-1">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-            Trading Floor Price
-          </span>
-          <p className="text-2xl font-black text-gray-900">
-            ₹{(stats?.currentCarbonSpotPriceINR || 1450).toLocaleString('en-IN')} <span className="text-xs font-normal text-gray-500">/ tCO2e</span>
-          </p>
-          <span className="text-xs text-emerald-600 font-semibold block">Sovereign Floor Rate</span>
+        <Card className="p-5 border border-gray-100 space-y-2 bg-gradient-to-br from-teal-50 to-cyan-50/20">
+          <div className="flex items-center gap-2 text-xs font-bold text-teal-900 uppercase">
+            <TrendingUp className="w-4 h-4 text-teal-700" /> Total CO2 Sequestered
+          </div>
+          <div className="text-3xl font-black text-teal-950">
+            {stats?.totalTCO2eSequestered || 24.5} <span className="text-xs font-normal text-gray-500">tCO2e</span>
+          </div>
+          <span className="text-xs text-teal-700 font-semibold">Verified Biomass Growth</span>
         </Card>
 
-        <Card className="p-5 bg-white border border-gray-100 shadow-sm space-y-1">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-            Total Carbon Valuation
-          </span>
-          <p className="text-2xl font-black text-gray-900">
+        <Card className="p-5 border border-gray-100 space-y-2 bg-gradient-to-br from-blue-50 to-indigo-50/20">
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-900 uppercase">
+            <Satellite className="w-4 h-4 text-blue-700" /> Sentinel-2 Scanned Parcels
+          </div>
+          <div className="text-3xl font-black text-blue-950">
+            {audits?.length || 1} <span className="text-xs font-normal text-gray-500">Parcels</span>
+          </div>
+          <span className="text-xs text-blue-700 font-semibold">10m Multispectral MSI</span>
+        </Card>
+
+        <Card className="p-5 border border-gray-100 space-y-2 bg-gradient-to-br from-amber-50 to-orange-50/20">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-900 uppercase">
+            <DollarSign className="w-4 h-4 text-amber-700" /> Total Farmer Carbon Payout
+          </div>
+          <div className="text-3xl font-black text-amber-950">
             ₹{(stats?.totalCarbonEarningsINR || 35525).toLocaleString('en-IN')}
-          </p>
-          <span className="text-xs text-emerald-600 font-semibold block">Direct Farmer Liquidity</span>
-        </Card>
-
-        <Card className="p-5 bg-white border border-gray-100 shadow-sm space-y-1">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-            Satellite Health Index
-          </span>
-          <p className="text-2xl font-black text-teal-700">
-            {stats?.satelliteHealthIndex || '0.78 NDVI'}
-          </p>
-          <span className="text-xs text-gray-500 block">Sentinel-2 Multispectral</span>
+          </div>
+          <span className="text-xs text-amber-700 font-semibold">₹1,450 / tCO2e Floor Rate</span>
         </Card>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs Navigation */}
       <div className="flex items-center gap-3 border-b border-gray-200">
         <button
           onClick={() => setActiveTab('AUDITS')}
@@ -174,12 +175,14 @@ export const AdminCarbonPage = () => {
         </button>
       </div>
 
-      {/* Tab 1: Satellite MRV Audits */}
+      {/* Tab 1: Satellite MRV Audits List */}
       {activeTab === 'AUDITS' && (
         <div className="space-y-4">
-          <p className="text-xs text-gray-500">
-            Sentinel-2 multispectral NDVI scans verified by ISRO Space Applications Centre.
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500">
+              Sentinel-2 multispectral NDVI scans pending government verification & 1-click token minting.
+            </p>
+          </div>
 
           <div className="space-y-4">
             {audits.map((audit) => (
@@ -197,24 +200,27 @@ export const AdminCarbonPage = () => {
                     </span>
                   </div>
 
-                  <Badge
-                    variant={
-                      audit.status === 'MINTED'
-                        ? 'success'
-                        : audit.status === 'VERIFIED_MINT_READY'
-                        ? 'default'
-                        : 'outline'
-                    }
-                  >
-                    {audit.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={
+                        audit.status === 'MINTED'
+                          ? 'success'
+                          : audit.status === 'VERIFIED_MINT_READY'
+                          ? 'default'
+                          : 'outline'
+                      }
+                    >
+                      {audit.status}
+                    </Badge>
+                  </div>
                 </div>
 
+                {/* Spectral Metrics Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-2xl text-xs text-slate-700">
                   <div>
                     <span className="text-gray-500 block">NDVI Canopy Index:</span>
                     <strong className="text-emerald-700 text-sm font-mono font-bold">
-                      {audit.spectralMetrics?.ndviMean || 0.78}
+                      {audit.spectralMetrics?.ndviMean || 0.78} (Optimal)
                     </strong>
                   </div>
                   <div>
@@ -237,22 +243,31 @@ export const AdminCarbonPage = () => {
                   </div>
                 </div>
 
+                <div className="text-xs text-gray-600 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Telemetry Verification:</strong> {audit.verificationNotes || 'Sentinel-2 multispectral bands B4/B8/B11 confirm healthy tree canopy compliant with VCS VM0042 methodology.'}
+                  </span>
+                </div>
+
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-100">
                   <span className="text-xs text-gray-500">
-                    Sensor: <strong>Sentinel-2 MSI (10m Resolution)</strong>
+                    Sensor: <strong>Sentinel-2 MSI (10m Optical Resolution)</strong>
                   </span>
 
-                  {audit.status !== 'MINTED' && (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      isLoading={isMinting}
-                      onClick={() => handleMint(audit)}
-                      className="flex items-center gap-1.5"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" /> Mint Sovereign Carbon Credits
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {audit.status !== 'MINTED' && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        isLoading={isMinting}
+                        onClick={() => handleMintCredits(audit)}
+                        className="flex items-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> Mint Sovereign Carbon Credits
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </Card>
             ))}
@@ -260,12 +275,14 @@ export const AdminCarbonPage = () => {
         </div>
       )}
 
-      {/* Tab 2: Minted Credits */}
+      {/* Tab 2: Minted Green Credits List */}
       {activeTab === 'CREDITS' && (
         <div className="space-y-4">
-          <p className="text-xs text-gray-500">
-            Serialized Sovereign Carbon Credit tokens available for corporate off-take or retirement.
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500">
+              Sovereign Carbon Credits ledger with serialized certificate numbers and ESG retirement capability.
+            </p>
+          </div>
 
           <div className="space-y-4">
             {credits.map((credit) => (
@@ -344,7 +361,7 @@ export const AdminCarbonPage = () => {
                       variant="outline"
                       size="sm"
                       isLoading={isRetiring}
-                      onClick={() => handleRetire(credit)}
+                      onClick={() => handleRetireCredit(credit)}
                       className="text-xs"
                     >
                       Retire for ESG Offsetting

@@ -36,21 +36,30 @@ export const InteractiveGisMap = ({
   ];
 
   const startingPoints = useMemo(() => {
-    if (initialPoints && Array.isArray(initialPoints) && initialPoints.length > 0) {
+    if (initialPoints && Array.isArray(initialPoints)) {
       return initialPoints;
     }
-    if (initialPolygons && Array.isArray(initialPolygons) && initialPolygons[0]?.coordinates?.length > 0) {
-      return initialPolygons[0].coordinates.map((c, idx) => ({
-        x: c.x ?? (idx === 0 ? 30 : idx === 1 ? 74 : idx === 2 ? 82 : 26),
-        y: c.y ?? (idx === 0 ? 35 : idx === 1 ? 28 : idx === 2 ? 74 : 76),
-        lat: c.lat ?? (22.564 + idx * 0.001),
-        lng: c.lng ?? (72.928 + idx * 0.001)
-      }));
+    if (initialPolygons && Array.isArray(initialPolygons)) {
+      if (initialPolygons[0]?.coordinates && Array.isArray(initialPolygons[0].coordinates)) {
+        if (initialPolygons[0].coordinates.length === 0) {
+          return [];
+        }
+        return initialPolygons[0].coordinates.map((c, idx) => ({
+          x: c.x ?? (idx === 0 ? 30 : idx === 1 ? 74 : idx === 2 ? 82 : 26),
+          y: c.y ?? (idx === 0 ? 35 : idx === 1 ? 28 : idx === 2 ? 74 : 76),
+          lat: c.lat ?? (22.564 + idx * 0.001),
+          lng: c.lng ?? (72.928 + idx * 0.001)
+        }));
+      }
     }
-    return defaultInitial;
+    return [];
   }, [initialPoints, initialPolygons]);
 
   const [points, setPoints] = useState(startingPoints);
+
+  React.useEffect(() => {
+    setPoints(startingPoints);
+  }, [startingPoints]);
   const [showNdvi, setShowNdvi] = useState(false);
   const [mapMode, setMapMode] = useState('SATELLITE'); // 'SATELLITE' | 'CADASTRAL'
   const [hoveredIdx, setHoveredIdx] = useState(null);
@@ -189,25 +198,37 @@ export const InteractiveGisMap = ({
 
           {!readOnly && allowDrawing && (
             <>
-              {points.length > 0 && (
+              {points.length === 0 ? (
                 <button
                   type="button"
-                  onClick={handleUndo}
-                  className="px-2.5 py-1.5 rounded-xl bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 text-xs font-semibold transition-colors flex items-center gap-1"
-                  title="Undo last plotted point"
+                  onClick={() => notifyChange(defaultInitial)}
+                  className="px-2.5 py-1.5 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 text-xs font-semibold transition-colors flex items-center gap-1"
+                  title="Auto-Plot Demo Boundary"
                 >
-                  <RotateCcw className="w-3 h-3" />
-                  <span className="hidden sm:inline">Undo</span>
+                  <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Demo Boundary</span>
                 </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleUndo}
+                    className="px-2.5 py-1.5 rounded-xl bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 text-xs font-semibold transition-colors flex items-center gap-1"
+                    title="Undo last plotted point"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span className="hidden sm:inline">Undo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="p-1.5 rounded-xl bg-neutral-800/80 hover:bg-rose-950 text-neutral-400 hover:text-rose-300 border border-neutral-700 transition-colors"
+                    title="Clear Coordinates"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </>
               )}
-              <button
-                type="button"
-                onClick={handleClear}
-                className="p-1.5 rounded-xl bg-neutral-800/80 hover:bg-rose-950 text-neutral-400 hover:text-rose-300 border border-neutral-700 transition-colors"
-                title="Clear Coordinates"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
             </>
           )}
         </div>
@@ -219,6 +240,16 @@ export const InteractiveGisMap = ({
         onClick={handleMapClick}
         className={`relative ${height} w-full overflow-hidden cursor-crosshair select-none bg-[#0a120c]`}
       >
+        {/* Empty Map Drawing Guidance */}
+        {points.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-4 text-center z-10">
+            <div className="p-3.5 bg-neutral-900/90 border border-emerald-500/30 rounded-2xl shadow-xl backdrop-blur-md max-w-sm">
+              <MapPin className="w-6 h-6 text-emerald-400 mx-auto mb-1.5 animate-bounce" />
+              <p className="text-xs font-bold text-neutral-200">Interactive GIS Drawing Stage</p>
+              <p className="text-[11px] text-neutral-400 mt-1">Click anywhere on the satellite canvas to plot land boundary vertices (minimum 3 points to form polygon).</p>
+            </div>
+          </div>
+        )}
         {/* Simulated High-Res Satellite Grid Terrain Texture */}
         <div
           className={`absolute inset-0 transition-opacity duration-300 ${

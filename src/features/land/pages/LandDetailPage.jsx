@@ -23,7 +23,6 @@ import { Badge } from '../../../components/ui/Badge.jsx';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { MapPlaceholder } from '../../../components/ui/MapPlaceholder.jsx';
 import { useEffect } from 'react';
-import { MOCK_LANDS } from '../../../services/mockData/landsMock.js';
 import { MOCK_POLICIES } from '../../../services/mockData/insuranceMock.js';
 import { MOCK_SOIL_REQUESTS } from '../../../services/mockData/soilMock.js';
 import { storageService } from '../../../services/storageService.js';
@@ -68,11 +67,12 @@ export const LandDetailPage = () => {
           });
         }
       } catch (err) {
-        console.warn('Backend land detail fetch error, using local fallback:', err);
+        console.warn('Backend land detail fetch error, checking localStorage:', err);
         if (isMounted) {
-          const stored = storageService.getLands().find((l) => l.id === id || l.landId === id);
-          const mock = MOCK_LANDS.find((l) => l.id === id);
-          setLandData(stored || mock || MOCK_LANDS[0]);
+          const stored = storageService.getLands().find((l) => String(l.id) === String(id) || String(l.landId) === String(id));
+          if (stored) {
+            setLandData(stored);
+          }
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -85,7 +85,30 @@ export const LandDetailPage = () => {
     };
   }, [id]);
 
-  const land = landData || MOCK_LANDS.find((l) => l.id === id) || MOCK_LANDS[0];
+  const land = landData || storageService.getLands().find((l) => String(l.id) === String(id) || String(l.landId) === String(id));
+
+  if (loading && !land) {
+    return (
+      <div className="py-16 text-center">
+        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
+        <p className="text-gray-500">Loading land record details...</p>
+      </div>
+    );
+  }
+
+  if (!land) {
+    return (
+      <div className="py-16 text-center">
+        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h3 className="text-lg font-bold text-gray-900">Land Record Not Found</h3>
+        <p className="text-gray-500 text-sm mt-1 mb-6">The requested land parcel record does not exist or has been removed.</p>
+        <Button onClick={() => navigate('/farmer/lands')}>Back to My Lands</Button>
+      </div>
+    );
+  }
+
   const linkedPolicy = MOCK_POLICIES.find((p) => p.landId === land.id || p.landId === land.landId);
   const linkedSoil = MOCK_SOIL_REQUESTS.find((s) => s.landId === land.id || s.landId === land.landId);
 
@@ -478,7 +501,7 @@ export const LandDetailPage = () => {
           village: land.village || 'Mogri',
           taluka: land.taluka || 'Anand',
           district: land.district || 'Anand, Gujarat',
-          totalAreaAcres: land.areaAcres || 12.4,
+          totalAreaAcres: land.area || land.areaAcres || 0,
           soilType: land.soilType || 'Alluvial Loam',
           irrigationStatus: land.irrigationSource || 'Tube Well & Drip System',
           verificationDate: '24 Jan 2026',

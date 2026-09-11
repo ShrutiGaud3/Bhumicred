@@ -43,38 +43,88 @@ export const ApprovalsQueuePage = () => {
   const fetchQueue = async () => {
     setLoading(true);
     try {
-      const res = await onboardingService.getAdminQueue();
-      const appsList = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.applications) ? res.data.applications : []);
-      if (appsList.length > 0) {
-        const liveItems = appsList.map((app) => ({
+      let liveItems = [];
+      try {
+        const res = await onboardingService.getAdminQueue();
+        const appsList = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.applications) ? res.data.applications : []);
+        liveItems = appsList.map((app) => ({
           id: app.applicationId || app.id || app._id,
           applicationId: app.applicationId || app.id || app._id,
           targetId: app.targetId,
-          type: app.type || 'FARMER_KYC',
+          type: app.type || (app.applicationId?.startsWith('APP-LND-') ? 'LAND_REGISTRATION' : 'FARMER_KYC'),
           title: app.title || `Application - ${app.applicantName}`,
           applicantName: app.applicantName || 'Citizen Applicant',
           applicantRole: app.role || 'FARMER',
           applicantPhone: app.mobile || '',
           submittedDate: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Just now',
-          submittedAt: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Today',
-          status: app.status || 'PENDING_REVIEW',
+          submittedAt: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Just now',
+          timestamp: app.submittedAt || app.createdAt || new Date().toISOString(),
+          status: app.status || 'PENDING_VERIFICATION',
           riskScore: app.riskScore || 'LOW',
-          details: `${app.address?.village || ''} ${app.address?.district || ''} • ${app.address?.state || ''}`,
+          details: app.details || `${app.address?.village || ''} ${app.address?.district || ''} • ${app.address?.state || ''}`,
+        }));
+      } catch (backendErr) {
+        console.warn('Backend admin queue fetch warning:', backendErr?.message);
+      }
+
+      // Collect all pending lands stored in local storage
+      const localLands = storageService.getLands();
+      const landApprovalItems = localLands
+        .filter((l) => l.status === 'PENDING_VERIFICATION' || l.status === 'PENDING_REVIEW' || l.status === 'SUBMITTED' || l.status === 'PENDING')
+        .map((land) => ({
+          id: `APP-LND-${land.id || land.landId}`,
+          applicationId: `APP-LND-${land.id || land.landId}`,
+          targetId: land.id || land.landId,
+          type: 'LAND_REGISTRATION',
+          title: `Land Title Registration - ${land.landName || 'Plot'} - Khasra ${land.khasraNumber || '412/9'} (Survey ${land.surveyNumber || '108/A'})`,
+          applicantName: land.ownerName || land.farmerName || 'Citizen Farmer',
+          applicantRole: 'FARMER',
+          applicantPhone: land.ownerMobile || land.mobile || '',
+          submittedDate: 'Just now',
+          submittedAt: land.createdAt ? new Date(land.createdAt).toLocaleDateString() : 'Just now',
+          timestamp: land.createdAt || new Date().toISOString(),
+          status: land.status || 'PENDING_VERIFICATION',
+          riskScore: 'LOW',
+          details: `${land.area || land.areaAcres || 5} Acres in ${land.village || land.district || 'Anand'}`,
         }));
 
-        // Merge with any local storage only items
-        const local = storageService.getApprovals();
-        const combined = [...liveItems];
-        local.forEach((loc) => {
-          if (!combined.some((c) => c.id === loc.id || c.applicationId === loc.id)) {
-            combined.push(loc);
-          }
-        });
+      // Merge liveItems, landApprovalItems, and general approvals
+      const localApprovals = storageService.getApprovals();
+      const combined = [...liveItems];
 
-        setItems(combined);
-      }
+      // Add pending lands to queue
+      landApprovalItems.forEach((item) => {
+        if (!combined.some((c) => c.id === item.id || c.applicationId === item.id || (item.targetId && c.targetId === item.targetId))) {
+          combined.unshift(item);
+        }
+      });
+
+      // Add general local approvals
+      localApprovals.forEach((loc) => {
+        if (!combined.some((c) => c.id === loc.id || c.applicationId === loc.id || (loc.targetId && c.targetId === loc.targetId))) {
+          combined.push(loc);
+        }
+      });
+
+      // Filter out any mock approval entries
+      const sanitized = combined.filter(
+        (c) =>
+          !c.id?.startsWith('appr_') &&
+          c.applicantName !== 'Jitendra Vaghela' &&
+          c.applicantName !== 'Manharbhai Solanki' &&
+          c.applicantName !== 'Dr. Suresh Mehta'
+      );
+
+      // Sort recent requests on TOP (newest first)
+      sanitized.sort((a, b) => {
+        const timeA = new Date(a.timestamp || a.createdAt || a.submittedAt || 0).getTime();
+        const timeB = new Date(b.timestamp || b.createdAt || b.submittedAt || 0).getTime();
+        return timeB - timeA;
+      });
+
+      setItems(sanitized);
     } catch (err) {
-      console.warn('Backend admin queue fetch error, using local fallback:', err);
+      console.warn('Admin queue load error:', err);
       setItems(storageService.getApprovals());
     } finally {
       setLoading(false);
@@ -128,10 +178,21 @@ export const ApprovalsQueuePage = () => {
     // Live Backend API sync
     try {
       const targetAppId = actionModal.item.applicationId || actionModal.item.id;
+      const rawTargetId = actionModal.item.targetId || actionModal.item.id?.replace(/^APP-LND-/, '');
+      const storedLands = storageService.getLands();
+      const landData = storedLands.find(
+        (l) =>
+          l.id === rawTargetId ||
+          l.landId === rawTargetId ||
+          `APP-LND-${l.id}` === targetAppId ||
+          `APP-LND-${l.landId}` === targetAppId
+      );
+
       await onboardingService.reviewKyc(targetAppId, {
         status: targetStatus,
         reviewNotes: actionRemarks,
         action: actionModal.actionType,
+        landData: landData || undefined,
       });
     } catch (apiErr) {
       console.warn('Backend review sync warning:', apiErr?.message);

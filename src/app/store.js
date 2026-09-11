@@ -11,6 +11,9 @@ import soilReducer from '../features/soil/soilSlice.js';
 import marketplaceReducer from '../features/marketplace/marketplaceSlice.js';
 import projectReducer from '../features/projects/projectSlice.js';
 import schemesReducer from '../features/schemes/schemesSlice.js';
+import carbonReducer from '../features/carbon/carbonSlice.js';
+import walletReducer from '../features/wallet/walletSlice.js';
+import notificationReducer from '../features/notifications/notificationSlice.js';
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +29,9 @@ export const store = configureStore({
     marketplace: marketplaceReducer,
     projects: projectReducer,
     schemes: schemesReducer,
+    carbon: carbonReducer,
+    wallet: walletReducer,
+    notifications: notificationReducer,
   },
 });
 

@@ -14,6 +14,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { logoutUser } from '../../features/auth/authSlice.js';
+import { fetchUnreadCount } from '../../features/notifications/notificationSlice.js';
 import { ROLE_LABELS } from '../../constants/roles.js';
 import { LanguageSelector } from './LanguageSelector.jsx';
 import { ThemeToggle } from './ThemeToggle.jsx';
@@ -25,10 +26,17 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
+  const { unreadCount } = useSelector((state) => state.notifications);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPublicMobileMenu, setShowPublicMobileMenu] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (user) {
+      dispatch(fetchUnreadCount());
+    }
+  }, [user, dispatch]);
 
   const isPublicRoute = !user || (!location.pathname.startsWith('/farmer') &&
     !location.pathname.startsWith('/government') &&
@@ -147,11 +155,15 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
             {user && (
               <button
                 onClick={() => setIsNotificationOpen(true)}
-                className="relative p-2 text-slate-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-xl transition-colors"
+                className="relative p-2 text-slate-600 hover:text-emerald-800 hover:bg-emerald-50 dark:text-neutral-300 dark:hover:text-emerald-400 dark:hover:bg-neutral-800 rounded-xl transition-colors"
                 title="Open Notifications Drawer"
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+                {unreadCount > 0 ? (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-neutral-900 shadow-sm animate-in zoom-in">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                ) : null}
               </button>
             )}
 

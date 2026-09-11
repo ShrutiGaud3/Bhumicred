@@ -149,8 +149,15 @@ export const marketplaceSlice = createSlice({
       saveCartToStorage([]);
     },
     applyCoupon: (state, action) => {
-      const code = action.payload.trim().toUpperCase();
-      if (code === 'BHUMI10' || code === 'KISAN100' || code === 'HARVEST15') {
+      const code = (action.payload || '').trim().toUpperCase();
+      if (
+        code === 'BHUMI10' ||
+        code === 'KISAN100' ||
+        code === 'HARVEST15' ||
+        code.startsWith('BHUMI-') ||
+        code.includes('REWARD') ||
+        code.includes('REFERRAL')
+      ) {
         state.appliedCoupon = code;
       }
     },

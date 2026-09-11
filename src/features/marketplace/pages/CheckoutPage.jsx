@@ -98,6 +98,12 @@ export const CheckoutPage = () => {
     couponDiscount = Math.min(100, rawSubtotal);
   } else if (appliedCoupon === 'HARVEST15') {
     couponDiscount = Math.round(rawSubtotal * 0.15);
+  } else if (
+    appliedCoupon?.startsWith('BHUMI-') ||
+    appliedCoupon?.includes('REWARD') ||
+    appliedCoupon?.includes('REFERRAL')
+  ) {
+    couponDiscount = Math.min(320, rawSubtotal);
   }
 
   const deliveryFee = rawSubtotal > 1500 || rawSubtotal === 0 ? 0 : 120;

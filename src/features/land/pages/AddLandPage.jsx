@@ -117,31 +117,22 @@ export const AddLandPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const toast = useToast();
 
-  // Khasra / Pawti & KYC Documents State
-  const [khasraDoc, setKhasraDoc] = useState({
-    name: 'Khasra_Pawti_Survey_402A.pdf',
-    size: 2450000,
-    uploadedAt: 'Today',
-  });
-  const [aadhaarDoc, setAadhaarDoc] = useState({
-    name: 'Aadhaar_Card_Front_Back.pdf',
-    size: 1820000,
-    uploadedAt: 'Today',
-  });
-  const [panDoc, setPanDoc] = useState({
-    name: 'PAN_Card_Individual.pdf',
-    size: 1140000,
-    uploadedAt: 'Today',
-  });
-  const [farmerPhoto, setFarmerPhoto] = useState({
-    url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80',
-    mode: 'LIVE_CAPTURED',
-    timestamp: 'Live captured • Today 11:45 AM',
-    name: 'Farmer_Passport_Photo.jpg',
-  });
+  // Khasra / Pawti & KYC Documents State (Starts Empty by default for new user)
+  const [khasraDoc, setKhasraDoc] = useState(null);
+  const [aadhaarFrontDoc, setAadhaarFrontDoc] = useState(null);
+  const [aadhaarBackDoc, setAadhaarBackDoc] = useState(null);
+  const aadhaarDoc = (aadhaarFrontDoc || aadhaarBackDoc) ? {
+    front: aadhaarFrontDoc,
+    back: aadhaarBackDoc,
+    name: (aadhaarFrontDoc && aadhaarBackDoc)
+      ? `${aadhaarFrontDoc.name} & ${aadhaarBackDoc.name}`
+      : (aadhaarFrontDoc?.name || aadhaarBackDoc?.name || 'Aadhaar_Card.jpg'),
+  } : null;
+  const [panDoc, setPanDoc] = useState(null);
+  const [farmerPhoto, setFarmerPhoto] = useState(null);
 
-  // Form State
-  const [rawMapAcreage, setRawMapAcreage] = useState('12.40');
+  // Form State (Starts Empty by default for new user)
+  const [rawMapAcreage, setRawMapAcreage] = useState('');
 
   const convertAreaUnits = (valueInAcres, targetUnit) => {
     const num = parseFloat(valueInAcres) || 0;
@@ -165,28 +156,22 @@ export const AddLandPage = () => {
     khasraNumber: '',
     landType: 'Agricultural (Irrigated)',
     ownershipType: 'Individual Owner',
-    area: '12.40',
+    area: '',
     areaUnit: 'Acres',
     address: '',
-    district: 'Anand',
-    state: 'Gujarat',
-    pincode: '388345',
-    soilType: 'Alluvial Loam',
-    irrigationSource: 'Borewell & Drip Irrigation',
-    primaryCrops: 'Cotton, Groundnut, Castor',
-    treeCount: '45',
-    treeSpecies: 'Mango, Teakwood, Neem',
-    polygonCoords: [
-      [72.9281, 22.5645],
-      [72.9312, 22.5648],
-      [72.9308, 22.5612],
-      [72.9278, 22.561],
-      [72.9281, 22.5645],
-    ],
+    district: '',
+    state: '',
+    pincode: '',
+    soilType: '',
+    irrigationSource: '',
+    primaryCrops: '',
+    treeCount: '',
+    treeSpecies: '',
+    polygonCoords: [],
     documents: [],
-    optInsurance: true,
+    optInsurance: false,
     insurancePlan: 'Custom Sovereign Tree Shield (₹31 / Tree / Year)',
-    insuredTreeCount: '4', // Customizable tree count for insurance (default 4 trees)
+    insuredTreeCount: '0',
   });
 
   // Payment & Tax Invoice States
@@ -194,20 +179,21 @@ export const AddLandPage = () => {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('UPI'); // 'UPI' | 'CARD' | 'NETBANKING'
   const [invoiceData, setInvoiceData] = useState(null);
+  const [createdLandId, setCreatedLandId] = useState('');
 
   // Selected Tree Insurance Plan & Tree Fee Calculations (₹31 per year per customized insured tree)
   const selectedInsurancePlan = TREE_INSURANCE_PLANS.find(
     (p) => p.title === formData.insurancePlan || p.id === formData.insurancePlan
   ) || TREE_INSURANCE_PLANS[0];
-  const standingTreeCount = parseInt(formData.treeCount, 10) || 45;
-  const insuredTreeCountForCalc = parseInt(formData.insuredTreeCount, 10) >= 0 ? parseInt(formData.insuredTreeCount, 10) : 4;
+  const standingTreeCount = parseInt(formData.treeCount, 10) || 0;
+  const insuredTreeCountForCalc = parseInt(formData.insuredTreeCount, 10) >= 0 ? parseInt(formData.insuredTreeCount, 10) : 0;
   const insuranceRatePerTree = selectedInsurancePlan?.ratePerTree ?? 31;
   const treeInsuranceAmount = formData.optInsurance
     ? Number((insuredTreeCountForCalc * insuranceRatePerTree).toFixed(2))
     : 0;
 
   // Price & Fee Calculations based on ₹149 per Acre + Tree Insurance (₹31/tree/yr for custom insured trees)
-  const acreageForCalc = parseFloat(rawMapAcreage) || parseFloat(formData?.area) || 12.40;
+  const acreageForCalc = parseFloat(rawMapAcreage) || parseFloat(formData?.area) || 0;
   const soilTestingAmount = Number((acreageForCalc * 49).toFixed(2));
   const inspectionAmount = Number((acreageForCalc * 50).toFixed(2));
   const carbonCreditAmount = Number((acreageForCalc * 35).toFixed(2));
@@ -249,66 +235,66 @@ export const AddLandPage = () => {
     farmerAuthorizationAccepted: true,
   });
 
-  // Mandatory (4-5) and Additional Geotagged Field Photos State
+  // Mandatory (4-5) and Additional Geotagged Field Photos State (Starts uncaptured for new users)
   const [fieldPhotos, setFieldPhotos] = useState([
     {
       id: 'photo_north',
       title: 'North Boundary Vertex (N-Corner)',
       direction: 'North Boundary',
       isMandatory: true,
-      captured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&q=80',
-      lat: 22.5648,
-      lng: 72.9312,
-      timestamp: 'Today, 11:30 AM',
+      captured: false,
+      imageUrl: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
     },
     {
       id: 'photo_east',
       title: 'East Boundary Vertex (E-Corner)',
       direction: 'East Boundary',
       isMandatory: true,
-      captured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=600&q=80',
-      lat: 22.5638,
-      lng: 72.9325,
-      timestamp: 'Today, 11:32 AM',
+      captured: false,
+      imageUrl: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
     },
     {
       id: 'photo_south',
       title: 'South Boundary Vertex (S-Corner)',
       direction: 'South Boundary',
       isMandatory: true,
-      captured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&q=80',
-      lat: 22.5610,
-      lng: 72.9278,
-      timestamp: 'Today, 11:34 AM',
+      captured: false,
+      imageUrl: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
     },
     {
       id: 'photo_west',
       title: 'West Boundary Vertex (W-Corner)',
       direction: 'West Boundary',
       isMandatory: true,
-      captured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=600&q=80',
-      lat: 22.5622,
-      lng: 72.9265,
-      timestamp: 'Today, 11:35 AM',
+      captured: false,
+      imageUrl: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
     },
     {
       id: 'photo_center',
       title: 'Center Plot Standing Crop & Trees',
       direction: 'Center Plot',
       isMandatory: true,
-      captured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=600&q=80',
-      lat: 22.5630,
-      lng: 72.9290,
-      timestamp: 'Today, 11:36 AM',
+      captured: false,
+      imageUrl: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
     },
   ]);
 
-  // 4-5 Angle Geotagged Tree Verification Photos State (Required for ₹31/tree Custom Policy)
+  // 4-5 Angle Geotagged Tree Verification Photos State (Starts uncaptured for new users)
   const [treeAnglePhotos, setTreeAnglePhotos] = useState([
     {
       id: 'tree_angle_1',
@@ -316,11 +302,11 @@ export const AddLandPage = () => {
       direction: 'Ground Level (0°)',
       description: 'Root flare & ground-level bark inspection',
       isMandatory: true,
-      captured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&q=80',
-      lat: 22.5631,
-      lng: 72.9291,
-      timestamp: 'Today, 11:38 AM',
+      captured: false,
+      imageUrl: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
     },
     {
       id: 'tree_angle_2',
@@ -328,11 +314,11 @@ export const AddLandPage = () => {
       direction: 'Upward Elevation (45°)',
       description: 'Leaf density, crown health & foliage assessment',
       isMandatory: true,
-      captured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=600&q=80',
-      lat: 22.5632,
-      lng: 72.9292,
-      timestamp: 'Today, 11:39 AM',
+      captured: false,
+      imageUrl: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
     },
     {
       id: 'tree_angle_3',
@@ -340,11 +326,11 @@ export const AddLandPage = () => {
       direction: 'Lateral NE (90°)',
       description: 'Branch spread & side crown uniformity',
       isMandatory: true,
-      captured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80',
-      lat: 22.5633,
-      lng: 72.9293,
-      timestamp: 'Today, 11:40 AM',
+      captured: false,
+      imageUrl: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
     },
     {
       id: 'tree_angle_4',
@@ -352,11 +338,11 @@ export const AddLandPage = () => {
       direction: 'Lateral SW (270°)',
       description: 'Windward side bark condition & stem lean',
       isMandatory: true,
-      captured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=600&q=80',
-      lat: 22.5629,
-      lng: 72.9289,
-      timestamp: 'Today, 11:41 AM',
+      captured: false,
+      imageUrl: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
     },
     {
       id: 'tree_angle_5',
@@ -364,11 +350,11 @@ export const AddLandPage = () => {
       direction: 'Breast Height (1.3m Girth)',
       description: 'DBH girth tape measurement & QR tree collar',
       isMandatory: true,
-      captured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=600&q=80',
-      lat: 22.5630,
-      lng: 72.9290,
-      timestamp: 'Today, 11:42 AM',
+      captured: false,
+      imageUrl: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
     },
   ]);
 
@@ -620,9 +606,14 @@ export const AddLandPage = () => {
       size: 2450000,
       uploadedAt: 'Today',
     });
-    setAadhaarDoc({
-      name: 'Aadhaar_Card_Front_Back.pdf',
-      size: 1820000,
+    setAadhaarFrontDoc({
+      name: 'Aadhaar_Card_Front.jpg',
+      size: 940000,
+      uploadedAt: 'Today',
+    });
+    setAadhaarBackDoc({
+      name: 'Aadhaar_Card_Back.jpg',
+      size: 880000,
       uploadedAt: 'Today',
     });
     setPanDoc({
@@ -856,6 +847,8 @@ export const AddLandPage = () => {
         treeInsuranceAmount: treeInsuranceAmount,
         khasraDoc: khasraDoc,
         aadhaarDoc: aadhaarDoc,
+        aadhaarFrontDoc: aadhaarFrontDoc,
+        aadhaarBackDoc: aadhaarBackDoc,
         panDoc: panDoc,
         farmerPhoto: farmerPhoto,
         status: 'PENDING_VERIFICATION',
@@ -863,18 +856,24 @@ export const AddLandPage = () => {
       };
 
       // 1. Save to sovereign MongoDB Atlas backend
+      let registeredId = null;
       try {
         const backendRes = await landService.registerLand(landPayload);
         if (backendRes?.data?.landId) {
           landPayload.id = backendRes.data.landId;
           landPayload.landId = backendRes.data.landId;
+          registeredId = backendRes.data.landId;
         }
       } catch (apiErr) {
         console.warn('Backend live registration synced to local cache fallback:', apiErr?.message);
       }
 
       // 2. Persist to local storage service for instant caching
-      storageService.saveLand(landPayload);
+      const savedLocal = storageService.saveLand(landPayload);
+      if (!registeredId) {
+        registeredId = savedLocal?.id || savedLocal?.landId || `LND-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
+      setCreatedLandId(registeredId);
 
       setPaymentProcessing(false);
       setShowPaymentModal(false);
@@ -1225,7 +1224,7 @@ export const AddLandPage = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate('/farmer/application-status/BC-LND-2026-9810')}
+            onClick={() => navigate(`/farmer/application-status/${createdLandId || landPayload?.landId || invoiceData?.invoiceNumber || 'latest'}`)}
           >
             Track Desk & Field Verification Status
           </Button>
@@ -1256,14 +1255,54 @@ export const AddLandPage = () => {
       <Card className="p-6 md:p-8">
         {activeStep === 0 && (
           <div className="space-y-6">
-            <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
-              <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-                <MapPin className="w-6 h-6" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Land Identity & Ownership Title</h3>
+                  <p className="text-xs text-gray-500">Enter official revenue records details matching your 7/12 extract or deed.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Land Identity & Ownership Title</h3>
-                <p className="text-xs text-gray-500">Enter official revenue records details matching your 7/12 extract or deed.</p>
-              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    landName: 'Shree Ram Krishi Farm',
+                    surveyNumber: '402/A',
+                    khasraNumber: '118/2',
+                    landType: 'Agricultural (Irrigated)',
+                    ownershipType: 'Individual Owner',
+                    area: '12.40',
+                    areaUnit: 'Acres',
+                    address: 'Near Narmada Canal, Sanwer Road',
+                    district: 'Indore',
+                    state: 'Madhya Pradesh',
+                    pincode: '388345',
+                    soilType: 'Alluvial Loam',
+                    irrigationSource: 'Borewell & Drip Irrigation',
+                    primaryCrops: 'Cotton, Groundnut, Wheat',
+                    treeCount: '45',
+                    treeSpecies: 'Mango, Teakwood, Neem',
+                    polygonCoords: [
+                      [72.9281, 22.5645],
+                      [72.9312, 22.5648],
+                      [72.9308, 22.5612],
+                      [72.9278, 22.561],
+                      [72.9281, 22.5645],
+                    ],
+                  }));
+                  setRawMapAcreage('12.40');
+                  toast.success('Sample land particulars & GPS polygon populated!');
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-300 text-emerald-800 text-xs font-bold hover:bg-emerald-100 shadow-2xs transition-all self-start sm:self-auto"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                Auto-Fill Demo Land Data
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1960,51 +1999,111 @@ export const AddLandPage = () => {
                 )}
               </div>
 
-              {/* Card 2: Aadhaar Card Document */}
-              <div className="p-5 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-3 flex flex-col justify-between">
+              {/* Card 2: Aadhaar Card Document (Front & Back Photos) */}
+              <div className="p-5 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-3.5 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <div className="flex items-center gap-2">
                       <CreditCard className="w-4 h-4 text-emerald-600" />
-                      <h4 className="font-bold text-sm text-gray-900">Aadhaar Card (आधार कार्ड)</h4>
+                      <h4 className="font-bold text-sm text-gray-900">Aadhaar Card (आधार कार्ड - 2 Photos)</h4>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                      Identity Proof
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      aadhaarFrontDoc && aadhaarBackDoc
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : aadhaarFrontDoc || aadhaarBackDoc
+                        ? 'bg-amber-100 text-amber-800 border-amber-300'
+                        : 'bg-slate-100 text-slate-700 border-slate-300'
+                    }`}>
+                      {aadhaarFrontDoc && aadhaarBackDoc
+                        ? '✓ Both Sides Uploaded'
+                        : aadhaarFrontDoc || aadhaarBackDoc
+                        ? '1/2 Photos Uploaded'
+                        : 'Identity Proof (2 Sides)'}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Front & Back copy of 12-digit Aadhaar Card for UIDAI biometric identity verification.
+                    Upload 2 separate photos: Front Side (सामने का भाग) and Back Side (पीछे का भाग) for UIDAI verification.
                   </p>
                 </div>
 
-                {aadhaarDoc ? (
-                  <div className="p-3 bg-white border border-emerald-300 rounded-xl flex items-center justify-between gap-2 shadow-2xs">
-                    <div className="flex items-center gap-2.5 truncate">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                        <FileCheck className="w-4 h-4" />
-                      </div>
-                      <div className="truncate">
-                        <p className="text-xs font-bold text-gray-900 truncate">{aadhaarDoc.name}</p>
-                        <span className="text-[10px] text-emerald-700 font-semibold">✓ Attached & Verified</span>
-                      </div>
+                {/* Sub-grid for Front and Back side uploads */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Front Side Upload */}
+                  <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                        Front Side (सामने)
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-medium">Photo & Name</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setAadhaarDoc(null)}
-                      className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                      title="Remove document"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+
+                    {aadhaarFrontDoc ? (
+                      <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 truncate">
+                          <FileCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                          <div className="truncate">
+                            <p className="text-[11px] font-bold text-gray-900 truncate">{aadhaarFrontDoc.name}</p>
+                            <span className="text-[9px] text-emerald-700 font-semibold">✓ Front Verified</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setAadhaarFrontDoc(null)}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                          title="Remove Front Side"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <FileUploader
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        maxSizeMB={5}
+                        helperText="Aadhaar Front Side (JPG, PNG, PDF up to 5MB)"
+                        onFileSelect={(file) => setAadhaarFrontDoc(file)}
+                      />
+                    )}
                   </div>
-                ) : (
-                  <FileUploader
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    maxSizeMB={5}
-                    helperText="PDF, PNG, JPG (Aadhaar Front & Back up to 5MB)"
-                    onFileSelect={(file) => setAadhaarDoc(file)}
-                  />
-                )}
+
+                  {/* Back Side Upload */}
+                  <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-teal-500 inline-block"></span>
+                        Back Side (पीछे)
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-medium">Address & QR</span>
+                    </div>
+
+                    {aadhaarBackDoc ? (
+                      <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 truncate">
+                          <FileCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                          <div className="truncate">
+                            <p className="text-[11px] font-bold text-gray-900 truncate">{aadhaarBackDoc.name}</p>
+                            <span className="text-[9px] text-emerald-700 font-semibold">✓ Back Verified</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setAadhaarBackDoc(null)}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                          title="Remove Back Side"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <FileUploader
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        maxSizeMB={5}
+                        helperText="Aadhaar Back Side (JPG, PNG, PDF up to 5MB)"
+                        onFileSelect={(file) => setAadhaarBackDoc(file)}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Card 3: PAN Card Document */}
@@ -2721,13 +2820,22 @@ export const AddLandPage = () => {
                   <p className="text-slate-500 truncate text-[11px]">{khasraDoc?.name || 'Khasra_Pawti_402A.pdf'}</p>
                 </div>
 
-                {/* Aadhaar Card */}
+                {/* Aadhaar Card Front */}
                 <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded uppercase">
-                    ID Proof
+                    ID Front (सामने)
                   </span>
-                  <p className="font-bold text-slate-900 truncate">Aadhaar Card</p>
-                  <p className="text-slate-500 truncate text-[11px]">{aadhaarDoc?.name || 'Aadhaar_Document.pdf'}</p>
+                  <p className="font-bold text-slate-900 truncate">Aadhaar (Front)</p>
+                  <p className="text-slate-500 truncate text-[11px]">{aadhaarFrontDoc?.name || 'Aadhaar_Front.jpg'}</p>
+                </div>
+
+                {/* Aadhaar Card Back */}
+                <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
+                  <span className="text-[10px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded uppercase">
+                    ID Back (पीछे)
+                  </span>
+                  <p className="font-bold text-slate-900 truncate">Aadhaar (Back)</p>
+                  <p className="text-slate-500 truncate text-[11px]">{aadhaarBackDoc?.name || 'Aadhaar_Back.jpg'}</p>
                 </div>
 
                 {/* PAN Card */}

@@ -27,6 +27,7 @@ import { SovereignGisMap } from '../../../components/gis/SovereignGisMap.jsx';
 import { useToast } from '../../../components/ui/ToastContext.jsx';
 import { fetchGisLayers, fetchMacroMetrics, fetchParcelSpatialData } from '../gisSlice.js';
 import { landService } from '../../land/services/landService.js';
+import { storageService } from '../../../services/storageService.js';
 
 export const GisCadastralExplorerPage = () => {
   const dispatch = useDispatch();
@@ -45,20 +46,28 @@ export const GisCadastralExplorerPage = () => {
     dispatch(fetchGisLayers());
     dispatch(fetchMacroMetrics('Anand'));
 
-    // Fetch real lands from backend
+    // Fetch real lands from backend or local storage for the user
     const loadLands = async () => {
+      const userIdentifier = user?._id || user?.id || user?.phone || user?.mobile || user?.name;
+      let userLands = [];
       try {
         const res = await landService.getMyLands();
         if (res.data && res.data.length > 0) {
-          setLands(res.data);
-          setSelectedParcel(res.data[0]);
+          userLands = res.data;
         }
       } catch (e) {
-        // Fallback
+        console.warn('GIS explorer land load error:', e);
+      }
+      if (userLands.length === 0) {
+        userLands = storageService.getLands(userIdentifier);
+      }
+      setLands(userLands);
+      if (userLands.length > 0) {
+        setSelectedParcel(userLands[0]);
       }
     };
     loadLands();
-  }, [dispatch]);
+  }, [dispatch, user]);
 
   // Transform lands to GIS Map parcel items
   const mapParcels = lands.map((l, idx) => {
@@ -163,7 +172,7 @@ export const GisCadastralExplorerPage = () => {
               variant="primary"
               size="sm"
               className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 shadow-md"
-              onClick={() => navigate('/lands/add')}
+              onClick={() => navigate('/farmer/lands/add')}
             >
               <Plus className="w-4 h-4" /> Map New Parcel
             </Button>
@@ -316,8 +325,18 @@ export const GisCadastralExplorerPage = () => {
 
           {/* Parcels List */}
           <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">
-            {filteredLands.map((parcel) => {
-              const isSelected = selectedParcel?.id === parcel.id;
+            {filteredLands.length === 0 ? (
+              <div className="p-6 text-center bg-slate-50 border border-slate-200 rounded-2xl">
+                <MapPin className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-xs font-bold text-slate-700">No Cadastral Parcels</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Register a land parcel to inspect cadastral boundaries.</p>
+                <Button size="sm" className="mt-3 text-xs" onClick={() => navigate('/farmer/lands/add')}>
+                  Add Land
+                </Button>
+              </div>
+            ) : (
+              filteredLands.map((parcel) => {
+                const isSelected = selectedParcel?.id === parcel.id;
 
               return (
                 <div
@@ -367,9 +386,10 @@ export const GisCadastralExplorerPage = () => {
                       {parcel.ndviScore} (High Canopy)
                     </span>
                   </div>
-                </div>
-              );
-            })}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

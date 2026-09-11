@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { SearchInput } from '../../../components/forms/SearchInput.jsx';
 import { FormSelect } from '../../../components/forms/FormSelect.jsx';
@@ -11,6 +12,7 @@ import { storageService } from '../../../services/storageService.js';
 import { landService } from '../services/landService.js';
 
 export const LandListPage = () => {
+  const { user } = useSelector((state) => state.auth);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [lands, setLands] = useState([]);
@@ -19,6 +21,7 @@ export const LandListPage = () => {
   const fetchLands = async () => {
     setLoading(true);
     try {
+      const userIdentifier = user?.mobile || user?.id || user?.name;
       const response = await landService.getMyLands({
         search: search.trim() || undefined,
         status: statusFilter !== 'ALL' ? statusFilter : undefined,
@@ -27,6 +30,7 @@ export const LandListPage = () => {
       const list = Array.isArray(response?.data) ? response.data : (response?.data?.lands || []);
       const mapped = list.map((item) => ({
         id: item.landId || item._id,
+        landId: item.landId || item._id,
         landName: item.landName,
         surveyNumber: item.surveyNumber,
         khasraNumber: item.khasraNumber,
@@ -38,17 +42,51 @@ export const LandListPage = () => {
         soilType: item.agronomicDetails?.soilType || 'Alluvial Loam',
         irrigationSource: item.agronomicDetails?.irrigationSource || 'Borewell & Drip Irrigation',
         primaryCrops: item.agronomicDetails?.primaryCrops || ['Cotton', 'Wheat'],
-        status: item.status,
+        status: item.status || 'PENDING_VERIFICATION',
         treeCount: item.agronomicDetails?.treeCount || 0,
         treesInsured: item.agronomicDetails?.treesInsured || false,
         soilReportStatus: item.agronomicDetails?.soilReportStatus || 'NOT_REQUESTED',
         createdAt: item.createdAt,
         coordinates: item.boundaries?.simpleCoordinates || item.boundaries?.coordinates?.[0] || [],
       }));
-      setLands(mapped);
+
+      // Combine only this farmer's local storage lands
+      const local = storageService.getLands(userIdentifier);
+      const combined = [...mapped];
+      local.forEach((loc) => {
+        const exists = combined.some(
+          (c) => c.id === loc.id || c.landId === loc.id || (c.surveyNumber === loc.surveyNumber && c.khasraNumber === loc.khasraNumber)
+        );
+        if (!exists) {
+          combined.push({
+            id: loc.id || loc.landId,
+            landId: loc.id || loc.landId,
+            landName: loc.landName,
+            surveyNumber: loc.surveyNumber,
+            khasraNumber: loc.khasraNumber,
+            landType: loc.landType,
+            ownershipType: loc.ownershipType,
+            area: loc.area || loc.areaAcres,
+            areaUnit: loc.areaUnit || 'Acres',
+            address: loc.address || `${loc.village || ''}, ${loc.district || ''}`,
+            soilType: loc.soilType || 'Alluvial Loam',
+            irrigationSource: loc.irrigationSource || 'Borewell & Drip Irrigation',
+            primaryCrops: loc.primaryCrops || ['Cotton', 'Wheat'],
+            status: loc.status || 'PENDING_VERIFICATION',
+            treeCount: loc.treeCount || 0,
+            treesInsured: loc.treesInsured || false,
+            soilReportStatus: loc.soilReportStatus || 'NOT_REQUESTED',
+            createdAt: loc.createdAt || new Date().toISOString(),
+            coordinates: loc.coordinates || [],
+          });
+        }
+      });
+
+      setLands(combined);
     } catch (err) {
       console.warn('Backend fetch failed, using local storage cache:', err);
-      const local = storageService.getLands();
+      const userIdentifier = user?.mobile || user?.id || user?.name;
+      const local = storageService.getLands(userIdentifier);
       setLands(local || []);
     } finally {
       setLoading(false);
@@ -61,10 +99,15 @@ export const LandListPage = () => {
 
   const filteredLands = lands.filter((l) => {
     const matchesSearch =
+      !search.trim() ||
       l.landName?.toLowerCase().includes(search.toLowerCase()) ||
       l.surveyNumber?.toLowerCase().includes(search.toLowerCase()) ||
       (l.khasraNumber && l.khasraNumber.toLowerCase().includes(search.toLowerCase()));
-    const matchesStatus = statusFilter === 'ALL' || l.status === statusFilter;
+    const matchesStatus =
+      statusFilter === 'ALL' ||
+      l.status === statusFilter ||
+      (statusFilter === 'APPROVED' && (l.status === 'APPROVED' || l.status === 'VERIFIED')) ||
+      (statusFilter === 'PENDING_VERIFICATION' && (l.status === 'PENDING_VERIFICATION' || l.status === 'PENDING_REVIEW'));
     return matchesSearch && matchesStatus;
   });
 

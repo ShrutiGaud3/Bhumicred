@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -13,129 +13,144 @@ import {
   Clock,
   CheckCheck,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  ShoppingBag,
+  Award,
+  LifeBuoy,
+  RefreshCw,
+  Info,
+  ArrowRight,
 } from 'lucide-react';
+import {
+  fetchNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from '../../features/notifications/notificationSlice.js';
 import { Button } from '../ui/Button.jsx';
-import { StatusBadge } from '../ui/StatusBadge.jsx';
 
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 'notif_1',
-    role: 'FARMER',
-    title: 'Soil Health Card Ready',
-    message: 'NABL Certified laboratory has uploaded your 12-parameter soil health report for Khasra 412/1.',
-    category: 'Soil',
-    time: '10 mins ago',
-    read: false,
-    priority: 'HIGH',
-    link: '/farmer/soil/report/soil_001',
-    icon: Sprout,
-    iconColor: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-950/60'
-  },
-  {
-    id: 'notif_2',
-    role: 'FARMER',
-    title: 'Claim Settlement Disbursed',
-    message: 'Insurance claim payout of ₹48,000 has been credited to your BHUMICRED Smart Wallet.',
-    category: 'Finance',
-    time: '2 hours ago',
-    read: false,
-    priority: 'HIGH',
-    link: '/farmer/wallet',
-    icon: DollarSign,
-    iconColor: 'text-amber-600 bg-amber-100 dark:bg-amber-950/60'
-  },
-  {
-    id: 'notif_3',
-    role: 'FARMER',
-    title: 'Land Verification In Progress',
-    message: 'Revenue Officer assigned to verify your cadastral Naksha for Parcel #LND-9082.',
-    category: 'Land',
-    time: 'Yesterday',
-    read: true,
-    priority: 'NORMAL',
-    link: '/farmer/application-status/APP-7821',
-    icon: FileText,
-    iconColor: 'text-blue-600 bg-blue-100 dark:bg-blue-950/60'
-  },
-  {
-    id: 'notif_4',
-    role: 'GOVERNMENT',
-    title: 'New Community Land Demarcation',
-    message: 'Gaon Sabha plot #44/2 registered in Kheda block awaiting nodal allocation audit.',
-    category: 'Land',
-    time: '25 mins ago',
-    read: false,
-    priority: 'HIGH',
-    link: '/government/assets',
-    icon: FileText,
-    iconColor: 'text-indigo-600 bg-indigo-100 dark:bg-indigo-950/60'
-  },
-  {
-    id: 'notif_5',
-    role: 'PARTNER',
-    title: 'Urgent Drone Survey Assigned',
-    message: 'Tree census survey in Anand Cluster assigned. Scheduled deadline: 48 hours.',
-    category: 'Tasks',
-    time: '1 hour ago',
-    read: false,
-    priority: 'HIGH',
-    link: '/partner/tasks',
-    icon: AlertTriangle,
-    iconColor: 'text-amber-600 bg-amber-100 dark:bg-amber-950/60'
-  },
-  {
-    id: 'notif_6',
-    role: 'SUPER_ADMIN',
-    title: 'High-Value Claim Approval Required',
-    message: 'Storm damage claim of ₹1,45,000 pending final underwriter sign-off.',
-    category: 'Approvals',
-    time: '15 mins ago',
-    read: false,
-    priority: 'HIGH',
-    link: '/admin/approvals',
-    icon: ShieldAlert,
-    iconColor: 'text-rose-600 bg-rose-100 dark:bg-rose-950/60'
+const getCategoryMeta = (category) => {
+  const cat = (category || 'SYSTEM').toUpperCase();
+  switch (cat) {
+    case 'SOIL':
+      return {
+        icon: Sprout,
+        color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800',
+        label: 'Soil Health',
+      };
+    case 'WALLET':
+    case 'FINANCE':
+      return {
+        icon: DollarSign,
+        color: 'text-amber-600 bg-amber-100 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800',
+        label: 'Finance & Wallet',
+      };
+    case 'LAND':
+      return {
+        icon: FileText,
+        color: 'text-blue-600 bg-blue-100 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800',
+        label: 'Land & GIS',
+      };
+    case 'INSURANCE':
+      return {
+        icon: ShieldAlert,
+        color: 'text-rose-600 bg-rose-100 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800',
+        label: 'Tree Insurance',
+      };
+    case 'MARKETPLACE':
+      return {
+        icon: ShoppingBag,
+        color: 'text-purple-600 bg-purple-100 dark:bg-purple-950/60 border-purple-200 dark:border-purple-800',
+        label: 'Marketplace',
+      };
+    case 'SCHEME':
+      return {
+        icon: Award,
+        color: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700',
+        label: 'Scheme',
+      };
+    case 'SUPPORT':
+      return {
+        icon: LifeBuoy,
+        color: 'text-cyan-600 bg-cyan-100 dark:bg-cyan-950/60 border-cyan-200 dark:border-cyan-800',
+        label: 'Support Desk',
+      };
+    case 'TASK':
+      return {
+        icon: AlertTriangle,
+        color: 'text-indigo-600 bg-indigo-100 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800',
+        label: 'Partner Task',
+      };
+    default:
+      return {
+        icon: Bell,
+        color: 'text-slate-600 bg-slate-100 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700',
+        label: 'System Alert',
+      };
   }
-];
+};
+
+const formatTimeAgo = (dateInput) => {
+  if (!dateInput) return 'Just now';
+  const now = new Date();
+  const date = new Date(dateInput);
+  const diffSec = Math.floor((now - date) / 1000);
+
+  if (diffSec < 60) return 'Just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}h ago`;
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay === 1) return 'Yesterday';
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+};
 
 export const NotificationDrawer = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const { user } = useSelector((state) => state.auth);
+  const { items: notifications, unreadCount, loading } = useSelector(
+    (state) => state.notifications
+  );
   const userRole = user?.role || 'FARMER';
 
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [filter, setFilter] = useState('ALL'); // 'ALL', 'UNREAD', 'PRIORITY'
+  const [selectedNotif, setSelectedNotif] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(fetchNotifications(filter));
+    }
+  }, [isOpen, filter, dispatch]);
 
   if (!isOpen) return null;
 
-  // Filter notifications for current user's role or system
-  const roleNotifications = notifications.filter(
-    (n) => n.role === userRole || userRole === 'SUPER_ADMIN'
-  );
-
-  const displayedNotifications = roleNotifications.filter((n) => {
+  const displayedNotifications = (notifications || []).filter((n) => {
     if (filter === 'UNREAD') return !n.read;
-    if (filter === 'PRIORITY') return n.priority === 'HIGH';
+    if (filter === 'PRIORITY') return n.priority === 'HIGH' || n.priority === 'URGENT';
     return true;
   });
 
-  const unreadCount = roleNotifications.filter((n) => !n.read).length;
-
   const handleMarkAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.role === userRole || userRole === 'SUPER_ADMIN' ? { ...n, read: true } : n))
-    );
+    dispatch(markAllNotificationsAsRead());
   };
 
-  const handleItemClick = (notif) => {
-    // Mark as read
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
-    );
+  const handleOpenDetail = (notif, e) => {
+    if (e) e.stopPropagation();
+    const id = notif._id || notif.id;
+    if (!notif.read) {
+      dispatch(markNotificationAsRead(id));
+    }
+    setSelectedNotif(notif);
+  };
+
+  const handleNavigateToLink = (link) => {
+    setSelectedNotif(null);
     onClose();
-    if (notif.link) {
-      navigate(notif.link);
+    if (link) {
+      navigate(link);
     }
   };
 
@@ -144,7 +159,10 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm z-50 transition-opacity animate-in fade-in"
-        onClick={onClose}
+        onClick={() => {
+          setSelectedNotif(null);
+          onClose();
+        }}
       />
 
       {/* Slide-in Drawer */}
@@ -152,7 +170,7 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
         {/* Drawer Header */}
         <div className="p-5 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400">
+            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
               <Bell className="w-5 h-5" />
             </div>
             <div>
@@ -164,16 +182,25 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-neutral-500">Live platform alerts & updates</p>
+              <p className="text-xs text-neutral-500">Live platform alerts & sovereign notifications</p>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => dispatch(fetchNotifications(filter))}
+              className="p-2 rounded-xl text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 transition-colors"
+              title="Refresh Notifications"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-600' : ''}`} />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Filter Bar & Quick Action */}
@@ -201,7 +228,7 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllAsRead}
-              className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+              className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1"
             >
               <CheckCheck className="w-3.5 h-3.5" />
               Mark all read
@@ -219,54 +246,62 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
             </div>
           ) : (
             displayedNotifications.map((notif) => {
-              const Icon = notif.icon;
+              const meta = getCategoryMeta(notif.category);
+              const Icon = meta.icon;
+              const isUnread = !notif.read;
+              const timeDisplay = formatTimeAgo(notif.createdAt);
+
               return (
                 <div
-                  key={notif.id}
-                  onClick={() => handleItemClick(notif)}
+                  key={notif._id || notif.id}
+                  onClick={(e) => handleOpenDetail(notif, e)}
                   className={`p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
-                    notif.read
-                      ? 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 opacity-80'
-                      : 'bg-primary-50/40 dark:bg-primary-950/20 border-primary-200 dark:border-primary-800/60 shadow-sm'
+                    isUnread
+                      ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60 shadow-sm'
+                      : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 opacity-85'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-xl shrink-0 ${notif.iconColor}`}>
+                    <div className={`p-2.5 rounded-xl shrink-0 border ${meta.color}`}>
                       <Icon className="w-4 h-4" />
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-semibold text-primary-700 dark:text-primary-400 uppercase tracking-wider">
-                            {notif.category}
+                          <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                            {meta.label}
                           </span>
-                          {!notif.read && (
-                            <span className="w-2 h-2 rounded-full bg-primary-600"></span>
+                          {isUnread && (
+                            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
                           )}
                         </div>
                         <span className="text-[11px] text-neutral-400 flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {notif.time}
+                          {timeDisplay}
                         </span>
                       </div>
 
-                      <h4 className="text-sm font-semibold text-neutral-900 dark:text-white mt-1">
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white mt-1">
                         {notif.title}
                       </h4>
-                      <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 line-clamp-2">
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 leading-relaxed">
                         {notif.message}
                       </p>
 
                       <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-neutral-100 dark:border-neutral-800/80">
-                        <span className="text-[11px] font-medium text-primary-600 dark:text-primary-400 flex items-center gap-1 group">
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenDetail(notif, e)}
+                          className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 group hover:underline"
+                        >
                           View details
-                          <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                        </span>
+                          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </button>
 
-                        {notif.priority === 'HIGH' && (
-                          <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded">
-                            URGENT
+                        {(notif.priority === 'HIGH' || notif.priority === 'URGENT') && (
+                          <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 px-2 py-0.5 rounded-full">
+                            {notif.priority}
                           </span>
                         )}
                       </div>
@@ -280,15 +315,129 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
 
         {/* Footer */}
         <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 flex items-center justify-between text-xs text-neutral-500">
-          <span>Active Role: <strong className="text-neutral-800 dark:text-neutral-200">{userRole}</strong></span>
+          <span>
+            Active Role: <strong className="text-neutral-800 dark:text-neutral-200">{userRole}</strong>
+          </span>
           <button
             onClick={onClose}
-            className="text-primary-600 hover:text-primary-700 font-medium"
+            className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-semibold"
           >
             Close Drawer
           </button>
         </div>
       </div>
+
+      {/* Interactive Notification Detail Popup Modal */}
+      {selectedNotif && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/70 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl max-w-lg w-full border border-neutral-200 dark:border-neutral-800 shadow-2xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const meta = getCategoryMeta(selectedNotif.category);
+                  const Icon = meta.icon;
+                  return (
+                    <div className={`p-3 rounded-2xl border ${meta.color}`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                  );
+                })()}
+                <div>
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                    {getCategoryMeta(selectedNotif.category).label}
+                  </span>
+                  <h3 className="text-base sm:text-lg font-black text-neutral-900 dark:text-white leading-snug">
+                    {selectedNotif.title}
+                  </h3>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedNotif(null)}
+                className="p-2 rounded-xl text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Notification Meta Badges */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                {selectedNotif.createdAt
+                  ? new Date(selectedNotif.createdAt).toLocaleString('en-IN', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })
+                  : 'Just now'}
+              </span>
+
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                Role: {selectedNotif.targetRole || 'ALL'}
+              </span>
+
+              {selectedNotif.priority && (
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                    selectedNotif.priority === 'HIGH' || selectedNotif.priority === 'URGENT'
+                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                      : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                  }`}
+                >
+                  Priority: {selectedNotif.priority}
+                </span>
+              )}
+            </div>
+
+            {/* Message Body */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-700/80 text-sm text-slate-700 dark:text-neutral-200 leading-relaxed space-y-2">
+              <p>{selectedNotif.message}</p>
+
+              {selectedNotif.metadata && Object.keys(selectedNotif.metadata).length > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-neutral-700 text-xs text-slate-600 dark:text-neutral-400 space-y-1 font-mono">
+                  {selectedNotif.metadata.ticketId && (
+                    <p className="flex justify-between">
+                      <span className="text-slate-500 font-sans">Ticket Reference:</span>
+                      <strong className="text-emerald-700 dark:text-emerald-400">{selectedNotif.metadata.ticketId}</strong>
+                    </p>
+                  )}
+                  {selectedNotif.metadata.landId && (
+                    <p className="flex justify-between">
+                      <span className="text-slate-500 font-sans">Land Parcel ID:</span>
+                      <strong className="text-blue-600">{selectedNotif.metadata.landId}</strong>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedNotif(null)}
+              >
+                Close
+              </Button>
+
+              {selectedNotif.link && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={ArrowRight}
+                  onClick={() => handleNavigateToLink(selectedNotif.link)}
+                >
+                  Open Page / Service
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
+
+export default NotificationDrawer;

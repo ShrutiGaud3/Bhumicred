@@ -22,7 +22,13 @@ import {
   ChevronRight,
   TrendingUp,
   Landmark,
-  BadgeCheck
+  BadgeCheck,
+  Sprout,
+  Award,
+  Layers,
+  Globe,
+  Compass,
+  FileCheck
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
@@ -43,18 +49,33 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
   const [selectedReport, setSelectedReport] = useState(null);
 
   useEffect(() => {
-    const loadedInvoices = storageService.getInvoices();
-    const loadedReports = storageService.getReports();
+    const userIdentifier = user?.mobile || user?.id || user?._id || user?.name || null;
+    const loadedInvoices = storageService.getInvoices(userIdentifier);
+    const loadedReports = storageService.getReports(userIdentifier);
     setInvoices(loadedInvoices);
     setReports(loadedReports);
-  }, []);
+  }, [user]);
 
   const totalInvoicesAmount = invoices.reduce((acc, curr) => acc + (curr.grandTotal || curr.amount || 0), 0);
+  const totalCarbonCredits = reports
+    .filter((r) => r.category === 'Carbon Credits')
+    .reduce((acc, curr) => acc + (curr.annualSequestration || 0), 0);
 
   const handlePrintModalInvoice = () => {
     const originalTitle = document.title;
     if (selectedInvoice?.invoiceNumber) {
       document.title = `BHUMICRED_Tax_Invoice_${selectedInvoice.invoiceNumber}`;
+    }
+    window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
+  };
+
+  const handlePrintModalReport = () => {
+    const originalTitle = document.title;
+    if (selectedReport?.certId || selectedReport?.id) {
+      document.title = `BHUMICRED_Official_Audit_${selectedReport.certId || selectedReport.id}`;
     }
     window.print();
     setTimeout(() => {
@@ -75,7 +96,8 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
     const matchSearch =
       rep.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       rep.parcel?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rep.category?.toLowerCase().includes(searchQuery.toLowerCase());
+      rep.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rep.certId?.toLowerCase().includes(searchQuery.toLowerCase());
     if (activeTab === 'SOIL') return matchSearch && rep.category === 'Soil Health';
     if (activeTab === 'GIS') return matchSearch && (rep.category === 'GIS & Land RoR' || rep.category === 'Tree Asset Audit');
     if (activeTab === 'CARBON') return matchSearch && rep.category === 'Carbon Credits';
@@ -124,7 +146,7 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
             <div className="text-xl font-black text-slate-900">
               {reports.filter((r) => r.category === 'Soil Health').length} Certified
             </div>
-            <p className="text-[11px] text-slate-500 mt-0.5">N-P-K & Micro-nutrient maps</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">12-Parameter NABL Diagnostic Cards</p>
           </div>
         </Card>
 
@@ -139,9 +161,9 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
           </div>
           <div className="mt-2.5">
             <div className="text-xl font-black text-slate-900">
-              {reports.filter((r) => r.category === 'GIS & Land RoR' || r.category === 'Tree Asset Audit').length} Synced
+              {reports.filter((r) => r.category === 'GIS & Land RoR').length} Synced
             </div>
-            <p className="text-[11px] text-slate-500 mt-0.5">Bhulekh RoR & Drone verified</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">ISRO 0.3m Satellite & Bhulekh RoR</p>
           </div>
         </Card>
 
@@ -155,8 +177,8 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
             </div>
           </div>
           <div className="mt-2.5">
-            <div className="text-xl font-black text-slate-900">18.6 tCO2e / yr</div>
-            <p className="text-[11px] text-teal-700 font-semibold mt-0.5">Minting Ready Token Asset</p>
+            <div className="text-xl font-black text-slate-900">{totalCarbonCredits.toFixed(1)} tCO2e / yr</div>
+            <p className="text-[11px] text-teal-700 font-semibold mt-0.5">IPCC VM0042 Verified Assets</p>
           </div>
         </Card>
       </div>
@@ -214,73 +236,91 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
           />
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900 text-white uppercase text-[10px] tracking-wider">
-                  <tr>
-                    <th className="py-3 px-4">Invoice No & Date</th>
-                    <th className="py-3 px-4">Land Parcel / Service Scope</th>
-                    <th className="py-3 px-3 text-center">Area</th>
-                    <th className="py-3 px-4">Payment & Ref ID</th>
-                    <th className="py-3 px-4 text-right">Grand Total (₹)</th>
-                    <th className="py-3 px-3 text-center">Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 text-slate-800">
-                  {filteredInvoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 px-4">
-                        <strong className="font-mono text-slate-950 block text-xs">{inv.invoiceNumber}</strong>
-                        <span className="text-[11px] text-slate-500">{inv.invoiceDate} • {inv.invoiceTime || '12:00 PM'}</span>
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <strong className="text-slate-950 block">{inv.parcelName || 'Agricultural Parcel'}</strong>
-                        <span className="text-[11px] text-slate-500">
-                          Survey {inv.surveyNumber || '402/A'} • Khasra {inv.khasraNumber || '118/2'}
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-3 text-center font-mono font-semibold">
-                        {inv.acres || 12.4} ac
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <span className="text-[11px] font-semibold text-slate-800 block">{inv.paymentMethod}</span>
-                        <span className="text-[10px] font-mono text-emerald-800">{inv.transactionId}</span>
-                      </td>
-
-                      <td className="py-3 px-4 text-right">
-                        <strong className="font-mono text-slate-950 text-sm">
-                          ₹{(inv.grandTotal || inv.amount || 0).toFixed(2)}
-                        </strong>
-                        <span className="text-[10px] text-slate-500 block">Inc. 18% GST</span>
-                      </td>
-
-                      <td className="py-3 px-3 text-center">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          PAID
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedInvoice(inv)}
-                            className="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-sm"
-                            title="View full tax invoice with QR codes"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            View & Print
-                          </button>
-                        </div>
-                      </td>
+              {filteredInvoices.length === 0 ? (
+                <div className="text-center py-12 px-4 bg-slate-50/50">
+                  <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <h4 className="text-sm font-bold text-slate-800">No Invoices Found</h4>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                    Official GST invoices and receipts are automatically created when you register and map land parcels on BhumiCred.
+                  </p>
+                  <div className="mt-4">
+                    <Link
+                      to="/farmer/lands/add"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow transition-all"
+                    >
+                      Register New Land Parcel
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-900 text-white uppercase text-[10px] tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Invoice No & Date</th>
+                      <th className="py-3 px-4">Land Parcel / Service Scope</th>
+                      <th className="py-3 px-3 text-center">Area</th>
+                      <th className="py-3 px-4">Payment & Ref ID</th>
+                      <th className="py-3 px-4 text-right">Grand Total (₹)</th>
+                      <th className="py-3 px-3 text-center">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 text-slate-800">
+                    {filteredInvoices.map((inv) => (
+                      <tr key={inv.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-4">
+                          <strong className="font-mono text-slate-950 block text-xs">{inv.invoiceNumber}</strong>
+                          <span className="text-[11px] text-slate-500">{inv.invoiceDate} • {inv.invoiceTime || '12:00 PM'}</span>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <strong className="text-slate-950 block">{inv.parcelName || 'Agricultural Parcel'}</strong>
+                          <span className="text-[11px] text-slate-500">
+                            Survey {inv.surveyNumber || '402/A'} • Khasra {inv.khasraNumber || '118/2'}
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-3 text-center font-mono font-semibold">
+                          {inv.acres || 12.4} ac
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <span className="text-[11px] font-semibold text-slate-800 block">{inv.paymentMethod}</span>
+                          <span className="text-[10px] font-mono text-emerald-800">{inv.transactionId}</span>
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <strong className="font-mono text-slate-950 text-sm">
+                            ₹{(inv.grandTotal || inv.amount || 0).toFixed(2)}
+                          </strong>
+                          <span className="text-[10px] text-slate-500 block">Inc. 18% GST</span>
+                        </td>
+
+                        <td className="py-3 px-3 text-center">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            PAID
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedInvoice(inv)}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-sm"
+                              title="View full tax invoice with QR codes"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              View & Print
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -299,65 +339,96 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
             }
           />
           <CardContent className="p-4 sm:p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredReports.map((rep) => (
-                <div
-                  key={rep.id}
-                  className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200 hover:border-emerald-300 transition-all space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-white border border-slate-200 shadow-sm text-emerald-800">
-                        {rep.category === 'Soil Health' ? (
-                          <FlaskConical className="w-5 h-5 text-sky-600" />
-                        ) : rep.category === 'Carbon Credits' ? (
-                          <Sparkles className="w-5 h-5 text-teal-600" />
-                        ) : (
-                          <MapPin className="w-5 h-5 text-emerald-600" />
-                        )}
+            {filteredReports.length === 0 ? (
+              <div className="text-center py-10 px-4 bg-slate-50/50 rounded-2xl border border-slate-200">
+                <FlaskConical className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                <h4 className="text-sm font-bold text-slate-800">No Reports Available</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                  Soil health cards and cadastral audit reports are linked directly to your registered land parcels.
+                </p>
+                <div className="mt-4">
+                  <Link
+                    to="/farmer/lands/add"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow transition-all"
+                  >
+                    Register Land Parcel
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredReports.map((rep) => (
+                  <div
+                    key={rep.id}
+                    className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200 hover:border-emerald-300 transition-all space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-white border border-slate-200 shadow-sm text-emerald-800">
+                          {rep.category === 'Soil Health' ? (
+                            <FlaskConical className="w-5 h-5 text-sky-600" />
+                          ) : rep.category === 'Carbon Credits' ? (
+                            <Sparkles className="w-5 h-5 text-teal-600" />
+                          ) : (
+                            <MapPin className="w-5 h-5 text-emerald-600" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">
+                              {rep.category}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-500">{rep.certId}</span>
+                          </div>
+                          <h4 className="font-bold text-xs text-slate-900 mt-1 leading-snug">{rep.title}</h4>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">
-                          {rep.category}
-                        </span>
-                        <h4 className="font-bold text-xs text-slate-900 mt-1 leading-snug">{rep.title}</h4>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                        ✓ {rep.status}
+                      </span>
+                    </div>
+
+                    {/* Parcel & Authority Meta */}
+                    <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-[11px] space-y-1">
+                      <p><span className="text-slate-500">Target Parcel:</span> <strong className="text-slate-900">{rep.parcel}</strong></p>
+                      <p><span className="text-slate-500">Issuing Authority:</span> <span className="text-slate-700">{rep.authority}</span></p>
+                      <p><span className="text-slate-500">Audit Score / Vitality:</span> <strong className="text-emerald-800">{rep.score}</strong></p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between pt-1 text-xs">
+                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" /> Issued: {rep.issuedDate}
+                      </span>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReport(rep)}
+                          className="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-sm"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          View Certificate
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedReport(rep);
+                            setTimeout(() => {
+                              handlePrintModalReport();
+                            }, 400);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-sm"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          PDF
+                        </button>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
-                      ✓ {rep.status}
-                    </span>
                   </div>
-
-                  {/* Parcel & Authority Meta */}
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-[11px] space-y-1">
-                    <p><span className="text-slate-500">Target Parcel:</span> <strong className="text-slate-900">{rep.parcel}</strong></p>
-                    <p><span className="text-slate-500">Issuing Lab:</span> <span className="text-slate-700">{rep.authority}</span></p>
-                    <p><span className="text-slate-500">Audit Score / Vitality:</span> <strong className="text-emerald-800">{rep.score}</strong></p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-1 text-xs">
-                    <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" /> Issued: {rep.issuedDate}
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        toast.success(`Downloading ${rep.title} (${rep.fileSize})...`);
-                        setTimeout(() => {
-                          window.print();
-                        }, 600);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Download {rep.fileSize}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -646,6 +717,314 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
                       <div className="font-serif italic font-bold text-slate-800 text-xs">Digitally Signed & Certified</div>
                       <p className="text-[9px] font-mono text-emerald-700">CERT-ID: BC-TAX-AUTH-2026-9810</p>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* INTERACTIVE FULL OFFICIAL SCIENTIFIC REPORT / CADASTRAL AUDIT MODAL */}
+      {selectedReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-4xl w-full border border-slate-200 shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+            {/* Modal Header Controls (Hidden in Print) */}
+            <div className="print:hidden p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <Award className="w-5 h-5 text-emerald-400" />
+                <div>
+                  <h3 className="text-sm font-bold">{selectedReport.title}</h3>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    Certificate ID: {selectedReport.certId || selectedReport.id} • Issued {selectedReport.issuedDate}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handlePrintModalReport}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow"
+                >
+                  <Download className="w-4 h-4" />
+                  Download PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrintModalReport}
+                  className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1"
+                >
+                  <Printer className="w-4 h-4" />
+                  Print
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedReport(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 ml-2"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body: AUTHENTIC PRINTABLE CERTIFICATE */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 text-slate-900">
+              <div className="border-4 border-double border-emerald-800 p-5 sm:p-7 rounded-2xl bg-gradient-to-b from-emerald-50/20 via-white to-slate-50/30 space-y-4 print:p-0 print:border-none print:shadow-none">
+                {/* Certificate Emblem & Top Banner */}
+                <div className="text-center border-b-2 border-emerald-800 pb-4">
+                  <div className="inline-flex items-center justify-center p-2 rounded-full bg-emerald-100 text-emerald-800 mb-1.5">
+                    {selectedReport.category === 'Soil Health' ? (
+                      <FlaskConical className="w-7 h-7" />
+                    ) : selectedReport.category === 'Carbon Credits' ? (
+                      <Sparkles className="w-7 h-7" />
+                    ) : selectedReport.category === 'Tree Asset Audit' ? (
+                      <Trees className="w-7 h-7" />
+                    ) : (
+                      <MapPin className="w-7 h-7" />
+                    )}
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-black text-emerald-950 uppercase tracking-tight">
+                    {selectedReport.category === 'Soil Health'
+                      ? 'National Soil Health Diagnostic Card & Nutrient Profile'
+                      : selectedReport.category === 'Carbon Credits'
+                      ? 'National Agroforestry Carbon Credit Sequestration Certificate'
+                      : selectedReport.category === 'Tree Asset Audit'
+                      ? 'Biometric Tree Asset & Multi-Angle Canopy Vitality Audit'
+                      : 'High-Resolution Satellite GIS Cadastral Boundary Audit'}
+                  </h2>
+                  <p className="text-xs font-semibold text-emerald-800 mt-0.5">
+                    BHUMICRED Sovereign Agricultural Registry • {selectedReport.authority}
+                  </p>
+                  <div className="inline-block mt-2 px-3 py-0.5 bg-emerald-900 text-white rounded-full text-[11px] font-mono font-bold tracking-wider">
+                    REGISTRATION CERTIFICATE • {selectedReport.certId || selectedReport.id}
+                  </div>
+                </div>
+
+                {/* Farmer & Land Particulars Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                  <div>
+                    <span className="text-slate-500 font-medium block text-[10px]">Farmer / Applicant:</span>
+                    <strong className="text-slate-900">{selectedReport.ownerName || user?.name || 'Citizen Farmer'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium block text-[10px]">Survey & Khasra:</span>
+                    <strong className="text-slate-900">Survey {selectedReport.surveyNumber || '108/A'} • Khasra {selectedReport.khasraNumber || '412/9'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium block text-[10px]">Land Area:</span>
+                    <strong className="text-emerald-900 font-mono">{selectedReport.areaAcres || 5} Acres ({selectedReport.areaHectares || 2.02} Ha)</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium block text-[10px]">Location / Village:</span>
+                    <span className="text-slate-700">{selectedReport.location || 'Navli, Anand, Gujarat'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium block text-[10px]">Audit Status:</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800">
+                      ✓ {selectedReport.status}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium block text-[10px]">Date of Certification:</span>
+                    <span className="font-mono text-slate-700">{selectedReport.issuedDate}</span>
+                  </div>
+                </div>
+
+                {/* 1. SOIL HEALTH DIAGNOSTIC CARD VIEW */}
+                {selectedReport.category === 'Soil Health' && selectedReport.parameters && (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                      <FlaskConical className="w-4 h-4 text-emerald-700" />
+                      12-Parameter Chemical & Nutrient Profile (NABL Standard)
+                    </h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left border border-slate-300 rounded-lg overflow-hidden">
+                        <thead className="bg-emerald-900 text-white font-bold text-[10px] uppercase">
+                          <tr>
+                            <th className="p-2 border-r border-emerald-800">Nutrient Parameter</th>
+                            <th className="p-2 border-r border-emerald-800">Observed Value</th>
+                            <th className="p-2 border-r border-emerald-800">Standard Benchmarks</th>
+                            <th className="p-2">Rating & Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 text-slate-800 bg-white">
+                          <tr>
+                            <td className="p-2 font-medium border-r">Soil Reaction (pH)</td>
+                            <td className="p-2 font-bold font-mono border-r">{selectedReport.parameters.ph}</td>
+                            <td className="p-2 text-slate-500 border-r">6.5 - 7.5</td>
+                            <td className="p-2 text-emerald-700 font-semibold">Optimal Neutral</td>
+                          </tr>
+                          <tr>
+                            <td className="p-2 font-medium border-r">Electrical Conductivity (EC)</td>
+                            <td className="p-2 font-bold font-mono border-r">{selectedReport.parameters.ec}</td>
+                            <td className="p-2 text-slate-500 border-r">&lt; 1.0 dS/m</td>
+                            <td className="p-2 text-emerald-700 font-semibold">Normal (Non-Saline)</td>
+                          </tr>
+                          <tr>
+                            <td className="p-2 font-medium border-r">Organic Carbon (OC)</td>
+                            <td className="p-2 font-bold font-mono border-r">{selectedReport.parameters.oc}</td>
+                            <td className="p-2 text-slate-500 border-r">&gt; 0.75%</td>
+                            <td className="p-2 text-emerald-700 font-semibold">High / Carbon Rich</td>
+                          </tr>
+                          <tr>
+                            <td className="p-2 font-medium border-r">Available Nitrogen (N)</td>
+                            <td className="p-2 font-bold font-mono border-r">{selectedReport.parameters.nitrogen}</td>
+                            <td className="p-2 text-slate-500 border-r">280 - 560 kg/ha</td>
+                            <td className="p-2 text-blue-700 font-semibold">Medium Adequate</td>
+                          </tr>
+                          <tr>
+                            <td className="p-2 font-medium border-r">Available Phosphorus (P)</td>
+                            <td className="p-2 font-bold font-mono border-r">{selectedReport.parameters.phosphorus}</td>
+                            <td className="p-2 text-slate-500 border-r">14 - 28 kg/ha</td>
+                            <td className="p-2 text-emerald-700 font-semibold">High Fertility</td>
+                          </tr>
+                          <tr>
+                            <td className="p-2 font-medium border-r">Available Potassium (K)</td>
+                            <td className="p-2 font-bold font-mono border-r">{selectedReport.parameters.potassium}</td>
+                            <td className="p-2 text-slate-500 border-r">150 - 300 kg/ha</td>
+                            <td className="p-2 text-emerald-700 font-semibold">High</td>
+                          </tr>
+                          <tr>
+                            <td className="p-2 font-medium border-r">Available Zinc (Zn) & Iron (Fe)</td>
+                            <td className="p-2 font-bold font-mono border-r">{selectedReport.parameters.zinc} • {selectedReport.parameters.iron}</td>
+                            <td className="p-2 text-slate-500 border-r">&gt; 0.6 ppm</td>
+                            <td className="p-2 text-emerald-700 font-semibold">Adequate</td>
+                          </tr>
+                          <tr>
+                            <td className="p-2 font-medium border-r">Manganese (Mn) & Boron (B)</td>
+                            <td className="p-2 font-bold font-mono border-r">{selectedReport.parameters.manganese} • {selectedReport.parameters.boron}</td>
+                            <td className="p-2 text-slate-500 border-r">&gt; 0.5 ppm</td>
+                            <td className="p-2 text-emerald-700 font-semibold">Normal</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs">
+                      <span className="font-bold text-emerald-950 block mb-0.5">🌾 Scientific Agronomist Advisory & Dosage:</span>
+                      <p className="text-slate-700 leading-relaxed">{selectedReport.recommendation}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. CADASTRAL GIS AUDIT VIEW */}
+                {selectedReport.category === 'GIS & Land RoR' && (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                      <Compass className="w-4 h-4 text-emerald-700" />
+                      Satellite GIS Cadastral Vertex & Perimeter Analysis
+                    </h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1.5">
+                        <span className="font-bold text-slate-900 block border-b border-slate-100 pb-1">🛰️ Geodetic & Remote Sensing Meta:</span>
+                        <p><span className="text-slate-500">Satellite Sensor:</span> <strong className="text-slate-800">{selectedReport.satelliteResolution}</strong></p>
+                        <p><span className="text-slate-500">Total Perimeter:</span> <strong className="font-mono text-emerald-800">{selectedReport.boundaryPerimeter}</strong></p>
+                        <p><span className="text-slate-500">Bhulekh RoR 7/12 Sync:</span> <strong className="font-mono text-slate-800">{selectedReport.bhulekhSyncId}</strong></p>
+                        <p><span className="text-slate-500">Elevation:</span> <span className="text-slate-700">{selectedReport.elevation}</span></p>
+                        <p><span className="text-slate-500">Dispute & Overlap:</span> <span className="font-bold text-emerald-700">{selectedReport.disputeStatus}</span></p>
+                      </div>
+
+                      <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1.5">
+                        <span className="font-bold text-slate-900 block border-b border-slate-100 pb-1">📍 4 Geo-Corner GPS Boundary Vertices:</span>
+                        <div className="space-y-1 font-mono text-[11px] text-slate-800">
+                          {selectedReport.geoCorners?.map((c, idx) => (
+                            <div key={idx} className="flex justify-between py-0.5 border-b border-slate-50 last:border-none">
+                              <span className="font-bold text-slate-600">{c.label}:</span>
+                              <span>{c.lat}, {c.lng}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. CARBON CREDIT CERTIFICATE VIEW */}
+                {selectedReport.category === 'Carbon Credits' && (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-teal-900 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-teal-700" />
+                      Agro-Ecosystem Carbon Sequestration & Asset Metrics
+                    </h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                      <div className="p-3 bg-teal-50 rounded-xl border border-teal-200">
+                        <span className="text-[10px] text-teal-800 uppercase font-bold">Annual Sequestration</span>
+                        <div className="text-xl font-black text-teal-950 mt-1">{selectedReport.score}</div>
+                        <span className="text-[10px] text-teal-700 font-medium">VM0042 Protocol</span>
+                      </div>
+                      <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                        <span className="text-[10px] text-emerald-800 uppercase font-bold">Carbon Tokens Ready</span>
+                        <div className="text-xl font-black text-emerald-950 mt-1">{selectedReport.carbonTokens}</div>
+                        <span className="text-[10px] text-emerald-700 font-medium">Verified On-Chain Asset</span>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <span className="text-[10px] text-slate-600 uppercase font-bold">Estimated Market Value</span>
+                        <div className="text-xl font-black text-slate-900 mt-1">{selectedReport.estimatedAssetValue}</div>
+                        <span className="text-[10px] text-slate-500 font-medium">@ ₹1,200 / Token</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. TREE ASSET BIOMETRIC SCAN VIEW */}
+                {selectedReport.category === 'Tree Asset Audit' && (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                      <Trees className="w-4 h-4 text-emerald-700" />
+                      Multi-Angle Biometric Tree Asset & Insurance Summary
+                    </h4>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                        <span className="text-slate-500 text-[10px] block">Insured Trees:</span>
+                        <strong className="text-slate-900 text-sm">{selectedReport.insuredTreeCount}</strong>
+                      </div>
+                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                        <span className="text-slate-500 text-[10px] block">4-5 Angle GPS Scans:</span>
+                        <strong className="text-emerald-800 text-sm">{selectedReport.treePhotosCount}</strong>
+                      </div>
+                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                        <span className="text-slate-500 text-[10px] block">Canopy Vitality:</span>
+                        <strong className="text-emerald-800 text-sm">{selectedReport.score}</strong>
+                      </div>
+                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                        <span className="text-slate-500 text-[10px] block">Fungal / Pest Risk:</span>
+                        <strong className="text-emerald-700 text-sm">{selectedReport.fungalPestRisk}</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Verification Footer & QR Code */}
+                <div className="mt-4 pt-3 border-t-2 border-emerald-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3">
+                    <TaxInvoiceQrCode
+                      value={`https://bhumicred.gov.in/verify/${selectedReport.certId || selectedReport.id}?survey=${selectedReport.surveyNumber}&owner=${selectedReport.ownerName}`}
+                      size={42}
+                      badgeText="VERIFIED CERT"
+                      badgeColor="bg-emerald-900 text-white"
+                      label="Verification QR"
+                      subLabel="BhumiCred Sovereign Registry"
+                      showLabel={false}
+                    />
+                    <div>
+                      <p className="font-mono text-[10px] text-slate-500">Tamper-Proof Verification ID</p>
+                      <strong className="font-mono text-emerald-950 block">{selectedReport.certId || selectedReport.id}</strong>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800">
+                        <ShieldCheck className="w-3.5 h-3.5" /> Digitally Sealed & Certified by Registrar
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="w-36 border-b border-dashed border-slate-400 pb-0.5 mb-0.5 font-serif text-xs italic font-bold text-slate-800">
+                      Dr. Arvind Mehta
+                    </div>
+                    <p className="text-[10px] text-slate-600 font-medium">Head of Agronomy & Lab Quality</p>
+                    <p className="text-[9px] text-slate-400">BhumiCred NABL Testing Bureau</p>
                   </div>
                 </div>
               </div>
