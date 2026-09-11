@@ -227,9 +227,10 @@ export const ApprovalsQueuePage = () => {
             variant="outline"
             size="sm"
             onClick={fetchQueue}
-            className={`flex items-center gap-2 ${loading ? 'animate-spin' : ''}`}
+            disabled={loading}
+            className="flex items-center gap-2"
           >
-            <RefreshCw className="w-4 h-4" /> Refresh Queue
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh Queue
           </Button>
         }
       />

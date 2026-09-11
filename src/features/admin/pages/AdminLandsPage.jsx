@@ -102,9 +102,10 @@ export const AdminLandsPage = () => {
             variant="outline"
             size="sm"
             onClick={fetchLands}
-            className={`flex items-center gap-2 ${loading ? 'animate-spin' : ''}`}
+            disabled={loading}
+            className="flex items-center gap-2"
           >
-            <RefreshCw className="w-4 h-4" /> Refresh Registry
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh Registry
           </Button>
         }
       />

@@ -770,6 +770,9 @@ export const storageService = {
             areaAcres: 5.95,
             estimatedTreeCount: 33,
             treeCount: 33,
+            userMobile: '9876543210',
+            ownerMobile: '9876543210',
+            ownerName: 'Rajesh Patel',
             agroforestryType: 'High-Resin Indian Teak & Sandalwood',
             carbonSequestration: {
               annualSequestrationRateTons: 4.1,
@@ -790,15 +793,14 @@ export const storageService = {
       }
       if (!userMobileOrId) return audits;
       const cleanMobile = String(userMobileOrId).replace(/\D/g, '');
-      return audits.filter(
-        (a) =>
-          !a.userMobile ||
-          !cleanMobile ||
-          a.userMobile.replace(/\D/g, '') === cleanMobile ||
-          cleanMobile.includes(a.userMobile.replace(/\D/g, '')) ||
-          a.ownerId === userMobileOrId ||
-          a.userId === userMobileOrId
-      );
+      return audits.filter((a) => {
+        const aMobile = (a.userMobile || a.ownerMobile || '').replace(/\D/g, '');
+        if (cleanMobile && aMobile && (aMobile === cleanMobile || cleanMobile.includes(aMobile) || aMobile.includes(cleanMobile))) return true;
+        if (a.ownerId && String(a.ownerId) === String(userMobileOrId)) return true;
+        if (a.userId && String(a.userId) === String(userMobileOrId)) return true;
+        if (a.ownerName && String(a.ownerName).toLowerCase() === String(userMobileOrId).toLowerCase()) return true;
+        return false;
+      });
     } catch (e) {
       console.warn('Error reading carbon audits:', e);
       return [];
@@ -821,6 +823,11 @@ export const storageService = {
         estimatedTreeCount: audit.estimatedTreeCount || audit.treeCount || 45,
         treeCount: audit.estimatedTreeCount || audit.treeCount || 45,
         agroforestryType: audit.agroforestryType || 'High-Resin Teak & Sandalwood Bio-Sequestration',
+        userMobile: audit.userMobile || audit.ownerMobile || '',
+        ownerMobile: audit.ownerMobile || audit.userMobile || '',
+        ownerId: audit.ownerId || audit.userId || '',
+        userId: audit.userId || audit.ownerId || '',
+        ownerName: audit.ownerName || '',
         carbonSequestration: {
           annualSequestrationRateTons: audit.carbonSequestration?.annualSequestrationRateTons || Number(((audit.areaAcres || 5) * 0.95 + (audit.estimatedTreeCount || 45) * 0.08).toFixed(1)),
           estimated3YearTotalTons: audit.carbonSequestration?.estimated3YearTotalTons || Number((((audit.areaAcres || 5) * 0.95 + (audit.estimatedTreeCount || 45) * 0.08) * 3).toFixed(1)),

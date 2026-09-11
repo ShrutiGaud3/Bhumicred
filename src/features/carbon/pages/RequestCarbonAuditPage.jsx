@@ -39,30 +39,51 @@ export const RequestCarbonAuditPage = () => {
 
   useEffect(() => {
     const fetchAllLands = async () => {
-      let list = [];
+      let backendList = [];
       try {
         const res = await landService.getMyLands();
-        list = Array.isArray(res?.data) ? res.data : (res?.data?.lands || []);
+        backendList = Array.isArray(res?.data) ? res.data : (res?.data?.lands || []);
       } catch (err) {
         console.warn('Backend lands fetch error in RequestCarbonAuditPage:', err);
       }
 
-      if (!list || list.length === 0) {
-        const userIdentifier = user?.mobile || user?.id || user?._id || user?.name;
-        list = storageService.getLands(userIdentifier);
-      }
+      const userIdentifier = user?.mobile || user?.phone || user?.id || user?._id || user?.name;
+      const cleanUserPhone = userIdentifier ? String(userIdentifier).replace(/\D/g, '') : '';
+      const validUserId = user?.id || user?._id;
 
-      const mapped = (list || []).map((item) => ({
-        id: item.landId || item._id || item.id,
-        _id: item._id || item.landId || item.id,
-        landName: item.landName || 'Registered Farm',
-        surveyNumber: item.surveyNumber || item.khasraNumber || 'N/A',
-        khasraNumber: item.khasraNumber || item.surveyNumber || 'N/A',
-        area: item.area || item.areaAcres || 5,
-        areaUnit: item.areaUnit || 'Acres',
-        treeCount: item.treeCount || item.standingTreeCount || item.agronomicDetails?.treeCount || (item.treesInsured ? 12 : 0),
-        status: item.status || 'APPROVED',
-      }));
+      const localList = userIdentifier ? storageService.getLands(userIdentifier) : [];
+      const userOwnedLocalLands = localList.filter((l) => {
+        if (!l) return false;
+        if (l.ownerId && validUserId && String(l.ownerId) === String(validUserId)) return true;
+        if (l.userId && validUserId && String(l.userId) === String(validUserId)) return true;
+        if (cleanUserPhone && l.ownerMobile && l.ownerMobile.replace(/\D/g, '') === cleanUserPhone) return true;
+        if (cleanUserPhone && l.mobile && l.mobile.replace(/\D/g, '') === cleanUserPhone) return true;
+        if (user?.name && l.ownerName && l.ownerName.toLowerCase() === user.name.toLowerCase()) return true;
+        return false;
+      });
+
+      const combined = [...userOwnedLocalLands, ...backendList];
+      const seen = new Set();
+      const mapped = [];
+
+      combined.forEach((item) => {
+        if (!item) return;
+        const key = item.landId || item._id || item.id || item.surveyNumber;
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          mapped.push({
+            id: item.landId || item._id || item.id,
+            _id: item._id || item.landId || item.id,
+            landName: item.landName || 'Registered Farm',
+            surveyNumber: item.surveyNumber || item.khasraNumber || 'N/A',
+            khasraNumber: item.khasraNumber || item.surveyNumber || 'N/A',
+            area: item.area || item.areaAcres || 5,
+            areaUnit: item.areaUnit || 'Acres',
+            treeCount: item.treeCount || item.standingTreeCount || item.agronomicDetails?.treeCount || (item.treesInsured ? 12 : 0),
+            status: item.status || 'APPROVED',
+          });
+        }
+      });
 
       setLandsList(mapped);
 
@@ -95,7 +116,10 @@ export const RequestCarbonAuditPage = () => {
       treeCount: treesNum,
       agroforestryType,
       userMobile: user?.mobile || user?.phone || '',
-      ownerId: user?.id || user?._id,
+      ownerMobile: user?.mobile || user?.phone || '',
+      ownerId: user?.id || user?._id || '',
+      userId: user?.id || user?._id || '',
+      ownerName: user?.name || user?.fullName || '',
       carbonSequestration: {
         annualSequestrationRateTons: annualRate,
         estimated3YearTotalTons: Number((annualRate * 3).toFixed(1)),

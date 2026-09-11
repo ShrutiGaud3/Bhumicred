@@ -61,19 +61,51 @@ export const CarbonOpportunitiesPage = () => {
         console.warn('Backend lands fetch fallback in CarbonOpportunitiesPage:', err);
       }
 
-      const userIdentifier = user?.mobile || user?.id || user?._id || user?.name;
-      const localList = storageService.getLands(userIdentifier);
-      const localAudits = storageService.getCarbonAudits(userIdentifier);
+      const userIdentifier = user?.mobile || user?.phone || user?.id || user?._id || user?.name;
+      const cleanUserPhone = userIdentifier ? String(userIdentifier).replace(/\D/g, '') : '';
+      const validUserId = user?.id || user?._id;
 
-      // 1. Every distinct MRV scan requested creates its own standalone card
-      const auditCards = localAudits.map((audit, idx) => {
+      // Strictly get this user's local lands and audits
+      const localList = userIdentifier ? storageService.getLands(userIdentifier) : [];
+      const localAudits = userIdentifier ? storageService.getCarbonAudits(userIdentifier) : [];
+
+      // Double check that lands in localList actually match the current user
+      const userOwnedLocalLands = localList.filter((l) => {
+        if (!l) return false;
+        if (l.ownerId && validUserId && String(l.ownerId) === String(validUserId)) return true;
+        if (l.userId && validUserId && String(l.userId) === String(validUserId)) return true;
+        if (cleanUserPhone && l.ownerMobile && l.ownerMobile.replace(/\D/g, '') === cleanUserPhone) return true;
+        if (cleanUserPhone && l.mobile && l.mobile.replace(/\D/g, '') === cleanUserPhone) return true;
+        if (user?.name && l.ownerName && l.ownerName.toLowerCase() === user.name.toLowerCase()) return true;
+        return false;
+      });
+
+      // Combine user's local and backend lands
+      const userLands = [...userOwnedLocalLands, ...backendList];
+      const userLandIds = new Set(userLands.map((l) => String(l.landId || l.id || l._id)));
+      const userSurveys = new Set(userLands.map((l) => (l.surveyNumber || '').trim()).filter(Boolean));
+
+      // 1. Every distinct MRV scan requested by this user
+      // Audit must either match the user directly or match one of their registered lands
+      const validAudits = localAudits.filter((audit) => {
+        if (!audit) return false;
+        const auditPhone = (audit.userMobile || audit.ownerMobile || '').replace(/\D/g, '');
+        if (cleanUserPhone && auditPhone && (auditPhone === cleanUserPhone || cleanUserPhone.includes(auditPhone))) return true;
+        if (audit.ownerId && validUserId && String(audit.ownerId) === String(validUserId)) return true;
+        if (audit.userId && validUserId && String(audit.userId) === String(validUserId)) return true;
+        if (audit.landId && userLandIds.has(String(audit.landId))) return true;
+        if (audit.surveyNumber && userSurveys.has(String(audit.surveyNumber).trim())) return true;
+        return false;
+      });
+
+      const auditCards = validAudits.map((audit, idx) => {
         const trees = Number(audit.estimatedTreeCount || audit.treeCount || 33);
         const area = Number(audit.areaAcres || audit.area || 5.95);
         return {
           id: audit.auditId || audit._id || `scan_audit_${idx}`,
           _id: audit.auditId || audit._id || `scan_audit_${idx}`,
           auditId: audit.auditId,
-          landName: audit.landName || 'Krishna Farm',
+          landName: audit.landName || 'Registered Farm',
           surveyNumber: audit.surveyNumber || '465',
           khasraNumber: audit.khasraNumber || audit.surveyNumber || '465',
           area: area,
@@ -88,15 +120,14 @@ export const CarbonOpportunitiesPage = () => {
       });
 
       // 2. Base registered lands (add any registered parcel that hasn't been scanned yet)
-      const baseLands = [...localList, ...backendList];
       const baseCards = [];
       const seenBase = new Set();
 
-      baseLands.forEach((item) => {
+      userLands.forEach((item) => {
         if (!item) return;
         const srv = (item.surveyNumber && item.surveyNumber !== 'N/A') ? item.surveyNumber.trim() : null;
         const name = (item.landName || '').trim().toLowerCase();
-        const key = srv ? `srv_${srv}` : name ? `name_${name}` : `id_${item.id || item._id}`;
+        const key = item.landId || item._id || item.id || (srv ? `srv_${srv}` : `name_${name}`);
 
         if (key && !seenBase.has(key)) {
           seenBase.add(key);
@@ -107,7 +138,8 @@ export const CarbonOpportunitiesPage = () => {
               (srv && ac.surveyNumber === srv) ||
               (name && ac.landName.trim().toLowerCase() === name) ||
               ac.id === item.id ||
-              ac.id === item._id
+              ac.id === item._id ||
+              ac.id === item.landId
           );
 
           if (!alreadyHasAudit) {
@@ -143,6 +175,8 @@ export const CarbonOpportunitiesPage = () => {
       if (allCards.length > 0) {
         const totalTrees = allCards.reduce((acc, l) => acc + (Number(l.treeCount) || 0), 0);
         setTreeCountSlider(totalTrees > 0 ? totalTrees : 95);
+      } else {
+        setTreeCountSlider(0);
       }
     };
 
@@ -155,11 +189,11 @@ export const CarbonOpportunitiesPage = () => {
   const annualEarningEst = Math.round(annualCredits * creditPriceInr);
 
   const displayLands = landsList;
-  const totalActualCarbon = Number(
+  const totalActualCarbon = displayLands.length > 0 ? Number(
     displayLands.reduce((acc, l) => acc + ((Number(l.treeCount) || 0) * 0.125), 0).toFixed(1)
-  );
+  ) : 0;
   const totalActualValuation = Math.round(totalActualCarbon * creditPriceInr);
-  const totalMintedBatches = displayLands.length > 0 ? displayLands.length : (stats?.totalCreditsMinted || 1);
+  const totalMintedBatches = displayLands.length;
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">

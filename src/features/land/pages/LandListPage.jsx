@@ -125,10 +125,10 @@ export const LandListPage = () => {
             <Button
               variant="outline"
               size="sm"
-              icon={RefreshCw}
               onClick={fetchLands}
-              className={loading ? 'animate-spin' : ''}
+              disabled={loading}
             >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Link to="/farmer/lands/add">
