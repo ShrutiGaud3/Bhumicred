@@ -8,11 +8,11 @@ export const fetchPartnerDashboard = createAsyncThunk(
   async () => {
     return {
       metrics: {
-        assignedTasks: 8,
-        scheduledVisits: 3,
-        pendingInspections: MOCK_CLAIMS.length,
-        samplesInLabQueue: MOCK_SOIL_REQUESTS.length,
-        submittedReports: 14,
+        assignedTasks: 0,
+        scheduledVisits: 0,
+        pendingInspections: MOCK_CLAIMS?.length || 0,
+        samplesInLabQueue: MOCK_SOIL_REQUESTS?.length || 0,
+        submittedReports: 0,
       },
       status: 'APPROVED',
       upcomingVisits: [],

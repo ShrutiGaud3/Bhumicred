@@ -109,30 +109,49 @@ export const LandDetailPage = () => {
     );
   }
 
-  const linkedPolicy = MOCK_POLICIES.find((p) => p.landId === land.id || p.landId === land.landId);
-  const linkedSoil = MOCK_SOIL_REQUESTS.find((s) => s.landId === land.id || s.landId === land.landId);
+  const primaryCrops = Array.isArray(land.primaryCrops)
+    ? land.primaryCrops
+    : Array.isArray(land.agronomicDetails?.primaryCrops)
+    ? land.agronomicDetails.primaryCrops
+    : typeof land.primaryCrops === 'string'
+    ? [land.primaryCrops]
+    : ['Cotton', 'Wheat', 'Paddy'];
+
+  const area = land.area || land.areaAcres || 5;
+  const areaUnit = land.areaUnit || 'Acres';
+  const treeCount = land.treeCount ?? land.standingTreeCount ?? land.agronomicDetails?.treeCount ?? 0;
+  const soilType = land.soilType || land.agronomicDetails?.soilType || 'Alluvial Loam';
+  const irrigationSource = land.irrigationSource || land.agronomicDetails?.irrigationSource || 'Borewell & Drip Irrigation';
+  const fullAddress = land.address || (land.location ? `${land.location.village || ''}, ${land.location.district || ''}` : `${land.village || 'Mogri'}, ${land.district || 'Anand'}`);
+  const coordinates = land.coordinates || land.boundaries?.coordinates || [];
+
+  const localPolicies = storageService.getPolicies ? storageService.getPolicies() : [];
+  const linkedPolicy = localPolicies.find((p) => p.landId === land.id || p.landId === land.landId || p.landId === land._id) || null;
+
+  const localSoil = storageService.getSoilRequests ? storageService.getSoilRequests() : [];
+  const linkedSoil = localSoil.find((s) => s.landId === land.id || s.landId === land.landId || s.landId === land._id) || null;
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
       <PageHeader
-        title={land.landName}
-        subtitle={`Survey No: ${land.surveyNumber} • Khasra: ${land.khasraNumber} • ${land.address}`}
+        title={land.landName || 'Registered Agricultural Parcel'}
+        subtitle={`Survey No: ${land.surveyNumber || 'N/A'} • Khasra: ${land.khasraNumber || 'N/A'} • ${fullAddress}`}
         backTo="/farmer/lands"
         breadcrumbs={[
           { label: 'Farmer Portal', path: '/farmer/dashboard' },
           { label: 'My Lands', path: '/farmer/lands' },
-          { label: land.landName },
+          { label: land.landName || 'Land Detail' },
         ]}
         actions={
-          <div className="flex items-center gap-3">
-            <StatusBadge status={land.status} />
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <StatusBadge status={land.status || 'PENDING_VERIFICATION'} />
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5 text-xs sm:text-sm"
               onClick={() => setShowDeedModal(true)}
             >
-              <Download className="w-4 h-4" /> Official Cadastral Deed
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" /> Official Cadastral Deed
             </Button>
           </div>
         }
@@ -140,49 +159,49 @@ export const LandDetailPage = () => {
 
       {/* Top Metric Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="p-4 bg-white">
-          <div className="flex items-center gap-2 text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">
-            <MapPin className="w-4 h-4 text-emerald-600" /> Total Area
+        <Card className="p-4 bg-white dark:bg-neutral-900">
+          <div className="flex items-center gap-2 text-gray-500 dark:text-neutral-400 text-xs font-semibold uppercase tracking-wider mb-1">
+            <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Total Area
           </div>
-          <p className="text-2xl font-bold text-gray-900">{land.area} <span className="text-sm font-medium text-gray-500">{land.areaUnit}</span></p>
-          <span className="text-xs text-gray-500 mt-1 block">{land.ownershipType}</span>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{area} <span className="text-sm font-medium text-gray-500 dark:text-neutral-400">{areaUnit}</span></p>
+          <span className="text-xs text-gray-500 dark:text-neutral-400 mt-1 block">{land.ownershipType || 'Individual Owner'}</span>
         </Card>
 
-        <Card className="p-4 bg-white">
-          <div className="flex items-center gap-2 text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">
-            <Trees className="w-4 h-4 text-emerald-600" /> Tree Assets
+        <Card className="p-4 bg-white dark:bg-neutral-900">
+          <div className="flex items-center gap-2 text-gray-500 dark:text-neutral-400 text-xs font-semibold uppercase tracking-wider mb-1">
+            <Trees className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Tree Assets
           </div>
-          <p className="text-2xl font-bold text-gray-900">{land.treeCount} <span className="text-sm font-medium text-gray-500">Trees</span></p>
-          <span className="text-xs text-emerald-600 font-medium mt-1 block">
-            {land.treesInsured ? '✓ Insured & Tracked' : 'Uninsured'}
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{treeCount} <span className="text-sm font-medium text-gray-500 dark:text-neutral-400">Trees</span></p>
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 block">
+            {land.treesInsured || land.optInsurance ? '✓ Insured & Tracked' : 'Uninsured'}
           </span>
         </Card>
 
-        <Card className="p-4 bg-white">
-          <div className="flex items-center gap-2 text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">
-            <TestTube className="w-4 h-4 text-emerald-600" /> Soil Status
+        <Card className="p-4 bg-white dark:bg-neutral-900">
+          <div className="flex items-center gap-2 text-gray-500 dark:text-neutral-400 text-xs font-semibold uppercase tracking-wider mb-1">
+            <TestTube className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Soil Status
           </div>
-          <p className="text-lg font-bold text-gray-900">
+          <p className="text-lg font-bold text-gray-900 dark:text-white">
             {land.soilReportStatus === 'REPORT_READY' ? 'Optimal (7.2 pH)' : 'Test Needed'}
           </p>
-          <span className="text-xs text-gray-500 mt-1 block">{land.soilType}</span>
+          <span className="text-xs text-gray-500 dark:text-neutral-400 mt-1 block">{soilType}</span>
         </Card>
 
-        <Card className="p-4 bg-white">
-          <div className="flex items-center gap-2 text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" /> Active Policy
+        <Card className="p-4 bg-white dark:bg-neutral-900">
+          <div className="flex items-center gap-2 text-gray-500 dark:text-neutral-400 text-xs font-semibold uppercase tracking-wider mb-1">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Active Policy
           </div>
-          <p className="text-lg font-bold text-emerald-700">
+          <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
             {linkedPolicy ? `₹${(linkedPolicy.sumInsured / 100000).toFixed(1)}L Cover` : 'No Policy'}
           </p>
-          <span className="text-xs text-gray-500 mt-1 block">
+          <span className="text-xs text-gray-500 dark:text-neutral-400 mt-1 block">
             {linkedPolicy ? linkedPolicy.policyNumber : 'Eligible for 40% rebate'}
           </span>
         </Card>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 dark:border-neutral-800 overflow-x-auto scrollbar-none gap-1 sm:gap-2 pb-px">
         {[
           { id: 'overview', label: 'GIS & Boundaries' },
           { id: 'agronomy', label: 'Agronomy & Crops' },
@@ -193,10 +212,10 @@ export const LandDetailPage = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-5 py-3 font-semibold text-sm border-b-2 transition-colors ${
+            className={`px-3 sm:px-5 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm border-b-2 transition-colors whitespace-nowrap shrink-0 ${
               activeTab === tab.id
-                ? 'border-emerald-600 text-emerald-700'
-                : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'
+                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
+                : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white hover:border-gray-300'
             }`}
           >
             {tab.label}
@@ -206,33 +225,33 @@ export const LandDetailPage = () => {
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
+            <Card className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">GIS Satellite Land Boundary</h3>
-                  <p className="text-xs text-gray-500">Verified cadastral vertex polygon overlay</p>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">GIS Satellite Land Boundary</h3>
+                  <p className="text-xs text-gray-500 dark:text-neutral-400">Verified cadastral vertex polygon overlay</p>
                 </div>
-                <Badge variant="success">Polygon Verified</Badge>
+                <Badge variant="success" className="self-start sm:self-auto shrink-0">Polygon Verified</Badge>
               </div>
 
               <MapPlaceholder
                 mode="POLYGON"
                 polygonCoords={land.coordinates || []}
                 initialArea={Number(land.area || land.areaAcres || 5.0)}
-                height="h-[400px] min-h-[400px]"
+                height="h-[360px] sm:h-[400px] min-h-[340px]"
               />
 
-              <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-600">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-neutral-800 flex flex-wrap gap-3 sm:gap-4 text-xs text-gray-600 dark:text-neutral-300">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> GPS Perimeter Locked
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span> GPS Perimeter Locked
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Geo-tag Accuracy: ±0.8m
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span> Geo-tag Accuracy: ±0.8m
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Last Drone Survey: 18 Aug 2026
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span> Last Drone Survey: 18 Aug 2026
                 </span>
               </div>
             </Card>
@@ -293,38 +312,38 @@ export const LandDetailPage = () => {
       {activeTab === 'agronomy' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="p-6 space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <Trees className="w-5 h-5 text-emerald-600" /> Standing Crops & Trees
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Trees className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> Standing Crops & Trees
             </h3>
             <div className="flex flex-wrap gap-2">
-              {land.primaryCrops.map((crop, idx) => (
+              {primaryCrops.map((crop, idx) => (
                 <span
                   key={idx}
-                  className="px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-lg text-sm font-semibold border border-emerald-200"
+                  className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 rounded-lg text-sm font-semibold border border-emerald-200 dark:border-emerald-800"
                 >
                   {crop}
                 </span>
               ))}
             </div>
 
-            <div className="pt-4 border-t border-gray-100 space-y-2 text-sm">
+            <div className="pt-4 border-t border-gray-100 dark:border-neutral-800 space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">Estimated Tree Biomass:</span>
-                <span className="font-semibold text-gray-900">14.2 Metric Tonnes</span>
+                <span className="text-gray-500 dark:text-neutral-400">Estimated Tree Biomass:</span>
+                <span className="font-semibold text-gray-900 dark:text-white">14.2 Metric Tonnes</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Annual Carbon Absorption:</span>
-                <span className="font-semibold text-emerald-600">~2.8 tCO2e / yr</span>
+                <span className="text-gray-500 dark:text-neutral-400">Annual Carbon Absorption:</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">~2.8 tCO2e / yr</span>
               </div>
             </div>
           </Card>
 
           <Card className="p-6 space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <TestTube className="w-5 h-5 text-emerald-600" /> Soil Profile Summary
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <TestTube className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> Soil Profile Summary
             </h3>
-            <p className="text-sm text-gray-600">
-              Classified as <strong className="text-gray-900">{land.soilType}</strong>. Soil moisture and nitrogen
+            <p className="text-sm text-gray-600 dark:text-neutral-300">
+              Classified as <strong className="text-gray-900 dark:text-white">{soilType}</strong>. Soil moisture and nitrogen
               levels are monitored through regional IoT probes.
             </p>
             <Button

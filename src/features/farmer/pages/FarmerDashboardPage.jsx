@@ -95,7 +95,7 @@ export const FarmerDashboardPage = () => {
               <StatusBadge status={user?.status || 'APPROVED'} />
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-              Welcome back, {user?.name || user?.fullName || 'Ramesh Patel'}!
+              Welcome back, {user?.name || user?.fullName || 'Farmer'}!
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100 mt-1 max-w-xl leading-relaxed">
               Connect. Grow. Sustain. Manage your cadastral land parcels, tree insurance, soil chemistry diagnostics, and carbon credit monetization.
@@ -188,26 +188,32 @@ export const FarmerDashboardPage = () => {
             }
           />
           <CardContent className="space-y-4">
-            {(dashboardData?.recommendedSchemes || []).map((sch) => (
-              <div
-                key={sch.id}
-                className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-800/50 border border-slate-200 dark:border-neutral-700 hover:border-emerald-300 transition-colors flex items-start justify-between gap-4"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Landmark className="w-4 h-4 text-emerald-700 flex-shrink-0" />
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{sch.title}</h4>
+            {(dashboardData?.recommendedSchemes || []).length > 0 ? (
+              (dashboardData?.recommendedSchemes || []).map((sch) => (
+                <div
+                  key={sch.id}
+                  className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-800/50 border border-slate-200 dark:border-neutral-700 hover:border-emerald-300 transition-colors flex items-start justify-between gap-4"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Landmark className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">{sch.title}</h4>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-neutral-400">{sch.authority}</p>
+                    <p className="text-xs text-emerald-800 dark:text-emerald-400 font-semibold pt-1">{sch.benefit}</p>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-neutral-400">{sch.authority}</p>
-                  <p className="text-xs text-emerald-800 dark:text-emerald-400 font-semibold pt-1">{sch.benefit}</p>
+                  <Link to="/schemes">
+                    <Button variant="outline" size="sm">
+                      Apply
+                    </Button>
+                  </Link>
                 </div>
-                <Link to="/schemes">
-                  <Button variant="outline" size="sm">
-                    Apply
-                  </Button>
-                </Link>
+              ))
+            ) : (
+              <div className="py-8 text-center text-slate-400 text-xs">
+                No recommended schemes currently available.
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
       )}
@@ -233,10 +239,10 @@ export const FarmerDashboardPage = () => {
                 </div>
                 <div className="mt-3">
                   <div className="text-2xl font-black text-slate-900 dark:text-white">
-                    {overview.registeredLands || 1} <span className="text-xs font-normal text-slate-400">Plots</span>
+                    {overview.registeredLands || 0} <span className="text-xs font-normal text-slate-400">Plots</span>
                   </div>
                   <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5 font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> 5.95 Acres Cadastral GIS Mapped
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {overview.registeredLands > 0 ? 'Cadastral GIS Mapped' : 'No lands registered'}
                   </p>
                 </div>
               </Card>
@@ -255,10 +261,10 @@ export const FarmerDashboardPage = () => {
                 </div>
                 <div className="mt-3">
                   <div className="text-2xl font-black text-slate-900 dark:text-white">
-                    {overview.activePolicies || 1} <span className="text-xs font-normal text-slate-400">Policy</span>
+                    {overview.activePolicies || 0} <span className="text-xs font-normal text-slate-400">Policy</span>
                   </div>
                   <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 font-semibold">
-                    {overview.totalTrees || 33} Trees Underwritten
+                    {overview.totalTrees || 0} Trees Underwritten
                   </p>
                 </div>
               </Card>
@@ -277,10 +283,10 @@ export const FarmerDashboardPage = () => {
                 </div>
                 <div className="mt-3">
                   <div className="text-2xl font-black text-slate-900 dark:text-white">
-                    12-Parameter <span className="text-xs font-normal text-slate-400">Card</span>
+                    {overview.soilTestRequests || 0} <span className="text-xs font-normal text-slate-400">Tests</span>
                   </div>
                   <p className="text-xs text-sky-700 dark:text-sky-400 mt-0.5 font-semibold">
-                    pH 7.1 Optimal • NABL Validated
+                    {overview.soilTestRequests > 0 ? 'Diagnostic Active' : 'No tests requested'}
                   </p>
                 </div>
               </Card>
@@ -299,10 +305,10 @@ export const FarmerDashboardPage = () => {
                 </div>
                 <div className="mt-3">
                   <div className="text-2xl font-black text-emerald-950 dark:text-emerald-200">
-                    {formatCurrency(wallet.availableBalance || 14850)}
+                    {formatCurrency(wallet.availableBalance || 0)}
                   </div>
                   <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5 font-medium">
-                    +{formatCurrency(wallet.rewards || 1250)} Rewards • Payout Ready
+                    +{formatCurrency(wallet.rewards || 0)} Rewards
                   </p>
                 </div>
               </Card>
@@ -328,12 +334,12 @@ export const FarmerDashboardPage = () => {
               <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
                 <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-center min-w-[120px]">
                   <span className="text-[11px] text-emerald-200 block">Annual Carbon</span>
-                  <span className="text-lg font-black text-white">~{overview.totalCarbonTons || 4.1} tCO2e</span>
+                  <span className="text-lg font-black text-white">~{overview.totalCarbonTons || 0} tCO2e</span>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-center min-w-[120px]">
                   <span className="text-[11px] text-emerald-200 block">Carbon Valuation</span>
                   <span className="text-lg font-black text-emerald-400">
-                    ₹{(overview.carbonValuation || 5981).toLocaleString('en-IN')}
+                    ₹{(overview.carbonValuation || 0).toLocaleString('en-IN')}
                   </span>
                 </div>
                 <Button
@@ -369,37 +375,43 @@ export const FarmerDashboardPage = () => {
                 </div>
 
                 <div className="space-y-3.5 pt-4">
-                  {activities.map((act) => (
-                    <div
-                      key={act.id}
-                      className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-700/60 flex items-center justify-between gap-4 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 shrink-0 mt-0.5">
-                          {act.type === 'CARBON' ? (
-                            <Satellite className="w-4 h-4" />
-                          ) : act.type === 'SOIL' ? (
-                            <FlaskConical className="w-4 h-4" />
-                          ) : act.type === 'INSURANCE' ? (
-                            <ShieldAlert className="w-4 h-4" />
-                          ) : (
-                            <MapPin className="w-4 h-4" />
-                          )}
+                  {activities.length > 0 ? (
+                    activities.map((act) => (
+                      <div
+                        key={act.id}
+                        className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-700/60 flex items-center justify-between gap-4 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 shrink-0 mt-0.5">
+                            {act.type === 'CARBON' ? (
+                              <Satellite className="w-4 h-4" />
+                            ) : act.type === 'SOIL' ? (
+                              <FlaskConical className="w-4 h-4" />
+                            ) : act.type === 'INSURANCE' ? (
+                              <ShieldAlert className="w-4 h-4" />
+                            ) : (
+                              <MapPin className="w-4 h-4" />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white">{act.title}</h4>
+                            <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">{act.subtitle}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">{act.title}</h4>
-                          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">{act.subtitle}</p>
-                        </div>
-                      </div>
 
-                      <div className="text-right shrink-0">
-                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
-                          {act.badge}
-                        </span>
-                        <p className="text-[10px] text-slate-400 mt-1">{act.time}</p>
+                        <div className="text-right shrink-0">
+                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
+                            {act.badge}
+                          </span>
+                          <p className="text-[10px] text-slate-400 mt-1">{act.time}</p>
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-slate-400 text-xs">
+                      No recent activities recorded yet.
                     </div>
-                  ))}
+                  )}
                 </div>
               </Card>
 
@@ -421,23 +433,29 @@ export const FarmerDashboardPage = () => {
                 </div>
 
                 <div className="space-y-3 pt-4">
-                  {(dashboardData?.recommendedSchemes || []).map((sch) => (
-                    <div
-                      key={sch.id}
-                      className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-700/60 flex items-center justify-between gap-4"
-                    >
-                      <div className="space-y-0.5">
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">{sch.title}</h4>
-                        <p className="text-xs text-slate-500 dark:text-neutral-400">{sch.authority}</p>
-                        <p className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold">{sch.benefit}</p>
+                  {(dashboardData?.recommendedSchemes || []).length > 0 ? (
+                    (dashboardData?.recommendedSchemes || []).map((sch) => (
+                      <div
+                        key={sch.id}
+                        className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-700/60 flex items-center justify-between gap-4"
+                      >
+                        <div className="space-y-0.5">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">{sch.title}</h4>
+                          <p className="text-xs text-slate-500 dark:text-neutral-400">{sch.authority}</p>
+                          <p className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold">{sch.benefit}</p>
+                        </div>
+                        <Link to="/schemes">
+                          <Button variant="outline" size="sm">
+                            Apply
+                          </Button>
+                        </Link>
                       </div>
-                      <Link to="/schemes">
-                        <Button variant="outline" size="sm">
-                          Apply
-                        </Button>
-                      </Link>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-slate-400 text-xs">
+                      No recommended schemes currently available.
                     </div>
-                  ))}
+                  )}
                 </div>
               </Card>
             </div>

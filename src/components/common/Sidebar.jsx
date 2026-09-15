@@ -99,34 +99,34 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile & Tablet Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar aside */}
       <aside
-        className={`fixed md:sticky top-0 left-0 z-40 h-screen w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between transition-transform duration-300 ease-in-out md:translate-x-0 ${
+        className={`fixed lg:sticky top-0 left-0 z-40 h-screen w-64 bg-white dark:bg-neutral-900 border-r border-slate-200/80 dark:border-neutral-800 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full overflow-y-auto p-4">
-          {/* Top Brand & Close on Mobile */}
-          <div className="flex items-center justify-between pb-5 pt-2 px-2 border-b border-slate-100">
+          {/* Top Brand & Close on Mobile/Tablets */}
+          <div className="flex items-center justify-between pb-5 pt-2 px-2 border-b border-slate-100 dark:border-neutral-800">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-emerald-800 flex items-center justify-center text-white font-black text-sm">
                 BC
               </div>
-              <span className="font-extrabold text-slate-900 tracking-tight text-base">
+              <span className="font-extrabold text-slate-900 dark:text-white tracking-tight text-base">
                 BHUMICRED
               </span>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg md:hidden"
+              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-lg lg:hidden"
             >
               <X className="w-5 h-5" />
             </button>

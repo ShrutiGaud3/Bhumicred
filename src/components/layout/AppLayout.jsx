@@ -11,7 +11,7 @@ export const AppLayout = () => {
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row pb-12 sm:pb-16 print:p-0 print:m-0 print:pb-0 print:bg-white print:block print:min-h-0">
+    <div className="min-h-screen bg-slate-50 dark:bg-neutral-950 text-slate-900 dark:text-white flex flex-col lg:flex-row pb-12 sm:pb-16 lg:pb-0 print:p-0 print:m-0 print:pb-0 print:bg-white print:block print:min-h-0">
       {/* Sidebar for Desktop & Mobile Slide-out */}
       <div className="print:hidden">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -25,7 +25,7 @@ export const AppLayout = () => {
             onOpenAiModal={() => setIsAiDrawerOpen(true)}
           />
         </div>
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto pb-24 md:pb-8 print:p-0 print:m-0 print:max-w-none print:w-full print:pb-0">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto pb-24 lg:pb-8 print:p-0 print:m-0 print:max-w-none print:w-full print:pb-0">
           <Outlet />
         </main>
       </div>

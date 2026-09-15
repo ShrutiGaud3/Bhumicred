@@ -21,22 +21,22 @@ export const SoilCertificateModal = ({ isOpen, onClose, reportData }) => {
   if (!isOpen) return null;
 
   const data = reportData || {
-    id: 'SHC-2026-90812',
-    farmerName: 'Ramesh Patel',
-    village: 'Navli, Anand District, Gujarat',
-    khasraNo: '412/1 (Plot A)',
-    sampleDate: '15 Jan 2026',
-    testingDate: '18 Jan 2026',
-    labName: 'TerraAgri NABL Accredited Regional Laboratory, Anand',
-    labRegNo: 'NABL/TC-9042',
-    healthScore: 84,
-    ph: 6.8,
-    ec: '0.45 dS/m',
-    oc: '0.78% (High)',
-    nitrogen: '290 kg/ha (Medium)',
-    phosphorus: '22 kg/ha (High)',
-    potassium: '310 kg/ha (High)',
-    recommendation: 'Apply 40kg Neem Coated Urea and 10kg Bio-NPK consortium prior to rabi sowing.'
+    id: 'SHC-PENDING',
+    farmerName: 'Citizen Farmer',
+    village: 'N/A',
+    khasraNo: 'N/A',
+    sampleDate: 'N/A',
+    testingDate: 'N/A',
+    labName: 'Accredited Soil Laboratory',
+    labRegNo: 'NABL/REG-00',
+    healthScore: 0,
+    ph: 7.0,
+    ec: '0.00 dS/m',
+    oc: '0.00%',
+    nitrogen: '0 kg/ha',
+    phosphorus: '0 kg/ha',
+    potassium: '0 kg/ha',
+    recommendation: 'No diagnostic report data available.'
   };
 
   const handlePrint = () => {

@@ -17,32 +17,7 @@ import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { Modal } from '../../../components/ui/Modal.jsx';
 import { TreeGeotagModal } from '../components/TreeGeotagModal.jsx';
 
-const MOCK_VISITS = [
-  {
-    id: 'vst_01',
-    farmerName: 'Ramesh Patel',
-    phone: '+91 91234 56780',
-    village: 'Mogri Gram',
-    surveyNumber: '402/A',
-    visitDate: '12 Sep 2026',
-    timeSlot: '11:00 AM',
-    purpose: 'Tree Damage Drone Inspection (Hailstorm Loss)',
-    status: 'SCHEDULED',
-    gpsTarget: '22.5645, 72.9281',
-  },
-  {
-    id: 'vst_02',
-    farmerName: 'Jitendra Vaghela',
-    phone: '+91 98251 44091',
-    village: 'Jitodia',
-    surveyNumber: '619/C',
-    visitDate: '14 Sep 2026',
-    timeSlot: '02:30 PM',
-    purpose: 'Soil Core Sampling (N-P-K Micronutrient Baseline)',
-    status: 'SCHEDULED',
-    gpsTarget: '22.5710, 72.9340',
-  },
-];
+const MOCK_VISITS = [];
 
 export const FieldVisitsPage = () => {
   const [visits, setVisits] = useState(MOCK_VISITS);
@@ -74,8 +49,17 @@ export const FieldVisitsPage = () => {
         ]}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {visits.map((visit) => (
+      {visits.length === 0 ? (
+        <Card className="p-8 text-center border border-dashed border-gray-300 dark:border-slate-800">
+          <Calendar className="w-12 h-12 text-gray-400 dark:text-slate-600 mx-auto mb-3" />
+          <h4 className="text-base font-semibold text-gray-800 dark:text-white">No Scheduled Field Visits</h4>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+            There are currently no upcoming farmer visits or drone inspections scheduled.
+          </p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {visits.map((visit) => (
           <Card key={visit.id} className="p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
@@ -146,6 +130,7 @@ export const FieldVisitsPage = () => {
           </Card>
         ))}
       </div>
+      )}
 
       {/* GPS Check-in Modal */}
       {activeCheckInVisit && (

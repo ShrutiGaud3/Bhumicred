@@ -118,7 +118,7 @@ export const AdminInsurancePage = () => {
                   <td className="py-3 font-mono font-bold text-slate-900">
                     ₹{(c.estimatedLoss || 0).toLocaleString('en-IN')}
                   </td>
-                  <td className="py-3 text-slate-600">{c.inspectorName || 'Devang Joshi'}</td>
+                  <td className="py-3 text-slate-600">{c.inspectorName || 'Unassigned'}</td>
                   <td className="py-3">
                     <StatusBadge status={c.status} />
                   </td>

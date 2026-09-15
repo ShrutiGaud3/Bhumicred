@@ -19,15 +19,15 @@ export const CarbonCertificateModal = ({ isOpen, onClose, carbonData }) => {
   if (!isOpen) return null;
 
   const data = carbonData || {
-    id: 'VCS-CRB-2026-08912',
-    farmerName: 'Ramesh Patel',
-    projectName: 'Gujarat Agroforestry & Soil Carbon Sequestration Initiative',
-    verifier: 'Verra / Gold Standard Accredited Third-Party Auditor',
-    creditsIssued: 142.5,
-    vintageYear: '2025-2026',
-    issuedDate: '12 Feb 2026',
-    serialNumber: 'IN-VCS-9081-2026-00142',
-    equivalentOffset: '142.5 Metric Tonnes of CO2e Sequestered'
+    id: 'VCS-CRB-PENDING',
+    farmerName: 'Citizen Farmer',
+    projectName: 'Carbon Offset Project',
+    verifier: 'Accredited Carbon Auditor',
+    creditsIssued: 0,
+    vintageYear: 'N/A',
+    issuedDate: 'N/A',
+    serialNumber: 'N/A',
+    equivalentOffset: '0 Metric Tonnes of CO2e Sequestered'
   };
 
   const handlePrint = () => {

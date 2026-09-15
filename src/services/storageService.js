@@ -14,7 +14,31 @@ const STORAGE_KEYS = {
   CARBON_AUDITS: 'bhumicred_data_carbon_audits',
 };
 
+// Automatic cleanup of legacy/dummy farmer entries in client browser localStorage
+try {
+  const isMigrated = typeof window !== 'undefined' && localStorage.getItem('bhumicred_storage_clean_v5');
+  if (!isMigrated && typeof window !== 'undefined') {
+    localStorage.removeItem(STORAGE_KEYS.APPROVALS);
+    localStorage.removeItem(STORAGE_KEYS.LANDS);
+    localStorage.removeItem(STORAGE_KEYS.CLAIMS);
+    localStorage.removeItem(STORAGE_KEYS.POLICIES);
+    localStorage.removeItem(STORAGE_KEYS.SOIL);
+    localStorage.removeItem(STORAGE_KEYS.CARBON_AUDITS);
+    localStorage.removeItem(STORAGE_KEYS.WALLET);
+    localStorage.removeItem(STORAGE_KEYS.SUPPORT_TICKETS);
+    localStorage.removeItem('bhumicred_data_users');
+    localStorage.setItem('bhumicred_storage_clean_v5', 'true');
+  }
+} catch (e) {}
+
 export const storageService = {
+  // Clear all local storage records
+  clearAllLocalStorage: () => {
+    try {
+      Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
+      localStorage.removeItem('bhumicred_data_users');
+    } catch (e) {}
+  },
   // Lands
   getLands: (userIdOrMobile = null) => {
     try {
@@ -79,13 +103,7 @@ export const storageService = {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.APPROVALS);
       if (stored) {
-        list = JSON.parse(stored).filter(
-          (a) =>
-            !a.id?.startsWith('appr_') &&
-            a.applicantName !== 'Jitendra Vaghela' &&
-            a.applicantName !== 'Manharbhai Solanki' &&
-            a.applicantName !== 'Dr. Suresh Mehta'
-        );
+        list = JSON.parse(stored).filter((a) => !a.id?.startsWith('appr_'));
       }
     } catch (e) {
       list = [];
@@ -110,11 +128,24 @@ export const storageService = {
               (a.applicantPhone && u.mobile && a.applicantPhone.replace(/\D/g, '') === u.mobile.replace(/\D/g, ''))
           );
           if (!exists) {
+            const appType =
+              u.role === 'PARTNER'
+                ? 'PARTNER_ONBOARDING'
+                : u.role === 'GOVERNMENT'
+                ? 'GOVERNMENT_ONBOARDING'
+                : 'FARMER_KYC';
+            const appTitle =
+              u.role === 'PARTNER'
+                ? `Partner Business Licensing - ${u.name || 'Partner'}`
+                : u.role === 'GOVERNMENT'
+                ? `Government Official Verification - ${u.name || 'Official'}`
+                : `Citizen Aadhaar KYC - ${u.name || 'Citizen Applicant'}`;
+
             list.unshift({
               id: appId,
               applicationId: appId,
-              type: u.role === 'PARTNER' ? 'PARTNER_ONBOARDING' : 'FARMER_KYC',
-              title: `${u.role === 'PARTNER' ? 'Partner Business Licensing' : 'Citizen Aadhaar KYC'} - ${u.name || 'Citizen Applicant'}`,
+              type: appType,
+              title: appTitle,
               applicantName: u.name || 'Citizen Applicant',
               applicantRole: u.role || 'FARMER',
               applicantPhone: u.mobile || '',
@@ -124,7 +155,7 @@ export const storageService = {
               timestamp: u.updatedAt || u.createdAt || new Date().toISOString(),
               status: u.status || 'PENDING_VERIFICATION',
               riskScore: 'LOW',
-              details: `Village: ${u.address?.village || u.village || 'Anand'} • Mobile: ${u.mobile || ''}`,
+              details: `Village: ${u.address?.village || u.village || 'Local'} • Mobile: ${u.mobile || ''}`,
               targetId: u.id,
             });
           }
@@ -144,7 +175,7 @@ export const storageService = {
               id: appId,
               applicationId: appId,
               type: 'LAND_REGISTRATION',
-              title: `Land Title Registration - ${land.landName || 'Plot'} - Khasra ${land.khasraNumber || '412/9'} (Survey ${land.surveyNumber || '108/A'})`,
+              title: `Land Title Registration - ${land.landName || 'Plot'} - Khasra ${land.khasraNumber || 'N/A'} (Survey ${land.surveyNumber || 'N/A'})`,
               applicantName: land.ownerName || land.farmerName || 'Citizen Farmer',
               applicantRole: 'FARMER',
               applicantPhone: land.ownerMobile || land.mobile || '',
@@ -154,7 +185,7 @@ export const storageService = {
               timestamp: land.createdAt || new Date().toISOString(),
               status: land.status || 'PENDING_VERIFICATION',
               riskScore: 'LOW',
-              details: `${land.area || land.areaAcres || 5} Acres in ${land.village || land.district || 'Anand'}`,
+              details: `${land.area || land.areaAcres || 0} Acres in ${land.village || land.district || 'Local'}`,
               targetId: land.id || land.landId,
             });
           }
@@ -184,7 +215,9 @@ export const storageService = {
   getRegisteredUsers: () => {
     try {
       const stored = localStorage.getItem('bhumicred_data_users');
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        return JSON.parse(stored);
+      }
     } catch (e) {
       console.warn('Storage read error for users:', e);
     }
@@ -282,7 +315,7 @@ export const storageService = {
       const stored = localStorage.getItem(STORAGE_KEYS.CLAIMS);
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    return MOCK_CLAIMS;
+    return [];
   },
 
   saveClaim: (claim) => {
@@ -304,7 +337,7 @@ export const storageService = {
       const stored = localStorage.getItem(STORAGE_KEYS.SOIL);
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    return MOCK_SOIL_REQUESTS;
+    return [];
   },
 
   saveSoilRequest: (req) => {
@@ -359,20 +392,15 @@ export const storageService = {
       const stored = localStorage.getItem(STORAGE_KEYS.WALLET);
       if (stored) return JSON.parse(stored);
       const defaultWallet = {
-        availableBalance: 14850,
-        pendingBalance: 2900,
-        rewards: 1250,
+        availableBalance: 0,
+        pendingBalance: 0,
+        rewards: 0,
         currency: 'INR',
-        transactions: [
-          { id: 'tx_1', type: 'CREDIT', amount: 5981, title: 'Sentinel-2 Carbon Credit Sequestration Payout', date: 'Yesterday', status: 'COMPLETED' },
-          { id: 'tx_2', type: 'CREDIT', amount: 6000, title: 'PM-KISAN Central DBT Installment', date: '01 Sep 2026', status: 'COMPLETED' },
-          { id: 'tx_3', type: 'DEBIT', amount: 149, title: 'Cadastral GIS Verification Fee', date: '28 Aug 2026', status: 'COMPLETED' },
-        ],
+        transactions: [],
       };
-      localStorage.setItem(STORAGE_KEYS.WALLET, JSON.stringify(defaultWallet));
       return defaultWallet;
     } catch (e) {
-      return { availableBalance: 14850, pendingBalance: 2900, rewards: 1250, currency: 'INR' };
+      return { availableBalance: 0, pendingBalance: 0, rewards: 0, currency: 'INR', transactions: [] };
     }
   },
 
@@ -626,51 +654,6 @@ export const storageService = {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.SUPPORT_TICKETS);
       let tickets = stored ? JSON.parse(stored) : [];
-      if (!tickets || tickets.length === 0) {
-        tickets = [
-          {
-            _id: 'tkt_default_01',
-            ticketId: 'BC-SUP-48921',
-            category: 'LAND_DISPUTE',
-            priority: 'HIGH',
-            status: 'IN_REVIEW',
-            subject: 'Assistance for Survey 619/C GIS Polygon boundary demarcation',
-            message: 'The revenue boundary on the eastern canal boundary needs slight realignment. Uploaded revised survey sketch and 7/12 naksha.',
-            mobile: '9876543210',
-            createdAt: '2026-08-05T14:30:00Z',
-            responses: [
-              {
-                senderName: 'Aditi Deshmukh',
-                senderRole: 'ADMIN_STAFF',
-                message: 'Thank you. Our GIS team has received your sketch and will update the cadastral boundary within 24 hours.',
-                createdAt: '2026-08-06T10:15:00Z',
-              },
-            ],
-            resolutionNotes: 'Assigned to Anand District Nodal Surveyor Desk.',
-          },
-          {
-            _id: 'tkt_default_02',
-            ticketId: 'BC-SUP-31204',
-            category: 'SOIL_SAMPLE',
-            priority: 'NORMAL',
-            status: 'RESOLVED',
-            subject: 'Reschedule soil sample pickup slot',
-            message: 'Can we reschedule the soil sample pickup to morning 11 AM due to irrigation schedule?',
-            mobile: '9876543210',
-            createdAt: '2026-06-12T09:00:00Z',
-            responses: [
-              {
-                senderName: 'Karan Dave',
-                senderRole: 'PARTNER',
-                message: 'Your pickup has been successfully rescheduled. Partner field agent Devang will call before arrival.',
-                createdAt: '2026-06-12T11:00:00Z',
-              },
-            ],
-            resolutionNotes: 'Resolved on 14 Jun 2026 after successful laboratory sample collection.',
-          },
-        ];
-        localStorage.setItem(STORAGE_KEYS.SUPPORT_TICKETS, JSON.stringify(tickets));
-      }
       if (!mobile) return tickets;
       const cleanMobile = String(mobile).replace(/\D/g, '');
       return tickets.filter(
@@ -762,40 +745,6 @@ export const storageService = {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.CARBON_AUDITS);
       let audits = stored ? JSON.parse(stored) : [];
-      if (!audits || audits.length === 0) {
-        audits = [
-          {
-            _id: 'mrv_initial_01',
-            id: 'MRV-SENTINEL-2026-3938',
-            auditId: 'MRV-SENTINEL-2026-3938',
-            landId: 'lnd_krishna',
-            landName: 'Krishna Farm',
-            surveyNumber: '465',
-            khasraNumber: '465',
-            areaAcres: 5.95,
-            estimatedTreeCount: 33,
-            treeCount: 33,
-            userMobile: '9876543210',
-            ownerMobile: '9876543210',
-            ownerName: 'Rajesh Patel',
-            agroforestryType: 'High-Resin Indian Teak & Sandalwood',
-            carbonSequestration: {
-              annualSequestrationRateTons: 4.1,
-              estimated3YearTotalTons: 12.3,
-            },
-            satelliteTelemetry: {
-              satellite: 'Sentinel-2 MSI (10m Resolution)',
-              sensorBand: 'B8 (NIR) / B4 (Red) / NDVI',
-              ndviIndex: 0.78,
-              canopyHealth: 'Optimal High Biomass',
-              lastScanDate: '2026-08-15T10:00:00Z',
-            },
-            status: 'VERIFIED',
-            createdAt: '2026-08-15T10:00:00Z',
-          },
-        ];
-        localStorage.setItem(STORAGE_KEYS.CARBON_AUDITS, JSON.stringify(audits));
-      }
       if (!userMobileOrId) return audits;
       const cleanMobile = String(userMobileOrId).replace(/\D/g, '');
       return audits.filter((a) => {

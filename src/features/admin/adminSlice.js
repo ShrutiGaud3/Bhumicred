@@ -49,41 +49,44 @@ export const fetchAdminDashboardStats = createAsyncThunk(
         0
       );
 
+      if (liveTelemetry && liveTelemetry.metrics) {
+        return {
+          ...liveTelemetry.metrics,
+          systemHealth: liveTelemetry.systemHealth || 'HEALTHY_SOVEREIGN_NODE',
+          uptime: liveTelemetry.uptime || '99.99%',
+        };
+      }
+
       const baseMetrics = liveTelemetry?.metrics || {};
 
       const combinedStats = {
-        totalUsers: Math.max(users.length + 420, baseMetrics.totalUsers || 420),
-        farmers: Math.max(users.filter((u) => u.role === 'FARMER').length + 380, 380),
-        governmentBodies: Math.max(users.filter((u) => u.role === 'GOVERNMENT').length + 12, 12),
-        enterprisePartners: Math.max(users.filter((u) => u.role === 'PARTNER').length + 28, 28),
+        totalUsers: baseMetrics.totalUsers ?? users.length,
+        farmers: baseMetrics.farmers ?? users.filter((u) => u.role === 'FARMER').length,
+        governmentBodies: baseMetrics.governmentBodies ?? users.filter((u) => u.role === 'GOVERNMENT').length,
+        enterprisePartners: baseMetrics.enterprisePartners ?? users.filter((u) => u.role === 'PARTNER').length,
 
-        totalLands: Math.max(lands.length + 18, baseMetrics.totalLands || 18),
-        totalAcres: Number((Math.max(totalAcresCalculated + 142.8, baseMetrics.totalAcres || 142.8)).toFixed(1)),
-        totalTrees: Math.max(totalTreesCalculated + 18450, baseMetrics.totalTrees || 18450),
+        totalLands: baseMetrics.totalLands ?? lands.length,
+        totalAcres: Number((baseMetrics.totalAcres ?? totalAcresCalculated).toFixed(1)),
+        totalTrees: baseMetrics.totalTrees ?? totalTreesCalculated,
         pendingLands,
 
-        pendingApprovals: Math.max(pendingApprovals, approvals.length ? pendingApprovals : 3),
-        totalApprovals: Math.max(approvals.length, 5),
+        pendingApprovals: baseMetrics.pendingApprovals ?? pendingApprovals,
+        totalApprovals: approvals.length,
 
-        totalPolicies: Math.max(policies.length + 140, 140),
-        totalClaims: Math.max(claims.length + 6, baseMetrics.totalClaims || 6),
-        activeClaims: Math.max(activeClaims, 2),
+        totalPolicies: baseMetrics.totalPolicies ?? policies.length,
+        totalClaims: baseMetrics.totalClaims ?? claims.length,
+        activeClaims: baseMetrics.activeClaims ?? activeClaims,
 
-        totalSoilTests: Math.max(soilRequests.length + 24, baseMetrics.totalSoilTests || 24),
-        pendingSoilTests: Math.max(soilRequests.filter((s) => s.status !== 'COMPLETED' && s.status !== 'REPORT_GENERATED').length, 3),
+        totalSoilTests: baseMetrics.totalSoilTests ?? soilRequests.length,
+        pendingSoilTests: baseMetrics.pendingSoilTests ?? soilRequests.filter((s) => s.status !== 'COMPLETED' && s.status !== 'REPORT_GENERATED').length,
 
-        totalCarbonAudits: Math.max(carbonAudits.length, 3),
-        totalCarbonCredits: Number(
-          Math.max(
-            carbonAudits.reduce((acc, a) => acc + Number(a.carbonSequestration?.annualSequestrationRateTons || 4.1), 1250),
-            baseMetrics.totalCarbonCredits || 1250
-          ).toFixed(1)
-        ),
+        totalCarbonAudits: baseMetrics.totalCarbonAudits ?? carbonAudits.length,
+        totalCarbonCredits: Number((baseMetrics.totalCarbonCredits ?? 0).toFixed(1)),
 
-        totalSupportTickets: Math.max(supportTickets.length + 8, baseMetrics.totalSupportTickets || 8),
-        openTickets: Math.max(openTickets, 1),
+        totalSupportTickets: baseMetrics.totalSupportTickets ?? supportTickets.length,
+        openTickets: baseMetrics.openTickets ?? openTickets,
 
-        treasuryBalance: baseMetrics.totalLiquidity || 8450000,
+        treasuryBalance: baseMetrics.treasuryBalance ?? 0,
         systemHealth: liveTelemetry?.systemHealth || 'HEALTHY_SOVEREIGN_NODE',
         uptime: liveTelemetry?.uptime || '99.99%',
       };

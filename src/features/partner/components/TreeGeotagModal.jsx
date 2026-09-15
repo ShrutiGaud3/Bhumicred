@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
   X,
   Trees,
@@ -18,6 +19,7 @@ import { useToast } from '../../../components/ui/ToastContext.jsx';
 
 export const TreeGeotagModal = ({ isOpen, onClose, taskData }) => {
   const toast = useToast();
+  const { user } = useSelector((state) => state.auth);
 
   const [trees, setTrees] = useState([
     { id: 'TR-01', species: 'Teakwood (Tectona grandis)', ageYears: 4.5, girthCm: 38, heightM: 6.2, health: 'EXCELLENT', lat: 22.5646, lng: 72.9289, isVerified: true },
@@ -191,7 +193,7 @@ export const TreeGeotagModal = ({ isOpen, onClose, taskData }) => {
         <div className="px-6 py-3.5 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-neutral-500">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Surveyor: <strong>Devang Joshi (TerraAgri Survey ID #AGR-402)</strong></span>
+            <span>Surveyor: <strong>{user?.name || user?.fullName || 'Field Surveyor'}</strong></span>
           </div>
 
           <div className="flex items-center gap-2">

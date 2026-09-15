@@ -124,10 +124,21 @@ export const LandDeedModal = ({ isOpen, onClose, landData }) => {
               </h4>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                {data.coordinates.map((coord, idx) => (
+                {(Array.isArray(data?.coordinates) && data.coordinates.length > 0
+                  ? data.coordinates
+                  : [
+                      { lat: 22.5645, lng: 72.9288 },
+                      { lat: 22.5658, lng: 72.9312 },
+                      { lat: 22.5632, lng: 72.9325 },
+                      { lat: 22.5621, lng: 72.9295 }
+                    ]
+                ).map((coord, idx) => (
                   <div key={idx} className="p-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
                     <span className="text-[10px] text-neutral-400 block font-sans">Vertex P{idx + 1}</span>
-                    <span className="font-semibold">{coord.lat.toFixed(4)}° N, {coord.lng.toFixed(4)}° E</span>
+                    <span className="font-semibold">
+                      {typeof coord?.lat === 'number' ? coord.lat.toFixed(4) : (coord?.[0] || '22.5645')}° N,{' '}
+                      {typeof coord?.lng === 'number' ? coord.lng.toFixed(4) : (coord?.[1] || '72.9288')}° E
+                    </span>
                   </div>
                 ))}
               </div>

@@ -484,7 +484,7 @@ export const CarbonOpportunitiesPage = () => {
         onClose={() => setShowCertificate(false)}
         carbonData={{
           id: selectedCertificate?.creditId || 'BC-CARB-2026-0092',
-          farmerName: selectedCertificate?.farmerName || user?.fullName || user?.name || 'Rajesh',
+          farmerName: selectedCertificate?.farmerName || user?.fullName || user?.name || 'Citizen Farmer',
           projectName: selectedCertificate?.treeSpecies || 'Sovereign Teak & Sandalwood Agroforestry Carbon Initiative',
           verifier: 'ISRO SAC & National Agro-Biomass Satellite MRV Directorate',
           creditsIssued: selectedCertificate?.tCO2e || 24.5,

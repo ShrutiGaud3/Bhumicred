@@ -271,31 +271,6 @@ export const RegisterPage = () => {
     }
   };
 
-  const handleAutoFillDemo = () => {
-    setFormData({
-      fullName: 'Ramesh Patel',
-      fatherName: 'Dahybhai Patel',
-      gender: 'MALE',
-      mobile: '9876543210',
-      email: 'ramesh.patel@bhumicred.in',
-      role: ROLES.FARMER,
-      country: 'India (Bharat)',
-      state: 'Gujarat',
-      district: 'Anand',
-      city: 'Anand',
-      gramPanchayat: 'Mogri Gram Panchayat',
-      pincode: '388345',
-      deviceLat: 22.5645,
-      deviceLng: 72.9281,
-      locationCaptured: true,
-      photoUploaded: true,
-      photoName: 'ramesh_patel_kyc_photo.jpg',
-      consentAccepted: true,
-    });
-    setErrors({});
-    toast.info('Prefilled sample farmer application details!');
-  };
-
   return (
     <div className="w-full space-y-4 sm:space-y-6 text-left animate-in fade-in duration-200">
       {/* Header */}

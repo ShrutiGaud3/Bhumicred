@@ -10,6 +10,7 @@ import { LoadingSkeleton } from '../../../components/states/LoadingSkeleton.jsx'
 import { ErrorState } from '../../../components/states/ErrorState.jsx';
 import { formatDateTime } from '../../../utils/formatters.js';
 import { storageService } from '../../../services/storageService.js';
+import { onboardingService } from '../../farmer/services/onboardingService.js';
 import { useToast } from '../../../components/ui/ToastContext.jsx';
 import {
   ShieldCheck,
@@ -54,15 +55,29 @@ export const AdminDashboardPage = () => {
       dispatch(fetchAdminDashboardStats()),
       dispatch(fetchAuditLogs({ limit: 6 })),
     ]);
-    const approvals = storageService.getApprovals();
-    const pending = approvals.filter(
-      (a) =>
-        a.status === 'PENDING_APPROVAL' ||
-        a.status === 'PENDING_VERIFICATION' ||
-        a.status === 'PENDING' ||
-        a.status === 'PENDING_REVIEW'
-    );
-    setPendingItems(pending.slice(0, 4));
+
+    try {
+      const res = await onboardingService.getAdminQueue();
+      const appsList = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.applications) ? res.data.applications : []);
+      const pending = appsList.filter(
+        (a) =>
+          a.status === 'PENDING_APPROVAL' ||
+          a.status === 'PENDING_VERIFICATION' ||
+          a.status === 'PENDING' ||
+          a.status === 'PENDING_REVIEW'
+      );
+      setPendingItems(pending.slice(0, 4));
+    } catch (e) {
+      const approvals = storageService.getApprovals();
+      const pending = approvals.filter(
+        (a) =>
+          a.status === 'PENDING_APPROVAL' ||
+          a.status === 'PENDING_VERIFICATION' ||
+          a.status === 'PENDING' ||
+          a.status === 'PENDING_REVIEW'
+      );
+      setPendingItems(pending.slice(0, 4));
+    }
     setRefreshing(false);
   };
 
@@ -146,14 +161,14 @@ export const AdminDashboardPage = () => {
           <div className="mt-3">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {(stats?.totalUsers || 420).toLocaleString('en-IN')}
+                {(stats?.totalUsers || 0).toLocaleString('en-IN')}
               </span>
               <span className="text-xs font-bold text-slate-500 font-sans">Accounts</span>
             </div>
             <div className="text-xs text-slate-500 mt-1.5 truncate">
-              <span className="font-semibold text-emerald-700">{stats?.farmers || 380} Farmers</span> •{' '}
-              <span>{stats?.governmentBodies || 12} Gov</span> •{' '}
-              <span>{stats?.enterprisePartners || 28} Partners</span>
+              <span className="font-semibold text-emerald-700">{stats?.farmers || 0} Farmers</span> •{' '}
+              <span>{stats?.governmentBodies || 0} Gov</span> •{' '}
+              <span>{stats?.enterprisePartners || 0} Partners</span>
             </div>
           </div>
         </Card>
@@ -205,13 +220,13 @@ export const AdminDashboardPage = () => {
           <div className="mt-3">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {(stats?.totalLands || 18).toLocaleString('en-IN')}
+                {(stats?.totalLands || 0).toLocaleString('en-IN')}
               </span>
               <span className="text-xs font-bold text-slate-500 font-sans">Parcels</span>
             </div>
             <p className="text-xs text-slate-500 mt-1.5 truncate">
-              <span className="font-bold text-slate-800">{stats?.totalAcres || 142.8} Acres</span> •{' '}
-              <span className="font-bold text-teal-700">{(stats?.totalTrees || 18450).toLocaleString('en-IN')} trees</span>
+              <span className="font-bold text-slate-800">{stats?.totalAcres || 0} Acres</span> •{' '}
+              <span className="font-bold text-teal-700">{(stats?.totalTrees || 0).toLocaleString('en-IN')} trees</span>
             </p>
           </div>
         </Card>
@@ -233,12 +248,12 @@ export const AdminDashboardPage = () => {
           <div className="mt-3">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {stats?.totalPolicies || 140}
+                {stats?.totalPolicies || 0}
               </span>
               <span className="text-xs font-bold text-slate-500 font-sans">Policies</span>
             </div>
             <p className="text-xs text-slate-500 mt-1.5 truncate">
-              <span className="font-bold text-amber-700">{stats?.activeClaims || 2} Open Claims</span> • ₹31/tree/yr
+              <span className="font-bold text-amber-700">{stats?.activeClaims || 0} Open Claims</span> • Parametric Cover
             </p>
           </div>
         </Card>
@@ -260,12 +275,12 @@ export const AdminDashboardPage = () => {
           <div className="mt-3">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {stats?.totalSoilTests || 24}
+                {stats?.totalSoilTests || 0}
               </span>
               <span className="text-xs font-bold text-slate-500 font-sans">Tests</span>
             </div>
             <p className="text-xs text-slate-500 mt-1.5 truncate">
-              <span className="font-bold text-slate-800">{stats?.pendingSoilTests || 3} in Lab Queue</span> • NABL
+              <span className="font-bold text-slate-800">{stats?.pendingSoilTests || 0} in Lab Queue</span> • NABL
             </p>
           </div>
         </Card>
@@ -287,12 +302,12 @@ export const AdminDashboardPage = () => {
           <div className="mt-3">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {Number(stats?.totalCarbonCredits || 1250).toLocaleString('en-IN', { maximumFractionDigits: 1 })}
+                {Number(stats?.totalCarbonCredits || 0).toLocaleString('en-IN', { maximumFractionDigits: 1 })}
               </span>
               <span className="text-xs font-bold text-slate-500 font-sans">tCO2e</span>
             </div>
             <p className="text-xs text-slate-500 mt-1.5 truncate">
-              <span className="font-bold text-cyan-700">{stats?.totalCarbonAudits || 3} MRV Scans</span> • Sentinel-2
+              <span className="font-bold text-cyan-700">{stats?.totalCarbonAudits || 0} MRV Scans</span> • Satellite
             </p>
           </div>
         </Card>
@@ -314,12 +329,12 @@ export const AdminDashboardPage = () => {
           <div className="mt-3">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {stats?.totalSupportTickets || 8}
+                {stats?.totalSupportTickets || 0}
               </span>
               <span className="text-xs font-bold text-slate-500 font-sans">Tickets</span>
             </div>
             <p className="text-xs text-slate-500 mt-1.5 truncate">
-              <span className="font-bold text-emerald-700">{stats?.openTickets || 1} Active</span> • Avg 2.4h
+              <span className="font-bold text-emerald-700">{stats?.openTickets || 0} Active</span> • Resolution Desk
             </p>
           </div>
         </Card>
@@ -341,11 +356,11 @@ export const AdminDashboardPage = () => {
           <div className="mt-3">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                ₹{Number(stats?.treasuryBalance || 8450000).toLocaleString('en-IN')}
+                ₹{Number(stats?.treasuryBalance || 0).toLocaleString('en-IN')}
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1.5 truncate">
-              <span className="font-bold text-emerald-700">100% Escrow Backed</span> • DBT Liquidity
+              <span className="font-bold text-emerald-700">100% Escrow Backed</span> • Live Liquidity
             </p>
           </div>
         </Card>
@@ -459,7 +474,7 @@ export const AdminDashboardPage = () => {
               <MapPin className="w-5 h-5" />
             </div>
             <div className="text-xs font-bold text-slate-900">Cadastral GIS</div>
-            <span className="text-[10px] text-slate-500 font-semibold">{stats?.totalLands || 18} Parcels</span>
+            <span className="text-[10px] text-slate-500 font-semibold">{stats?.totalLands || 0} Parcels</span>
           </Link>
 
           <Link
@@ -470,7 +485,7 @@ export const AdminDashboardPage = () => {
               <Trees className="w-5 h-5" />
             </div>
             <div className="text-xs font-bold text-slate-900">Tree Insurance</div>
-            <span className="text-[10px] text-emerald-700 font-semibold">{stats?.totalPolicies || 140} Active</span>
+            <span className="text-[10px] text-emerald-700 font-semibold">{stats?.totalPolicies || 0} Active</span>
           </Link>
 
           <Link
@@ -481,7 +496,7 @@ export const AdminDashboardPage = () => {
               <FlaskConical className="w-5 h-5" />
             </div>
             <div className="text-xs font-bold text-slate-900">Soil Testing Lab</div>
-            <span className="text-[10px] text-slate-500 font-semibold">{stats?.totalSoilTests || 24} Orders</span>
+            <span className="text-[10px] text-slate-500 font-semibold">{stats?.totalSoilTests || 0} Orders</span>
           </Link>
 
           <Link
@@ -492,7 +507,7 @@ export const AdminDashboardPage = () => {
               <CloudSun className="w-5 h-5" />
             </div>
             <div className="text-xs font-bold text-slate-900">Carbon MRV</div>
-            <span className="text-[10px] text-cyan-700 font-semibold">{stats?.totalCarbonCredits || 1250} tCO2e</span>
+            <span className="text-[10px] text-cyan-700 font-semibold">{stats?.totalCarbonCredits || 0} tCO2e</span>
           </Link>
 
           <Link
@@ -518,7 +533,7 @@ export const AdminDashboardPage = () => {
               to="/admin/audit"
               className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200 transition"
             >
-              View Full Audit Trail ({auditLogs?.length || 5}) <ArrowRight className="w-3.5 h-3.5" />
+              View Full Audit Trail ({auditLogs?.length || 0}) <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           }
         />

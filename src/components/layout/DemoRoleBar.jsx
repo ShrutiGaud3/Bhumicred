@@ -18,76 +18,7 @@ import {
   Bot
 } from 'lucide-react';
 
-const DEMO_PERSONAS = [
-  {
-    role: ROLES.FARMER,
-    title: 'Farmer',
-    name: 'Ramesh Patel',
-    details: 'Anand District, Gujarat (12.4 Acres)',
-    targetRoute: '/farmer/dashboard',
-    badgeColor: 'bg-emerald-500',
-    icon: User,
-    userPayload: {
-      id: 'usr_farmer_01',
-      name: 'Ramesh Patel',
-      mobile: '+91 98765 43210',
-      role: ROLES.FARMER,
-      kycStatus: 'APPROVED',
-      isLoggedIn: true,
-    }
-  },
-  {
-    role: ROLES.GOVERNMENT,
-    title: 'Govt Nodal Officer',
-    name: 'Kavita Sharma',
-    details: 'Agriculture Dept, Gandhinagar',
-    targetRoute: '/government/dashboard',
-    badgeColor: 'bg-blue-500',
-    icon: Building2,
-    userPayload: {
-      id: 'usr_gov_01',
-      name: 'Kavita Sharma',
-      mobile: '+91 91234 56789',
-      role: ROLES.GOVERNMENT,
-      kycStatus: 'APPROVED',
-      isLoggedIn: true,
-    }
-  },
-  {
-    role: ROLES.PARTNER,
-    title: 'Enterprise Partner',
-    name: 'Devang Joshi',
-    details: 'TerraAgri Labs & Drone Survey',
-    targetRoute: '/partner/dashboard',
-    badgeColor: 'bg-amber-500',
-    icon: Briefcase,
-    userPayload: {
-      id: 'usr_partner_01',
-      name: 'Devang Joshi',
-      mobile: '+91 98111 22334',
-      role: ROLES.PARTNER,
-      kycStatus: 'APPROVED',
-      isLoggedIn: true,
-    }
-  },
-  {
-    role: ROLES.SUPER_ADMIN,
-    title: 'Super Admin',
-    name: 'Vikram Singh',
-    details: 'National Grid Controller',
-    targetRoute: '/admin/dashboard',
-    badgeColor: 'bg-rose-500',
-    icon: Shield,
-    userPayload: {
-      id: 'usr_admin_01',
-      name: 'Vikram Singh',
-      mobile: '+91 99999 00000',
-      role: ROLES.SUPER_ADMIN,
-      kycStatus: 'APPROVED',
-      isLoggedIn: true,
-    }
-  }
-];
+const DEMO_PERSONAS = [];
 
 export const DemoRoleBar = () => {
   const dispatch = useDispatch();
@@ -112,6 +43,10 @@ export const DemoRoleBar = () => {
     dispatch(setUser(persona.userPayload));
     navigate(persona.targetRoute);
   };
+
+  if (!DEMO_PERSONAS || DEMO_PERSONAS.length === 0) {
+    return null;
+  }
 
   return (
     <div id="demo-role-bar" className="fixed bottom-0 left-0 right-0 z-40 bg-neutral-900/95 backdrop-blur-md text-white border-t border-neutral-700 shadow-2xl transition-all duration-300 print:hidden">

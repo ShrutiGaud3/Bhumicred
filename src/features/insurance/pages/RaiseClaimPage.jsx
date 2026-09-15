@@ -135,7 +135,7 @@ export const RaiseClaimPage = () => {
           <div className="flex justify-between pb-2 border-b border-slate-200">
             <span className="text-slate-500">Assigned Surveyor:</span>
             <span className="font-semibold text-emerald-800">
-              {submittedClaim.inspectorName || 'Devang Joshi (Senior Agronomist)'}
+              {submittedClaim.inspectorName || 'Assigned Field Agronomist'}
             </span>
           </div>
           <div className="flex justify-between">

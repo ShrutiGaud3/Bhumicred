@@ -4,7 +4,12 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 font-sans min-h-screen overflow-x-hidden;
+    @apply bg-slate-50 text-slate-900 font-sans min-h-screen overflow-x-hidden dark:bg-neutral-950 dark:text-white;
+  }
+
+  .dark {
+    color-scheme: dark;
+    color: #ffffff;
   }
 }
 

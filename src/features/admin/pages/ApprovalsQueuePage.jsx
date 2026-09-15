@@ -31,8 +31,8 @@ import { onboardingService } from '../../farmer/services/onboardingService.js';
 
 export const ApprovalsQueuePage = () => {
   const dispatch = useDispatch();
-  const [items, setItems] = useState(() => storageService.getApprovals());
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionModal, setActionModal] = useState(null); // { item, actionType: 'APPROVE'|'REJECT'|'QUERY' }
@@ -44,6 +44,7 @@ export const ApprovalsQueuePage = () => {
     setLoading(true);
     try {
       let liveItems = [];
+      let backendLoaded = false;
       try {
         const res = await onboardingService.getAdminQueue();
         const appsList = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.applications) ? res.data.applications : []);
@@ -63,69 +64,27 @@ export const ApprovalsQueuePage = () => {
           riskScore: app.riskScore || 'LOW',
           details: app.details || `${app.address?.village || ''} ${app.address?.district || ''} • ${app.address?.state || ''}`,
         }));
+        backendLoaded = true;
       } catch (backendErr) {
         console.warn('Backend admin queue fetch warning:', backendErr?.message);
       }
 
-      // Collect all pending lands stored in local storage
-      const localLands = storageService.getLands();
-      const landApprovalItems = localLands
-        .filter((l) => l.status === 'PENDING_VERIFICATION' || l.status === 'PENDING_REVIEW' || l.status === 'SUBMITTED' || l.status === 'PENDING')
-        .map((land) => ({
-          id: `APP-LND-${land.id || land.landId}`,
-          applicationId: `APP-LND-${land.id || land.landId}`,
-          targetId: land.id || land.landId,
-          type: 'LAND_REGISTRATION',
-          title: `Land Title Registration - ${land.landName || 'Plot'} - Khasra ${land.khasraNumber || '412/9'} (Survey ${land.surveyNumber || '108/A'})`,
-          applicantName: land.ownerName || land.farmerName || 'Citizen Farmer',
-          applicantRole: 'FARMER',
-          applicantPhone: land.ownerMobile || land.mobile || '',
-          submittedDate: 'Just now',
-          submittedAt: land.createdAt ? new Date(land.createdAt).toLocaleDateString() : 'Just now',
-          timestamp: land.createdAt || new Date().toISOString(),
-          status: land.status || 'PENDING_VERIFICATION',
-          riskScore: 'LOW',
-          details: `${land.area || land.areaAcres || 5} Acres in ${land.village || land.district || 'Anand'}`,
-        }));
+      if (backendLoaded) {
+        liveItems.sort((a, b) => {
+          const timeA = new Date(a.timestamp || a.createdAt || a.submittedAt || 0).getTime();
+          const timeB = new Date(b.timestamp || b.createdAt || b.submittedAt || 0).getTime();
+          return timeB - timeA;
+        });
+        setItems(liveItems);
+        return;
+      }
 
-      // Merge liveItems, landApprovalItems, and general approvals
-      const localApprovals = storageService.getApprovals();
-      const combined = [...liveItems];
-
-      // Add pending lands to queue
-      landApprovalItems.forEach((item) => {
-        if (!combined.some((c) => c.id === item.id || c.applicationId === item.id || (item.targetId && c.targetId === item.targetId))) {
-          combined.unshift(item);
-        }
-      });
-
-      // Add general local approvals
-      localApprovals.forEach((loc) => {
-        if (!combined.some((c) => c.id === loc.id || c.applicationId === loc.id || (loc.targetId && c.targetId === loc.targetId))) {
-          combined.push(loc);
-        }
-      });
-
-      // Filter out any mock approval entries
-      const sanitized = combined.filter(
-        (c) =>
-          !c.id?.startsWith('appr_') &&
-          c.applicantName !== 'Jitendra Vaghela' &&
-          c.applicantName !== 'Manharbhai Solanki' &&
-          c.applicantName !== 'Dr. Suresh Mehta'
-      );
-
-      // Sort recent requests on TOP (newest first)
-      sanitized.sort((a, b) => {
-        const timeA = new Date(a.timestamp || a.createdAt || a.submittedAt || 0).getTime();
-        const timeB = new Date(b.timestamp || b.createdAt || b.submittedAt || 0).getTime();
-        return timeB - timeA;
-      });
-
-      setItems(sanitized);
+      // Fallback only if backend is completely offline
+      const localApprovals = storageService.getApprovals().filter((c) => !c.id?.startsWith('appr_'));
+      setItems(localApprovals);
     } catch (err) {
       console.warn('Admin queue load error:', err);
-      setItems(storageService.getApprovals());
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -139,8 +98,9 @@ export const ApprovalsQueuePage = () => {
     { id: 'ALL', label: 'All Pending Approvals' },
     { id: 'LAND_REGISTRATION', label: 'Land Registrations' },
     { id: 'FARMER_KYC', label: 'Farmer KYC' },
-    { id: 'INSURANCE_CLAIM', label: 'Insurance Claims' },
+    { id: 'GOVERNMENT_ONBOARDING', label: 'Govt Officers' },
     { id: 'PARTNER_ONBOARDING', label: 'Partner Licenses' },
+    { id: 'INSURANCE_CLAIM', label: 'Insurance Claims' },
   ];
 
   const filteredItems = items.filter((item) => {

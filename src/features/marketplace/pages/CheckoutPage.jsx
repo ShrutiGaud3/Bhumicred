@@ -33,13 +33,13 @@ export const CheckoutPage = () => {
   const [loadingLands, setLoadingLands] = useState(true);
 
   const [deliveryAddress, setDeliveryAddress] = useState({
-    recipientName: user?.name || 'Ramesh Patel',
-    phone: user?.mobile || user?.phone || '+91 98765 43210',
+    recipientName: user?.name || user?.fullName || '',
+    phone: user?.mobile || user?.phone || '',
     selectedLand: '',
-    addressLine: 'Shree Ram Farm, Survey 402/A, Village Mogri',
-    district: 'Anand',
-    state: 'Gujarat',
-    pincode: '388345',
+    addressLine: user?.address || '',
+    district: user?.district || '',
+    state: user?.state || '',
+    pincode: user?.pincode || '',
   });
 
   const [paymentMethod, setPaymentMethod] = useState('WALLET');

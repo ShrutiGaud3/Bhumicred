@@ -178,7 +178,7 @@ export const ClaimsListPage = () => {
               <div className="flex justify-between">
                 <span className="text-slate-500">Assigned Agronomist:</span>
                 <span className="font-semibold text-emerald-800">
-                  {selectedClaim.inspectorName || 'Devang Joshi'}
+                  {selectedClaim.inspectorName || 'Pending Assignment'}
                 </span>
               </div>
             </div>

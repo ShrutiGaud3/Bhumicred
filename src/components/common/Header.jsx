@@ -69,7 +69,7 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
             {user ? (
               <button
                 onClick={onToggleSidebar}
-                className="p-1.5 sm:p-2 -ml-1 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl md:hidden transition-colors"
+                className="p-1.5 sm:p-2 -ml-1 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl lg:hidden transition-colors"
                 aria-label="Toggle Portal Menu"
               >
                 <Menu className="w-5 h-5" />
