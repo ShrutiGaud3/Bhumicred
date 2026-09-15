@@ -148,6 +148,12 @@ export const GisCadastralExplorerPage = () => {
     toast.success('GeoJSON spatial layer exported successfully!');
   };
 
+  const userTotalAcres = lands.reduce((acc, l) => acc + Number(l.area || l.areaAcres || 0), 0);
+  const userTotalTrees = lands.reduce((acc, l) => acc + Number(l.agronomicDetails?.treeCount || l.treeCount || 0), 0);
+  const displayAcres = lands.length > 0 ? userTotalAcres.toFixed(1) : (macroMetrics?.totalMappedAcres ?? 0);
+  const displayTrees = lands.length > 0 ? userTotalTrees : (macroMetrics?.totalStandingTrees ?? 0);
+  const displayNdvi = lands.length > 0 ? (macroMetrics?.macroNdviAverage || 0.72) : (macroMetrics?.macroNdviAverage ?? 0);
+
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
       <PageHeader
@@ -190,7 +196,7 @@ export const GisCadastralExplorerPage = () => {
             </div>
           </div>
           <div className="text-2xl font-black mt-2 tracking-tight">
-            {macroMetrics?.totalMappedAcres || '21.4'} <span className="text-xs font-normal text-emerald-200">Acres</span>
+            {displayAcres} <span className="text-xs font-normal text-emerald-200">Acres</span>
           </div>
           <span className="text-[11px] text-emerald-300/80 mt-1 block">Digitized & Verified</span>
         </Card>
@@ -203,10 +209,10 @@ export const GisCadastralExplorerPage = () => {
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900 mt-2 tracking-tight">
-            {macroMetrics?.macroNdviAverage || 0.72} <span className="text-xs font-semibold text-emerald-700">/ 1.0</span>
+            {displayNdvi} <span className="text-xs font-semibold text-emerald-700">/ 1.0</span>
           </div>
           <span className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Optimal Canopy Density
+            <CheckCircle2 className="w-3 h-3" /> {Number(displayNdvi) > 0 ? 'Optimal Canopy Density' : 'Awaiting Parcel Data'}
           </span>
         </Card>
 
@@ -218,7 +224,7 @@ export const GisCadastralExplorerPage = () => {
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900 mt-2 tracking-tight">
-            {macroMetrics?.totalStandingTrees || 130} <span className="text-xs font-normal text-slate-500">Trees</span>
+            {displayTrees} <span className="text-xs font-normal text-slate-500">Trees</span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block">Geo-Tagged & Monitored</span>
         </Card>
