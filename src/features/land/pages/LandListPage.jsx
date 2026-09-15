@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { SearchInput } from '../../../components/forms/SearchInput.jsx';
@@ -12,6 +12,7 @@ import { storageService } from '../../../services/storageService.js';
 import { landService } from '../services/landService.js';
 
 export const LandListPage = () => {
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -177,7 +178,7 @@ export const LandListPage = () => {
           title="No Lands Found"
           description="You have not registered any land parcel matching your filter criteria."
           actionLabel="Register First Land"
-          onAction={() => window.location.assign('/farmer/lands/add')}
+          onAction={() => navigate('/farmer/lands/add')}
         />
       )}
     </div>

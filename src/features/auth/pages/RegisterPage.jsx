@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser } from '../authSlice.js';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
@@ -37,9 +37,13 @@ import {
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
   const toast = useToast();
-  const { isLoading } = useSelector((state) => state.auth);
+  const { selectedRole, isLoading } = useSelector((state) => state.auth);
+
+  const roleFromQuery = searchParams.get('role');
+  const activeRole = roleFromQuery || selectedRole || ROLES.FARMER;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -48,7 +52,7 @@ export const RegisterPage = () => {
     gender: 'MALE',
     mobile: '',
     email: '',
-    role: ROLES.FARMER,
+    role: activeRole,
     country: 'India (Bharat)',
     state: 'Gujarat',
     district: 'Anand',
@@ -229,7 +233,7 @@ export const RegisterPage = () => {
       if (!formData.fullName.trim()) errs.fullName = 'Full name is required';
       if (!formData.fatherName.trim()) errs.fatherName = "Father's or Husband's name is required";
       const cleanMobile = formData.mobile.replace(/\D/g, '');
-      if (!cleanMobile || cleanMobile.length < 8) errs.mobile = 'Valid contact/mobile number is required';
+      if (!cleanMobile || cleanMobile.length !== 10) errs.mobile = 'Valid 10-digit mobile number is required';
     } else if (step === 2) {
       if (!formData.country.trim()) errs.country = 'Country is required';
       if (!formData.state.trim()) errs.state = `${stateLabel} is required`;
@@ -352,14 +356,17 @@ export const RegisterPage = () => {
                   type="tel"
                   required
                   icon={Phone}
-                  placeholder="e.g. 9876543210"
+                  prefix="+91"
+                  placeholder="98765 43210"
+                  maxLength={10}
                   value={formData.mobile}
                   onChange={(e) => {
-                    setFormData({ ...formData, mobile: e.target.value });
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setFormData({ ...formData, mobile: val });
                     if (errors.mobile) setErrors({ ...errors, mobile: null });
                   }}
                   error={errors.mobile}
-                  helperText="Primary contact number for authentication"
+                  helperText="Primary 10-digit mobile number for OTP authentication"
                 />
 
                 <FormInput
@@ -373,17 +380,12 @@ export const RegisterPage = () => {
                 />
               </div>
 
-              <FormSelect
-                label="Registering As Portal Role"
-                required
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                options={[
-                  { value: ROLES.FARMER, label: 'Farmer / Land Owner' },
-                  { value: ROLES.PARTNER, label: 'Enterprise Partner (Surveyor / Lab)' },
-                  { value: ROLES.GOVERNMENT, label: 'Government Nodal Authority' },
-                ]}
-              />
+              <div className="flex items-center justify-between p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl text-xs">
+                <span className="text-emerald-800 font-medium">Selected Portal Role:</span>
+                <span className="font-bold text-emerald-950 px-2.5 py-1 bg-emerald-100/80 rounded-lg uppercase tracking-wide">
+                  {ROLE_LABELS[formData.role] || formData.role}
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -637,7 +639,9 @@ export const RegisterPage = () => {
 
                 <div>
                   <span className="text-slate-500 block text-[11px]">Mobile Number:</span>
-                  <span className="font-mono font-bold text-slate-900">{formData.mobile}</span>
+                  <span className="font-mono font-bold text-slate-900">
+                    {formData.mobile ? `+91 ${formData.mobile}` : '—'}
+                  </span>
                 </div>
 
                 <div>

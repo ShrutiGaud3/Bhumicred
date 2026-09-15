@@ -86,6 +86,7 @@ export const InsuranceCatalogPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  const { user } = useSelector((state) => state.auth);
   const { policies, stats, calculatedQuote, isLoading } = useSelector((state) => state.insurance);
   const [treeCountInput, setTreeCountInput] = useState(150);
   const [selectedSpecies, setSelectedSpecies] = useState('TEAK');
@@ -101,6 +102,35 @@ export const InsuranceCatalogPage = () => {
     setSelectedSpecies(species);
     dispatch(calculateQuote({ treeCount: count, species: species, ageYears: 4, durationMonths: 36 }));
   };
+
+  // User-wise strict filtering and deduplication
+  const userCleanPhone = (user?.mobile || '').replace(/\D/g, '');
+  const userPolicies = (policies || []).filter((p) => {
+    if (user?.role === 'SUPER_ADMIN') return true;
+    const pPhone = (p.userMobile || p.ownerMobile || '').replace(/\D/g, '');
+    if (userCleanPhone && pPhone && (pPhone === userCleanPhone || pPhone.endsWith(userCleanPhone) || userCleanPhone.endsWith(pPhone))) return true;
+    if (user?.id && (p.userId === user.id || p.userId?._id === user.id || p.ownerId === user.id)) return true;
+    if (user?._id && (p.userId === user._id || p.userId?._id === user._id || p.ownerId === user._id)) return true;
+    if (user?.name && p.userName && p.userName.trim().toLowerCase() === user.name.trim().toLowerCase()) return true;
+    return false;
+  });
+
+  const uniqueUserPolicies = [];
+  const seenPolicyKeys = new Set();
+  userPolicies.forEach((p) => {
+    const key = p.policyNumber || `${p.khasraNumber}-${p.surveyNumber}`;
+    if (!seenPolicyKeys.has(key)) {
+      seenPolicyKeys.add(key);
+      uniqueUserPolicies.push(p);
+    }
+  });
+
+  // Dynamically compute live stats from actual user policies array
+  const activePoliciesList = uniqueUserPolicies.filter((p) => p.status === 'ACTIVE' || !p.status);
+  const totalSumInsured = (stats?.totalSumInsured > 0 ? stats.totalSumInsured : activePoliciesList.reduce((sum, p) => sum + (Number(p.sumInsured) || 0), 0));
+  const activePoliciesCount = (stats?.activePolicies > 0 ? stats.activePolicies : (activePoliciesList.length || uniqueUserPolicies.length));
+  const totalInsuredTrees = (stats?.totalInsuredTrees > 0 ? stats.totalInsuredTrees : activePoliciesList.reduce((sum, p) => sum + (Number(p.insuredTreeCount || p.treeCount) || 0), 0));
+  const totalSubsidy = (stats?.totalGovernmentSubsidyDisbursed > 0 ? stats.totalGovernmentSubsidyDisbursed : activePoliciesList.reduce((sum, p) => sum + (Number(p.governmentSubsidyAmount) || 0), 0));
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
@@ -141,10 +171,10 @@ export const InsuranceCatalogPage = () => {
             </div>
           </div>
           <div className="text-2xl font-black mt-2 tracking-tight">
-            ₹{(stats?.totalSumInsured ?? 0).toLocaleString('en-IN')}
+            ₹{totalSumInsured.toLocaleString('en-IN')}
           </div>
           <span className="text-[11px] text-emerald-300/80 mt-1 block">
-            {stats?.activePolicies ?? policies.length} Active Policies
+            {activePoliciesCount} Active {activePoliciesCount === 1 ? 'Policy' : 'Policies'}
           </span>
         </Card>
 
@@ -156,7 +186,7 @@ export const InsuranceCatalogPage = () => {
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900 mt-2 tracking-tight">
-            {stats?.totalInsuredTrees ?? 0} <span className="text-xs font-normal text-slate-500">Trees</span>
+            {totalInsuredTrees.toLocaleString('en-IN')} <span className="text-xs font-normal text-slate-500">Trees</span>
           </div>
           <span className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
             <Check className="w-3 h-3" /> 100% Geo-Tagged
@@ -171,7 +201,7 @@ export const InsuranceCatalogPage = () => {
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900 mt-2 tracking-tight">
-            ₹{(stats?.totalGovernmentSubsidyDisbursed ?? 0).toLocaleString('en-IN')}
+            ₹{totalSubsidy.toLocaleString('en-IN')}
           </div>
           <span className="text-[11px] text-amber-800 font-medium mt-1 block">
             40% PM-KMY Agro Grant
@@ -334,17 +364,17 @@ export const InsuranceCatalogPage = () => {
       </div>
 
       {/* Active Policies List */}
-      {policies.length > 0 && (
+      {uniqueUserPolicies.length > 0 && (
         <div className="space-y-4 pt-4 border-t border-slate-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-slate-900">Your Active Tree Policies</h3>
             <span className="text-xs font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">
-              {policies.length} Active
+              {uniqueUserPolicies.length} Active
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {policies.map((policy) => (
+            {uniqueUserPolicies.map((policy) => (
               <Card
                 key={policy._id || policy.id || policy.policyNumber}
                 className="p-5 border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all rounded-2xl bg-white flex flex-col justify-between"

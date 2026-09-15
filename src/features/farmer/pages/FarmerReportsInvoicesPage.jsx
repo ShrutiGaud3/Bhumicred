@@ -37,6 +37,7 @@ import { TaxInvoiceQrCode } from '../../../components/ui/TaxInvoiceQrCode.jsx';
 import { storageService } from '../../../services/storageService.js';
 import { formatCurrency } from '../../../utils/formatters.js';
 import { useToast } from '../../../components/ui/ToastContext.jsx';
+import { downloadElementAsPdf } from '../../../utils/pdfDownloader.js';
 
 export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
   const { user } = useSelector((state) => state.auth);
@@ -47,6 +48,7 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
   const [reports, setReports] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
     const userIdentifier = user?.mobile || user?.id || user?._id || user?.name || null;
@@ -60,6 +62,46 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
   const totalCarbonCredits = reports
     .filter((r) => r.category === 'Carbon Credits')
     .reduce((acc, curr) => acc + (curr.annualSequestration || 0), 0);
+
+  const handleDownloadInvoicePdf = async (inv = null) => {
+    const targetInv = inv || selectedInvoice;
+    if (!targetInv) return;
+    
+    if (!selectedInvoice || selectedInvoice.id !== targetInv.id) {
+      setSelectedInvoice(targetInv);
+    }
+    
+    setIsGeneratingPdf(true);
+    toast.info('Generating official PDF invoice...');
+    setTimeout(async () => {
+      const fileName = `BHUMICRED_Tax_Invoice_${targetInv.invoiceNumber || 'INV'}`;
+      const success = await downloadElementAsPdf('tax-invoice-printable', fileName);
+      setIsGeneratingPdf(false);
+      if (success) {
+        toast.success(`Downloaded ${fileName}.pdf`);
+      }
+    }, 350);
+  };
+
+  const handleDownloadReportPdf = async (rep = null) => {
+    const targetRep = rep || selectedReport;
+    if (!targetRep) return;
+
+    if (!selectedReport || selectedReport.id !== targetRep.id) {
+      setSelectedReport(targetRep);
+    }
+
+    setIsGeneratingPdf(true);
+    toast.info('Generating official PDF audit certificate...');
+    setTimeout(async () => {
+      const fileName = `BHUMICRED_Audit_${targetRep.certId || targetRep.id || 'REPORT'}`;
+      const success = await downloadElementAsPdf('official-report-printable', fileName);
+      setIsGeneratingPdf(false);
+      if (success) {
+        toast.success(`Downloaded ${fileName}.pdf`);
+      }
+    }, 350);
+  };
 
   const handlePrintModalInvoice = () => {
     const originalTitle = document.title;
@@ -312,7 +354,16 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
                               title="View full tax invoice with QR codes"
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              View & Print
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadInvoicePdf(inv)}
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-sm"
+                              title="Download official PDF invoice"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              PDF
                             </button>
                           </div>
                         </td>
@@ -412,12 +463,7 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            setSelectedReport(rep);
-                            setTimeout(() => {
-                              handlePrintModalReport();
-                            }, 400);
-                          }}
+                          onClick={() => handleDownloadReportPdf(rep)}
                           className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-sm"
                         >
                           <Download className="w-3.5 h-3.5" />
@@ -452,11 +498,12 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handlePrintModalInvoice}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow"
+                  onClick={() => handleDownloadInvoicePdf()}
+                  disabled={isGeneratingPdf}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow disabled:opacity-50"
                 >
                   <Download className="w-4 h-4" />
-                  Download PDF
+                  {isGeneratingPdf ? 'Generating PDF...' : 'Download PDF'}
                 </button>
                 <button
                   type="button"
@@ -483,46 +530,59 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
                 className="bg-white rounded-2xl border-2 border-slate-900 p-5 text-slate-900 space-y-3.5 print:p-0 print:border-none print:shadow-none"
               >
                 {/* Invoice Header */}
-                <div className="flex flex-col sm:flex-row items-start justify-between gap-3 border-b-2 border-slate-900 pb-3">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-emerald-800 text-white font-black text-xs tracking-wider">
+                <div className="border-b-2 border-slate-900 pb-3 space-y-2.5">
+                  {/* Row 1: Brand on Left, Official Tax Invoice Title on Right */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="bg-emerald-800 text-white font-black text-xs tracking-wider rounded text-center"
+                        style={{ display: 'inline-block', padding: '4px 10px', lineHeight: '1.2' }}
+                      >
                         BHUMICRED
                       </span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-800">
-                        Sovereign Agro-GIS & Carbon Credit Registry
+                      <div>
+                        <h3 className="text-xs font-black uppercase tracking-wider text-emerald-950 leading-tight">
+                          Sovereign Agro-GIS & Carbon Credit Registry
+                        </h3>
+                        <p className="text-[9px] font-mono text-slate-500 leading-tight mt-0.5">
+                          GSTIN: <strong>24AABCB9821A1Z8</strong> • CIN: <strong>U01100GJ2026PTC098214</strong> • SAC: <strong>998313</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span
+                        className="bg-emerald-900 text-white text-[10px] font-black uppercase tracking-wider rounded text-center"
+                        style={{ display: 'inline-block', padding: '5px 12px', lineHeight: '1.2' }}
+                      >
+                        OFFICIAL DIGITAL TAX INVOICE
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-600">
-                      Department of Agriculture, Farmers Welfare & Land Administration • Govt. of Gujarat / India
-                    </p>
-                    <p className="text-[9px] font-mono text-slate-500">
-                      GSTIN: <strong>24AABCB9821A1Z8</strong> • CIN: <strong>U01100GJ2026PTC098214</strong> • SAC: <strong>998313</strong>
-                    </p>
                   </div>
 
-                  <div className="flex items-center gap-3 sm:text-right self-stretch sm:self-auto bg-slate-50 sm:bg-transparent p-2 rounded-lg border sm:border-none border-slate-200">
-                    <TaxInvoiceQrCode
-                      value={`https://einvoice.gst.gov.in/verify/${selectedInvoice.invoiceNumber}?gstin=24AABCB9821A1Z8&amt=${selectedInvoice.grandTotal}`}
-                      size={44}
-                      badgeText="GST E-INVOICE"
-                      badgeColor="bg-emerald-900 text-white"
-                      label="IRN Tax QR"
-                      subLabel="Govt GSTN Portal"
-                      className="hidden sm:flex"
-                    />
-                    <div className="text-[11px] space-y-0.5">
-                      <span className="inline-block px-2.5 py-0.5 rounded bg-emerald-800 text-white text-[10px] font-black uppercase tracking-wider">
-                        Official Digital Tax Invoice
+                  {/* Row 2: Metadata Strip with GST E-Invoice IRN Verification (Vertically Centered) */}
+                  <div className="grid grid-cols-4 items-center bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs gap-3">
+                    <div className="flex flex-col justify-center">
+                      <span className="text-slate-500 text-[9px] block font-bold uppercase tracking-wider">Invoice No</span>
+                      <strong className="font-mono text-slate-950 text-xs mt-0.5">{selectedInvoice.invoiceNumber}</strong>
+                    </div>
+                    <div className="border-l border-slate-300 pl-3 flex flex-col justify-center">
+                      <span className="text-slate-500 text-[9px] block font-bold uppercase tracking-wider">Date & Time</span>
+                      <strong className="text-slate-900 text-xs mt-0.5">{selectedInvoice.invoiceDate} • {selectedInvoice.invoiceTime || '12:00 PM'}</strong>
+                    </div>
+                    <div className="border-l border-slate-300 pl-3 flex flex-col justify-center">
+                      <span className="text-slate-500 text-[9px] block font-bold uppercase tracking-wider">Transaction ID</span>
+                      <strong className="font-mono text-emerald-800 text-xs mt-0.5">{selectedInvoice.transactionId}</strong>
+                    </div>
+                    <div className="flex items-center justify-end gap-2.5 border-l border-slate-300 pl-3">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 whitespace-nowrap">
+                        ✓ PAID & VERIFIED
                       </span>
-                      <p className="pt-1"><span className="text-slate-500">Invoice No:</span> <strong className="font-mono text-slate-950">{selectedInvoice.invoiceNumber}</strong></p>
-                      <p><span className="text-slate-500">Date & Time:</span> <strong className="text-slate-900">{selectedInvoice.invoiceDate} • {selectedInvoice.invoiceTime || '12:00 PM'}</strong></p>
-                      <p><span className="text-slate-500">Transaction ID:</span> <strong className="font-mono text-emerald-800">{selectedInvoice.transactionId}</strong></p>
-                      <div className="pt-0.5">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                          ✓ PAID & VERIFIED
-                        </span>
-                      </div>
+                      <TaxInvoiceQrCode
+                        value={`https://einvoice.gst.gov.in/verify/${selectedInvoice.invoiceNumber}?gstin=24AABCB9821A1Z8&amt=${selectedInvoice.grandTotal}`}
+                        size={34}
+                        showLabel={false}
+                      />
                     </div>
                   </div>
                 </div>
@@ -648,22 +708,31 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
                 </div>
 
                 {/* Totals & UPI Settlement QR */}
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-3 border-t border-slate-300 pt-2.5">
-                  <div className="space-y-1.5 max-w-sm text-[10px] text-slate-600">
-                    <TaxInvoiceQrCode
-                      value={`upi://pay?pa=bhumicred@sbi&pn=BHUMICRED_REGISTRY&am=${selectedInvoice.grandTotal}&tr=${selectedInvoice.transactionId}&cu=INR`}
-                      size={48}
-                      badgeText="UPI / RBI TREASURY"
-                      badgeColor="bg-blue-900 text-white"
-                      label="Treasury Settlement QR"
-                      subLabel={`Ref: ${selectedInvoice.transactionId} • Verified`}
-                    />
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-t border-slate-300 pt-3">
+                  <div className="space-y-2 max-w-sm text-xs text-slate-600">
+                    <div className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                      <TaxInvoiceQrCode
+                        value={`upi://pay?pa=bhumicred@sbi&pn=BHUMICRED_REGISTRY&am=${selectedInvoice.grandTotal}&tr=${selectedInvoice.transactionId}&cu=INR`}
+                        size={44}
+                        showLabel={false}
+                      />
+                      <div className="text-[11px] leading-tight">
+                        <span
+                          className="bg-blue-900 text-white font-bold uppercase tracking-wider text-[9px] rounded text-center mb-1"
+                          style={{ display: 'inline-block', padding: '3px 8px', lineHeight: '1.2' }}
+                        >
+                          UPI Treasury Settlement
+                        </span>
+                        <p className="font-bold text-slate-900">RBI Treasury & UPI Direct</p>
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">Ref: {selectedInvoice.transactionId}</p>
+                      </div>
+                    </div>
                     <p className="text-[9px] text-slate-500 italic">
                       * Land charges calculated at ₹149/ac + Tree insurance at ₹{selectedInvoice.insuranceRatePerTree || 31}/tree/year + 18% GST (CGST 9% + SGST 9%).
                     </p>
                   </div>
 
-                  <div className="w-full sm:w-64 bg-slate-50 rounded-lg p-2.5 border border-slate-300 text-[11px] space-y-1">
+                  <div className="w-full sm:w-64 bg-slate-50 rounded-xl p-3 border border-slate-300 text-[11px] space-y-1.5">
                     <div className="flex justify-between text-slate-700">
                       <span>Land Statutory Fee (₹149/ac):</span>
                       <span className="font-mono">₹{(selectedInvoice.landSubtotal || (selectedInvoice.acres ? selectedInvoice.acres * 149 : 1847.6)).toFixed(2)}</span>
@@ -674,7 +743,7 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
                         <span className="font-mono font-bold">₹{(selectedInvoice.treeInsuranceAmount || (Number(selectedInvoice.insuredTreeCount || selectedInvoice.treeCount || 4) * (selectedInvoice.insuranceRatePerTree || 31))).toFixed(2)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-0.5">
+                    <div className="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-1">
                       <span>Taxable Subtotal:</span>
                       <strong className="font-mono">₹{(selectedInvoice.subtotal || 1847.6).toFixed(2)}</strong>
                     </div>
@@ -686,11 +755,11 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
                       <span>State GST (SGST @ 9%):</span>
                       <span className="font-mono">₹{(selectedInvoice.sgst || 166.28).toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-slate-700 border-t border-slate-200 pt-0.5 font-semibold text-[10px]">
+                    <div className="flex justify-between text-slate-700 border-t border-slate-200 pt-1 font-semibold text-[10px]">
                       <span>Total GST (18%):</span>
                       <span className="font-mono">₹{(selectedInvoice.gstTotal || 332.57).toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-xs font-black text-emerald-900 bg-emerald-100 p-1.5 rounded border border-emerald-300 mt-0.5">
+                    <div className="flex justify-between text-xs font-black text-emerald-900 bg-emerald-100 p-2 rounded-lg border border-emerald-300 mt-1">
                       <span>Grand Total Paid:</span>
                       <span className="font-mono text-sm">₹{(selectedInvoice.grandTotal || 2180.17).toFixed(2)}</span>
                     </div>
@@ -744,11 +813,12 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handlePrintModalReport}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow"
+                  onClick={() => handleDownloadReportPdf()}
+                  disabled={isGeneratingPdf}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow disabled:opacity-50"
                 >
                   <Download className="w-4 h-4" />
-                  Download PDF
+                  {isGeneratingPdf ? 'Generating PDF...' : 'Download PDF'}
                 </button>
                 <button
                   type="button"
@@ -770,7 +840,10 @@ export const FarmerReportsInvoicesPage = ({ isEmbedded = false }) => {
 
             {/* Modal Body: AUTHENTIC PRINTABLE CERTIFICATE */}
             <div className="p-4 sm:p-6 overflow-y-auto flex-1 text-slate-900">
-              <div className="border-4 border-double border-emerald-800 p-5 sm:p-7 rounded-2xl bg-gradient-to-b from-emerald-50/20 via-white to-slate-50/30 space-y-4 print:p-0 print:border-none print:shadow-none">
+              <div
+                id="official-report-printable"
+                className="border-4 border-double border-emerald-800 p-5 sm:p-7 rounded-2xl bg-gradient-to-b from-emerald-50/20 via-white to-slate-50/30 space-y-4 print:p-0 print:border-none print:shadow-none"
+              >
                 {/* Certificate Emblem & Top Banner */}
                 <div className="text-center border-b-2 border-emerald-800 pb-4">
                   <div className="inline-flex items-center justify-center p-2 rounded-full bg-emerald-100 text-emerald-800 mb-1.5">

@@ -27,6 +27,7 @@ import { MOCK_POLICIES } from '../../../services/mockData/insuranceMock.js';
 import { MOCK_SOIL_REQUESTS } from '../../../services/mockData/soilMock.js';
 import { storageService } from '../../../services/storageService.js';
 import { landService } from '../services/landService.js';
+import { insuranceService } from '../../insurance/services/insuranceService.js';
 import { LandDeedModal } from '../components/LandDeedModal.jsx';
 
 export const LandDetailPage = () => {
@@ -35,16 +36,21 @@ export const LandDetailPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showDeedModal, setShowDeedModal] = useState(false);
   const [landData, setLandData] = useState(null);
+  const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
-    const fetchLand = async () => {
+    const fetchLandAndPolicies = async () => {
       setLoading(true);
       try {
-        const res = await landService.getLandById(id);
-        if (isMounted && res?.data) {
-          const item = res.data;
+        const [resLand, resPolicies] = await Promise.allSettled([
+          landService.getLandById(id),
+          insuranceService.getPolicies(),
+        ]);
+
+        if (isMounted && resLand.status === 'fulfilled' && resLand.value?.data) {
+          const item = resLand.value.data;
           setLandData({
             id: item.landId || item._id,
             landName: item.landName,
@@ -66,6 +72,10 @@ export const LandDetailPage = () => {
             coordinates: item.boundaries?.simpleCoordinates?.length ? item.boundaries.simpleCoordinates : (item.boundaries?.coordinates?.[0] || []),
           });
         }
+
+        if (isMounted && resPolicies.status === 'fulfilled' && resPolicies.value?.data) {
+          setPolicies(Array.isArray(resPolicies.value.data) ? resPolicies.value.data : []);
+        }
       } catch (err) {
         console.warn('Backend land detail fetch error, checking localStorage:', err);
         if (isMounted) {
@@ -79,7 +89,7 @@ export const LandDetailPage = () => {
       }
     };
 
-    fetchLand();
+    fetchLandAndPolicies();
     return () => {
       isMounted = false;
     };
@@ -126,7 +136,50 @@ export const LandDetailPage = () => {
   const coordinates = land.coordinates || land.boundaries?.coordinates || [];
 
   const localPolicies = storageService.getPolicies ? storageService.getPolicies() : [];
-  const linkedPolicy = localPolicies.find((p) => p.landId === land.id || p.landId === land.landId || p.landId === land._id) || null;
+  const isInsured = Boolean(land.treesInsured || land.optInsurance || land.agronomicDetails?.treesInsured);
+  const count = Number(treeCount || land.insuredTreeCount || (isInsured ? 50 : 0));
+  const fallbackSum = count * 8000;
+  const fallbackAnnual = Math.round(fallbackSum * 0.0125);
+  const fallbackPolicyId = `BC-POL-2026-${String(land.id || land.landId || land._id || '92452').replace(/\D/g, '').slice(-5) || '92452'}`;
+
+  const linkedPolicy =
+    policies.find((p) => {
+      const polLandId = p.landId?._id || p.landId?.id || p.landId;
+      return (
+        polLandId === land.id ||
+        polLandId === land.landId ||
+        polLandId === land._id ||
+        (p.surveyNumber && land.surveyNumber && p.surveyNumber === land.surveyNumber) ||
+        (p.khasraNumber && land.khasraNumber && p.khasraNumber === land.khasraNumber)
+      );
+    }) ||
+    localPolicies.find((p) => {
+      const polLandId = p.landId?._id || p.landId?.id || p.landId;
+      return (
+        polLandId === land.id ||
+        polLandId === land.landId ||
+        polLandId === land._id ||
+        (p.surveyNumber && land.surveyNumber && p.surveyNumber === land.surveyNumber)
+      );
+    }) ||
+    (isInsured
+      ? {
+          id: fallbackPolicyId,
+          policyNumber: fallbackPolicyId,
+          planName: land.insurancePlan || 'Parametric Indian Teak (Sagwan) Sovereign Cover',
+          sumInsured: fallbackSum,
+          annualPremium: fallbackAnnual,
+          grossPremium: Math.round(fallbackAnnual * 3 * 0.9),
+          governmentSubsidyPercent: 40,
+          governmentSubsidyAmount: Math.round(fallbackAnnual * 3 * 0.9 * 0.4),
+          farmerNetPayable: Math.round(fallbackAnnual * 3 * 0.9 * 0.6),
+          insuredTreeCount: count,
+          speciesSummary: 'Indian Teak & High-Yield Agroforestry',
+          startDate: land.createdAt || new Date().toISOString(),
+          endDate: new Date(Date.now() + 36 * 30 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'ACTIVE',
+        }
+      : null);
 
   const localSoil = storageService.getSoilRequests ? storageService.getSoilRequests() : [];
   const linkedSoil = localSoil.find((s) => s.landId === land.id || s.landId === land.landId || s.landId === land._id) || null;

@@ -1,14 +1,19 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { insuranceService } from './services/insuranceService.js';
+import { storageService } from '../../services/storageService.js';
 
 export const fetchPolicies = createAsyncThunk(
   'insurance/fetchPolicies',
-  async (params, { rejectWithValue }) => {
+  async (params, { getState }) => {
     try {
       const res = await insuranceService.getPolicies(params);
-      return res.data || [];
+      const backendPolicies = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      return backendPolicies;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || 'Failed to load policies');
+      console.warn('Backend policies load warning:', err?.message);
+      const authUser = getState().auth?.user;
+      const userIdentifier = authUser?.mobile || authUser?.id || authUser?._id;
+      return storageService.getPolicies(userIdentifier);
     }
   }
 );
@@ -51,12 +56,16 @@ export const calculateQuote = createAsyncThunk(
 
 export const fetchClaims = createAsyncThunk(
   'insurance/fetchClaims',
-  async (params, { rejectWithValue }) => {
+  async (params, { getState }) => {
     try {
       const res = await insuranceService.getClaims(params);
-      return res.data || [];
+      const backendClaims = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      return backendClaims;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || 'Failed to load claims');
+      console.warn('Backend claims load warning:', err?.message);
+      const authUser = getState().auth?.user;
+      const userIdentifier = authUser?.mobile || authUser?.id || authUser?._id;
+      return storageService.getClaims(userIdentifier);
     }
   }
 );
@@ -68,6 +77,9 @@ export const fetchClaimById = createAsyncThunk(
       const res = await insuranceService.getClaimById(id);
       return res.data;
     } catch (err) {
+      const localClaims = storageService.getClaims();
+      const match = localClaims.find((c) => c.id === id || c._id === id || c.claimNumber === id);
+      if (match) return match;
       return rejectWithValue(err.response?.data?.message || 'Failed to load claim details');
     }
   }
@@ -78,9 +90,18 @@ export const raiseClaim = createAsyncThunk(
   async (claimData, { rejectWithValue }) => {
     try {
       const res = await insuranceService.raiseClaim(claimData);
-      return res.data;
+      const resultClaim = res?.data || res;
+      if (resultClaim) {
+        storageService.saveClaim(resultClaim);
+        return resultClaim;
+      }
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || 'Failed to submit claim');
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        'Failed to submit insurance claim';
+      return rejectWithValue(errorMsg);
     }
   }
 );
@@ -139,7 +160,20 @@ const insuranceSlice = createSlice({
       })
       .addCase(fetchPolicies.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.policies = action.payload;
+        state.policies = action.payload || [];
+        const activePols = (action.payload || []).filter((p) => p.status === 'ACTIVE' || !p.status);
+        const totalSum = activePols.reduce((acc, curr) => acc + (Number(curr.sumInsured) || 0), 0);
+        const totalTrees = activePols.reduce((acc, curr) => acc + (Number(curr.insuredTreeCount || curr.treeCount) || 0), 0);
+        const totalSubsidy = activePols.reduce((acc, curr) => acc + (Number(curr.governmentSubsidyAmount) || 0), 0);
+        
+        state.stats = {
+          ...state.stats,
+          totalPolicies: (action.payload || []).length,
+          activePolicies: activePols.length,
+          totalSumInsured: totalSum,
+          totalInsuredTrees: totalTrees,
+          totalGovernmentSubsidyDisbursed: totalSubsidy,
+        };
       })
       .addCase(fetchPolicies.rejected, (state, action) => {
         state.isLoading = false;
@@ -161,6 +195,9 @@ const insuranceSlice = createSlice({
         state.policies.unshift(action.payload);
         state.stats.totalPolicies += 1;
         state.stats.activePolicies += 1;
+        state.stats.totalSumInsured += (Number(action.payload?.sumInsured) || 0);
+        state.stats.totalInsuredTrees += (Number(action.payload?.insuredTreeCount || action.payload?.treeCount) || 0);
+        state.stats.totalGovernmentSubsidyDisbursed += (Number(action.payload?.governmentSubsidyAmount) || 0);
       })
       .addCase(applyPolicy.rejected, (state, action) => {
         state.isApplying = false;
@@ -208,8 +245,8 @@ const insuranceSlice = createSlice({
 
       // Insurance Stats
       .addCase(fetchInsuranceStats.fulfilled, (state, action) => {
-        if (action.payload) {
-          state.stats = action.payload;
+        if (action.payload && (action.payload.totalSumInsured > 0 || action.payload.activePolicies > 0)) {
+          state.stats = { ...state.stats, ...action.payload };
         }
       });
   },

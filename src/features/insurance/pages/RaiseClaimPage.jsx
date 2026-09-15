@@ -20,8 +20,9 @@ import { FormSelect } from '../../../components/forms/FormSelect.jsx';
 import { FormTextarea } from '../../../components/forms/FormTextarea.jsx';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { useToast } from '../../../components/ui/ToastContext.jsx';
-import { raiseClaim } from '../insuranceSlice.js';
+import { raiseClaim, fetchPolicies, fetchClaims } from '../insuranceSlice.js';
 import { insuranceService } from '../services/insuranceService.js';
+import { storageService } from '../../../services/storageService.js';
 
 export const RaiseClaimPage = () => {
   const [searchParams] = useSearchParams();
@@ -29,8 +30,12 @@ export const RaiseClaimPage = () => {
   const dispatch = useDispatch();
   const toast = useToast();
 
+  const { policies: reduxPolicies, claims: reduxClaims, isLoading } = useSelector((state) => state.insurance);
+  const { user } = useSelector((state) => state.auth);
+
   const queryPolicyParam = searchParams.get('policy') || searchParams.get('policyId') || '';
   const [policies, setPolicies] = useState([]);
+  const [claims, setClaims] = useState([]);
   const [selectedPolicyId, setSelectedPolicyId] = useState('');
   const [incidentType, setIncidentType] = useState('Severe Hailstorm & Windthrow');
   const [incidentDate, setIncidentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -43,22 +48,57 @@ export const RaiseClaimPage = () => {
   const [submittedClaim, setSubmittedClaim] = useState(null);
 
   useEffect(() => {
-    const loadPolicies = async () => {
-      try {
-        const res = await insuranceService.getPolicies();
-        if (res.data && res.data.length > 0) {
-          setPolicies(res.data);
-          const match = res.data.find(
-            (p) => p.policyNumber === queryPolicyParam || p._id === queryPolicyParam || p.id === queryPolicyParam
-          );
-          setSelectedPolicyId(match ? match._id || match.id : res.data[0]._id || res.data[0].id);
-        }
-      } catch (e) {
-        // Ignore
+    dispatch(fetchPolicies());
+    dispatch(fetchClaims());
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Strict user filtering for policies and claims
+    const userCleanPhone = (user?.mobile || '').replace(/\D/g, '');
+    
+    const userPols = (reduxPolicies || []).filter((p) => {
+      if (user?.role === 'SUPER_ADMIN') return true;
+      const pPhone = (p.userMobile || p.ownerMobile || '').replace(/\D/g, '');
+      if (userCleanPhone && pPhone && (pPhone === userCleanPhone || pPhone.endsWith(userCleanPhone) || userCleanPhone.endsWith(pPhone))) return true;
+      if (user?.id && (p.userId === user.id || p.userId?._id === user.id || p.ownerId === user.id)) return true;
+      if (user?._id && (p.userId === user._id || p.userId?._id === user._id || p.ownerId === user._id)) return true;
+      if (user?.name && p.userName && p.userName.trim().toLowerCase() === user.name.trim().toLowerCase()) return true;
+      return false;
+    });
+
+    const uniquePols = [];
+    const seenPolKeys = new Set();
+    userPols.forEach((p) => {
+      const key = p.policyNumber || `${p.khasraNumber}-${p.surveyNumber}`;
+      if (!seenPolKeys.has(key)) {
+        seenPolKeys.add(key);
+        uniquePols.push(p);
       }
-    };
-    loadPolicies();
-  }, [queryPolicyParam]);
+    });
+
+    setPolicies(uniquePols);
+    setClaims(reduxClaims || []);
+
+    if (uniquePols.length > 0) {
+      const match = uniquePols.find(
+        (p) => p.policyNumber === queryPolicyParam || p._id === queryPolicyParam || p.id === queryPolicyParam
+      );
+      const chosen = match || uniquePols[0];
+      setSelectedPolicyId(chosen._id || chosen.id || chosen.policyNumber);
+    }
+  }, [reduxPolicies, reduxClaims, user, queryPolicyParam]);
+
+  const selectedPolicy = policies.find((p) => (p._id || p.id || p.policyNumber) === selectedPolicyId) || policies[0];
+
+  const existingClaimForSelected = claims.find((c) => {
+    const cPolNum = c.policyNumber || c.policyId;
+    const curPolNum = selectedPolicy?.policyNumber || selectedPolicy?.id || selectedPolicy?._id;
+    return (
+      (c.policyId && (c.policyId === selectedPolicy?._id || c.policyId === selectedPolicy?.id || c.policyId === selectedPolicy?.policyNumber)) ||
+      (c.policyNumber && selectedPolicy?.policyNumber && c.policyNumber === selectedPolicy.policyNumber) ||
+      (cPolNum && curPolNum && cPolNum === curPolNum)
+    );
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,11 +107,18 @@ export const RaiseClaimPage = () => {
       return;
     }
 
+    if (existingClaimForSelected) {
+      toast.error(
+        `A claim (${existingClaimForSelected.claimNumber}) has already been submitted for Policy ${selectedPolicy?.policyNumber}. Duplicate claims are not allowed.`
+      );
+      return;
+    }
+
     setIsSubmitting(true);
-    const selectedPolicy = policies.find((p) => (p._id || p.id) === selectedPolicyId) || policies[0];
 
     const payload = {
       policyId: selectedPolicy?._id || selectedPolicy?.id || selectedPolicyId,
+      policyNumber: selectedPolicy?.policyNumber || 'BC-POL-2026',
       incidentType,
       incidentDate: new Date(incidentDate),
       affectedTreeCount: parseInt(affectedTreeCount, 10),
@@ -160,7 +207,6 @@ export const RaiseClaimPage = () => {
     );
   }
 
-  const selectedPolicy = policies.find((p) => (p._id || p.id) === selectedPolicyId) || policies[0];
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
@@ -185,15 +231,48 @@ export const RaiseClaimPage = () => {
               </h3>
 
               {policies.length > 0 ? (
-                <FormSelect
-                  label="Select Active Policy"
-                  value={selectedPolicyId}
-                  onChange={(e) => setSelectedPolicyId(e.target.value)}
-                  options={policies.map((p) => ({
-                    value: p._id || p.id,
-                    label: `${p.policyNumber} — ${p.planName} (${p.insuredTreeCount} Trees)`,
-                  }))}
-                />
+                <>
+                  <FormSelect
+                    label="Select Active Policy"
+                    value={selectedPolicyId}
+                    onChange={(e) => setSelectedPolicyId(e.target.value)}
+                    options={policies.map((p) => {
+                      const isClaimed = claims.some(
+                        (c) =>
+                          (c.policyNumber && c.policyNumber === p.policyNumber) ||
+                          (c.policyId && (c.policyId === p._id || c.policyId === p.id || c.policyId === p.policyNumber))
+                      );
+                      return {
+                        value: p._id || p.id || p.policyNumber,
+                        label: `${p.policyNumber || 'BC-POL'} — ${p.planName || p.title || 'Agroforestry Cover'} (${p.insuredTreeCount || p.treeCount || 0} Trees)${isClaimed ? ' • [CLAIM ALREADY LODGED]' : ''}`,
+                      };
+                    })}
+                  />
+
+                  {existingClaimForSelected && (
+                    <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl text-xs space-y-2 text-amber-900 animate-in fade-in duration-200">
+                      <div className="flex items-center gap-2 font-bold text-amber-950 text-sm">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                        Claim Already Lodged for this Policy
+                      </div>
+                      <p className="text-slate-700 leading-relaxed">
+                        A tree loss claim (Tracking ID: <strong className="font-mono text-slate-900">{existingClaimForSelected.claimNumber}</strong>) has already been submitted on Policy <strong className="font-mono text-slate-900">{selectedPolicy?.policyNumber}</strong>. As per parametric insurance terms, only one claim per policy lifecycle is permitted.
+                      </p>
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-amber-200/80">
+                        <span className="text-[11px] text-slate-600 font-medium">
+                          Claim Status: <strong className="text-emerald-800 uppercase font-mono">{existingClaimForSelected.status || 'SUBMITTED'}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/farmer/insurance/claims')}
+                          className="text-emerald-700 hover:text-emerald-800 font-bold hover:underline flex items-center gap-1 text-xs"
+                        >
+                          View in Claims Tracker <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-800">
                   No active insurance policies found. You must have an active policy to raise a claim.
@@ -205,6 +284,7 @@ export const RaiseClaimPage = () => {
                   label="Peril / Incident Type"
                   value={incidentType}
                   onChange={(e) => setIncidentType(e.target.value)}
+                  disabled={!!existingClaimForSelected}
                   options={[
                     { value: 'Severe Hailstorm & Windthrow', label: 'Severe Hailstorm & Windthrow' },
                     { value: 'Forest & Agro Fire Peril', label: 'Forest & Agro Fire Peril' },
@@ -219,6 +299,7 @@ export const RaiseClaimPage = () => {
                   type="date"
                   value={incidentDate}
                   onChange={(e) => setIncidentDate(e.target.value)}
+                  disabled={!!existingClaimForSelected}
                   required
                 />
               </div>
@@ -230,7 +311,8 @@ export const RaiseClaimPage = () => {
                   value={affectedTreeCount}
                   onChange={(e) => setAffectedTreeCount(e.target.value)}
                   min="1"
-                  max={selectedPolicy?.insuredTreeCount || 500}
+                  max={selectedPolicy?.insuredTreeCount || selectedPolicy?.treeCount || 500}
+                  disabled={!!existingClaimForSelected}
                   required
                 />
 
@@ -239,6 +321,7 @@ export const RaiseClaimPage = () => {
                   type="number"
                   value={estimatedLoss}
                   onChange={(e) => setEstimatedLoss(e.target.value)}
+                  disabled={!!existingClaimForSelected}
                   required
                 />
               </div>
@@ -248,6 +331,7 @@ export const RaiseClaimPage = () => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe wind speed, trunk fracture, tree damage..."
+                disabled={!!existingClaimForSelected}
                 rows={3}
               />
 
@@ -256,11 +340,21 @@ export const RaiseClaimPage = () => {
                   type="submit"
                   variant="primary"
                   size="lg"
-                  className="w-full sm:w-auto bg-rose-700 hover:bg-rose-800 px-8"
+                  className={`w-full sm:w-auto px-8 ${
+                    existingClaimForSelected
+                      ? 'bg-slate-300 text-slate-500 cursor-not-allowed border-none'
+                      : 'bg-rose-700 hover:bg-rose-800'
+                  }`}
                   isLoading={isSubmitting}
-                  disabled={policies.length === 0}
+                  disabled={policies.length === 0 || !!existingClaimForSelected}
                 >
-                  Submit Claim for Field Audit <ArrowRight className="w-4 h-4 ml-1.5" />
+                  {existingClaimForSelected ? (
+                    'Claim Already Lodged on this Policy'
+                  ) : (
+                    <>
+                      Submit Claim for Field Audit <ArrowRight className="w-4 h-4 ml-1.5" />
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
@@ -286,12 +380,12 @@ export const RaiseClaimPage = () => {
               <div className="flex justify-between">
                 <span className="text-slate-400">Total Sum Insured:</span>
                 <span className="font-mono font-bold text-emerald-400">
-                  ₹{(selectedPolicy?.sumInsured || 0).toLocaleString('en-IN')}
+                  ₹{(Number(selectedPolicy?.sumInsured) || 0).toLocaleString('en-IN')}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Insured Trees:</span>
-                <span className="font-semibold text-white">{selectedPolicy?.insuredTreeCount || 0} Trees</span>
+                <span className="font-semibold text-white">{selectedPolicy?.insuredTreeCount || selectedPolicy?.treeCount || 0} Trees</span>
               </div>
             </div>
           </Card>

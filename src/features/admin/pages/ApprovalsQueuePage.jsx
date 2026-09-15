@@ -48,40 +48,115 @@ export const ApprovalsQueuePage = () => {
       try {
         const res = await onboardingService.getAdminQueue();
         const appsList = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.applications) ? res.data.applications : []);
-        liveItems = appsList.map((app) => ({
-          id: app.applicationId || app.id || app._id,
-          applicationId: app.applicationId || app.id || app._id,
-          targetId: app.targetId,
-          type: app.type || (app.applicationId?.startsWith('APP-LND-') ? 'LAND_REGISTRATION' : 'FARMER_KYC'),
-          title: app.title || `Application - ${app.applicantName}`,
-          applicantName: app.applicantName || 'Citizen Applicant',
-          applicantRole: app.role || 'FARMER',
-          applicantPhone: app.mobile || '',
-          submittedDate: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Just now',
-          submittedAt: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Just now',
-          timestamp: app.submittedAt || app.createdAt || new Date().toISOString(),
-          status: app.status || 'PENDING_VERIFICATION',
-          riskScore: app.riskScore || 'LOW',
-          details: app.details || `${app.address?.village || ''} ${app.address?.district || ''} • ${app.address?.state || ''}`,
-        }));
+        liveItems = appsList.map((app) => {
+          const isLand = app.type === 'LAND_REGISTRATION' || app.applicationId?.startsWith('APP-LND-') || app.targetId?.startsWith('LND-');
+          const isClaim = app.type === 'INSURANCE_CLAIM' || app.applicationId?.startsWith('APP-CLM-');
+          const resolvedType = isLand ? 'LAND_REGISTRATION' : isClaim ? 'INSURANCE_CLAIM' : (app.type || 'FARMER_KYC');
+          const resolvedTitle =
+            app.title ||
+            (isLand
+              ? `Land Title Registration - ${app.landName || app.applicantName || 'Plot'}`
+              : isClaim
+              ? `Tree Loss Insurance Claim - ${app.applicantName || 'Insured Farmer'}`
+              : `Farmer KYC Verification - ${app.applicantName || 'Citizen Applicant'}`);
+
+          return {
+            id: app.applicationId || app.id || app._id,
+            applicationId: app.applicationId || app.id || app._id,
+            targetId: app.targetId,
+            type: resolvedType,
+            title: resolvedTitle,
+            applicantName: app.applicantName || app.ownerName || app.farmerName || 'Citizen Applicant',
+            applicantRole: app.role || app.applicantRole || 'FARMER',
+            applicantPhone: app.mobile || app.applicantPhone || '',
+            submittedDate: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Just now',
+            submittedAt: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Just now',
+            timestamp: app.submittedAt || app.createdAt || new Date().toISOString(),
+            status: app.status || 'PENDING_VERIFICATION',
+            riskScore: app.riskScore || 'LOW',
+            details:
+              app.details ||
+              (isLand
+                ? `${app.area || 0} Acres in ${app.location?.village || app.village || 'Anand'}`
+                : `${app.address?.village || ''} ${app.address?.district || ''} • ${app.address?.state || ''}`),
+          };
+        });
         backendLoaded = true;
       } catch (backendErr) {
         console.warn('Backend admin queue fetch warning:', backendErr?.message);
       }
 
-      if (backendLoaded) {
-        liveItems.sort((a, b) => {
-          const timeA = new Date(a.timestamp || a.createdAt || a.submittedAt || 0).getTime();
-          const timeB = new Date(b.timestamp || b.createdAt || b.submittedAt || 0).getTime();
-          return timeB - timeA;
-        });
-        setItems(liveItems);
-        return;
-      }
-
-      // Fallback only if backend is completely offline
+      // Hybrid resilience: Merge backend items and local cache approvals (preventing any dropped request)
       const localApprovals = storageService.getApprovals().filter((c) => !c.id?.startsWith('appr_'));
-      setItems(localApprovals);
+      
+      // Build local status map keyed by specific application IDs only
+      const localStatusMap = new Map();
+      localApprovals.forEach((loc) => {
+        if (loc.id) localStatusMap.set(loc.id, loc.status);
+        if (loc.applicationId) localStatusMap.set(loc.applicationId, loc.status);
+        if (loc.targetId) localStatusMap.set(loc.targetId, loc.status);
+      });
+
+      const syncedLiveItems = liveItems.map((live) => {
+        const localStatus =
+          localStatusMap.get(live.id) ||
+          localStatusMap.get(live.applicationId) ||
+          localStatusMap.get(live.targetId);
+        if (localStatus && localStatus !== live.status && (localStatus === 'APPROVED' || localStatus === 'REJECTED')) {
+          return { ...live, status: localStatus };
+        }
+        return live;
+      });
+
+      const combinedItems = [...syncedLiveItems];
+      const existingIds = new Set(
+        syncedLiveItems.flatMap((it) => [it.id, it.applicationId, it.targetId, it.targetId ? `APP-LND-${it.targetId}` : null].filter(Boolean))
+      );
+
+      localApprovals.forEach((local) => {
+        const localId = local.id || local.applicationId;
+        const targetId = local.targetId;
+        const appLndId = targetId ? `APP-LND-${targetId}` : null;
+        if (!existingIds.has(localId) && (!targetId || !existingIds.has(targetId)) && (!appLndId || !existingIds.has(appLndId))) {
+          const isLand = local.type === 'LAND_REGISTRATION' || local.applicationId?.startsWith('APP-LND-');
+          const isClaim = local.type === 'INSURANCE_CLAIM' || local.applicationId?.startsWith('APP-CLM-');
+          const localType = isLand ? 'LAND_REGISTRATION' : isClaim ? 'INSURANCE_CLAIM' : (local.type || 'FARMER_KYC');
+          const localTitle =
+            local.title ||
+            (isLand
+              ? `Land Title Registration - ${local.landName || local.applicantName || 'Plot'}`
+              : isClaim
+              ? `Tree Loss Insurance Claim - ${local.applicantName || 'Insured Farmer'}`
+              : `Farmer KYC Verification - ${local.applicantName || 'Citizen Applicant'}`);
+
+          combinedItems.push({
+            id: local.id || local.applicationId || `APP-${Date.now()}`,
+            applicationId: local.applicationId || local.id,
+            targetId: local.targetId,
+            type: localType,
+            title: localTitle,
+            applicantName: local.applicantName || local.farmerName || 'Citizen Applicant',
+            applicantRole: local.applicantRole || local.role || 'FARMER',
+            applicantPhone: local.applicantPhone || local.mobile || '',
+            submittedDate: local.submittedDate || 'Just now',
+            submittedAt: local.submittedAt || local.createdAt || 'Just now',
+            timestamp: local.timestamp || local.createdAt || new Date().toISOString(),
+            status: local.status || 'PENDING_VERIFICATION',
+            riskScore: local.riskScore || 'LOW',
+            details: local.details || `${local.village || 'Mogri'}, ${local.district || 'Anand'}`,
+          });
+          if (localId) existingIds.add(localId);
+          if (targetId) existingIds.add(targetId);
+        }
+      });
+
+      combinedItems.sort((a, b) => {
+        const timeA = new Date(a.timestamp || a.createdAt || a.submittedAt || 0).getTime();
+        const timeB = new Date(b.timestamp || b.createdAt || b.submittedAt || 0).getTime();
+        return timeB - timeA;
+      });
+
+      setItems(combinedItems);
     } catch (err) {
       console.warn('Admin queue load error:', err);
       setItems([]);
@@ -122,22 +197,31 @@ export const ApprovalsQueuePage = () => {
         ? 'REJECTED'
         : 'QUERY_PENDING';
 
-    const updated = storageService.updateApprovalStatus(
-      actionModal.item.id,
+    const targetAppId = actionModal.item.applicationId || actionModal.item.id;
+    const cleanPhone = (actionModal.item.applicantPhone || actionModal.item.mobile || '').replace(/\D/g, '');
+
+    storageService.updateApprovalStatus(
+      targetAppId,
       targetStatus,
       actionRemarks
     );
+
     setItems((prev) =>
-      prev.map((it) => (it.id === actionModal.item.id ? { ...it, status: targetStatus } : it))
+      prev.map((it) => {
+        const itPhone = (it.applicantPhone || it.mobile || '').replace(/\D/g, '');
+        const isMatch =
+          it.id === actionModal.item.id ||
+          it.applicationId === targetAppId ||
+          it.id === targetAppId ||
+          (cleanPhone && itPhone && cleanPhone === itPhone);
+        return isMatch ? { ...it, status: targetStatus } : it;
+      })
     );
 
-    if (actionModal.item.type === 'FARMER_KYC' && actionModal.actionType === 'APPROVE') {
-      dispatch(setUserStatus('APPROVED'));
-    }
+    dispatch(setUserStatus('APPROVED'));
 
     // Live Backend API sync
     try {
-      const targetAppId = actionModal.item.applicationId || actionModal.item.id;
       const rawTargetId = actionModal.item.targetId || actionModal.item.id?.replace(/^APP-LND-/, '');
       const storedLands = storageService.getLands();
       const landData = storedLands.find(
@@ -152,6 +236,8 @@ export const ApprovalsQueuePage = () => {
         status: targetStatus,
         reviewNotes: actionRemarks,
         action: actionModal.actionType,
+        mobile: cleanPhone,
+        targetId: rawTargetId,
         landData: landData || undefined,
       });
     } catch (apiErr) {

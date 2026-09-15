@@ -62,11 +62,14 @@ export const LoginPage = () => {
           name="mobile"
           type="tel"
           value={mobile}
+          prefix="+91"
+          maxLength={10}
           onChange={(e) => {
-            setMobile(e.target.value);
+            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+            setMobile(val);
             setFormError('');
           }}
-          placeholder="e.g. 9876543210"
+          placeholder="98765 43210"
           icon={Phone}
           required
           error={formError || error}
@@ -88,14 +91,8 @@ export const LoginPage = () => {
       <div className="pt-4 border-t border-slate-100 flex flex-col items-center gap-2 text-xs text-slate-500">
         <div>
           New to BHUMICRED?{' '}
-          <Link to="/register" className="font-bold text-emerald-700 hover:underline">
+          <Link to={`/register?role=${activeRole}`} className="font-bold text-emerald-700 hover:underline">
             Register / Create Profile
-          </Link>
-        </div>
-        <div>
-          Need to change your role?{' '}
-          <Link to="/role-select" className="font-bold text-emerald-700 hover:underline">
-            Select Role
           </Link>
         </div>
       </div>

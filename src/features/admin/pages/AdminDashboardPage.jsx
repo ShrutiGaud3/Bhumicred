@@ -56,10 +56,54 @@ export const AdminDashboardPage = () => {
       dispatch(fetchAuditLogs({ limit: 6 })),
     ]);
 
-    try {
-      const res = await onboardingService.getAdminQueue();
-      const appsList = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.applications) ? res.data.applications : []);
-      const pending = appsList.filter(
+      let appsList = [];
+      try {
+        const res = await onboardingService.getAdminQueue();
+        appsList = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.applications) ? res.data.applications : []);
+      } catch (e) {
+        console.warn('Dashboard queue fetch note:', e?.message);
+      }
+
+      const localApprovals = storageService.getApprovals().filter((c) => !c.id?.startsWith('appr_'));
+      
+      const localStatusMap = new Map();
+      localApprovals.forEach((loc) => {
+        const cleanP = (loc.applicantPhone || loc.mobile || '').replace(/\D/g, '');
+        if (loc.id) localStatusMap.set(loc.id, loc.status);
+        if (loc.applicationId) localStatusMap.set(loc.applicationId, loc.status);
+        if (loc.targetId) localStatusMap.set(loc.targetId, loc.status);
+        if (cleanP) localStatusMap.set(cleanP, loc.status);
+      });
+
+      const syncedAppsList = appsList.map((live) => {
+        const cleanP = (live.applicantPhone || live.mobile || '').replace(/\D/g, '');
+        const localStatus =
+          localStatusMap.get(live.id) ||
+          localStatusMap.get(live.applicationId) ||
+          localStatusMap.get(live.targetId) ||
+          (cleanP ? localStatusMap.get(cleanP) : null);
+        if (localStatus && localStatus !== live.status && (localStatus === 'APPROVED' || localStatus === 'REJECTED')) {
+          return { ...live, status: localStatus };
+        }
+        return live;
+      });
+
+      const combined = [...syncedAppsList];
+      const existingIds = new Set(
+        syncedAppsList.flatMap((a) => [a.applicationId, a.id, a._id, a.targetId, a.targetId ? `APP-LND-${a.targetId}` : null].filter(Boolean))
+      );
+
+      localApprovals.forEach((loc) => {
+        const locId = loc.id || loc.applicationId;
+        const targetId = loc.targetId;
+        const appLndId = targetId ? `APP-LND-${targetId}` : null;
+        if (!existingIds.has(locId) && (!targetId || !existingIds.has(targetId)) && (!appLndId || !existingIds.has(appLndId))) {
+          combined.push(loc);
+          if (locId) existingIds.add(locId);
+        }
+      });
+
+      const pending = combined.filter(
         (a) =>
           a.status === 'PENDING_APPROVAL' ||
           a.status === 'PENDING_VERIFICATION' ||
@@ -67,17 +111,6 @@ export const AdminDashboardPage = () => {
           a.status === 'PENDING_REVIEW'
       );
       setPendingItems(pending.slice(0, 4));
-    } catch (e) {
-      const approvals = storageService.getApprovals();
-      const pending = approvals.filter(
-        (a) =>
-          a.status === 'PENDING_APPROVAL' ||
-          a.status === 'PENDING_VERIFICATION' ||
-          a.status === 'PENDING' ||
-          a.status === 'PENDING_REVIEW'
-      );
-      setPendingItems(pending.slice(0, 4));
-    }
     setRefreshing(false);
   };
 
@@ -85,11 +118,26 @@ export const AdminDashboardPage = () => {
     loadData();
   }, [dispatch]);
 
-  const handleQuickApprove = (e, item) => {
+  const handleQuickApprove = async (e, item) => {
     e.stopPropagation();
-    storageService.updateApprovalStatus(item.id || item.applicationId, 'APPROVED', 'Quick approved via Super Admin Dashboard');
+    const targetAppId = item.id || item.applicationId;
+    const cleanPhone = (item.applicantPhone || item.mobile || '').replace(/\D/g, '');
+
+    storageService.updateApprovalStatus(targetAppId, 'APPROVED', 'Quick approved via Super Admin Dashboard');
     toast.showSuccess(`Approved application for ${item.applicantName || 'Citizen'}`);
     loadData();
+
+    try {
+      await onboardingService.reviewKyc(targetAppId, {
+        status: 'APPROVED',
+        reviewNotes: 'Quick approved via Super Admin Dashboard',
+        action: 'APPROVE',
+        mobile: cleanPhone,
+        targetId: item.targetId,
+      });
+    } catch (err) {
+      console.warn('Quick approve backend sync warning:', err?.message);
+    }
   };
 
   if (isLoading && !stats) {

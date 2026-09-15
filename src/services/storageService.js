@@ -16,7 +16,7 @@ const STORAGE_KEYS = {
 
 // Automatic cleanup of legacy/dummy farmer entries & auth sessions in client browser localStorage
 try {
-  const isMigrated = typeof window !== 'undefined' && localStorage.getItem('bhumicred_storage_clean_v6');
+  const isMigrated = typeof window !== 'undefined' && localStorage.getItem('bhumicred_storage_clean_v8');
   if (!isMigrated && typeof window !== 'undefined') {
     localStorage.removeItem(STORAGE_KEYS.APPROVALS);
     localStorage.removeItem(STORAGE_KEYS.LANDS);
@@ -31,7 +31,7 @@ try {
     localStorage.removeItem('bhumicred_access_token');
     localStorage.removeItem('bhumicred_refresh_token');
     localStorage.removeItem('bhumicred_token');
-    localStorage.setItem('bhumicred_storage_clean_v6', 'true');
+    localStorage.setItem('bhumicred_storage_clean_v8', 'true');
   }
 } catch (e) {}
 
@@ -98,6 +98,50 @@ export const storageService = {
       targetId: landWithMeta.id
     });
 
+    // Also auto-generate Active Tree Insurance Policy if opted!
+    if (landWithMeta.optInsurance || landWithMeta.treesInsured) {
+      const treeCount = Number(landWithMeta.insuredTreeCount || landWithMeta.standingTreeCount || landWithMeta.treeCount || 50);
+      const sumInsured = treeCount * 8000;
+      const grossPremium = Math.round(sumInsured * 0.0125 * 3 * 0.9);
+      const subsidy = Math.round(grossPremium * 0.4);
+      const netPayable = grossPremium - subsidy;
+
+      storageService.savePolicy({
+        id: `BC-POL-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+        policyNumber: `BC-POL-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+        userName: landWithMeta.ownerName || landWithMeta.farmerName || 'Citizen Farmer',
+        userMobile: landWithMeta.ownerMobile || landWithMeta.mobile || '',
+        userId: landWithMeta.ownerId || landWithMeta.userId || '',
+        landId: landWithMeta.id,
+        landName: landWithMeta.landName || 'Registered Agricultural Parcel',
+        surveyNumber: landWithMeta.surveyNumber || '108/A',
+        khasraNumber: landWithMeta.khasraNumber || '412/9',
+        planName: landWithMeta.insurancePlan || 'Parametric Indian Teak (Sagwan) Sovereign Cover',
+        category: 'Commercial Agroforestry',
+        insuredTreeCount: treeCount,
+        treeCount: treeCount,
+        speciesSummary: 'Indian Teak & High-Yield Agroforestry',
+        sumInsured: sumInsured,
+        annualPremium: Math.round(sumInsured * 0.0125),
+        grossPremium: grossPremium,
+        governmentSubsidyPercent: 40,
+        governmentSubsidyAmount: subsidy,
+        farmerNetPayable: netPayable,
+        durationMonths: 36,
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 36 * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'ACTIVE',
+        paymentStatus: 'PAID',
+        coverageDetails: [
+          'Storm, Cyclone & Windthrow (>70 km/h)',
+          'Forest & Agro Fire Perils',
+          'Stem Borer Infestation & Root Rot Outbreaks',
+          'Severe Drought Stress (Revenue Trigger)',
+          'Lightning Strike & Frost Damage',
+        ],
+      });
+    }
+
     return landWithMeta;
   },
 
@@ -117,52 +161,59 @@ export const storageService = {
     try {
       const storedUsers = storageService.getRegisteredUsers();
       storedUsers.forEach((u) => {
-        if (
+        const uCleanPhone = (u.mobile || '').replace(/\D/g, '');
+        const appId = u.applicationId || `APP-USR-${u.id}`;
+        
+        const existingIndex = list.findIndex(
+          (a) =>
+            (a.type === 'FARMER_KYC' || a.type === 'GOVERNMENT_ONBOARDING' || a.type === 'PARTNER_ONBOARDING') &&
+            (a.id === appId ||
+              a.applicationId === appId ||
+              a.targetId === u.id ||
+              (a.applicantPhone && uCleanPhone && a.applicantPhone.replace(/\D/g, '') === uCleanPhone))
+        );
+
+        if (existingIndex >= 0) {
+          // If the user is already approved/rejected in users store, ensure approval list reflects it
+          if (u.status === 'APPROVED' || u.status === 'REJECTED' || u.status === 'ACTIVE') {
+            list[existingIndex].status = u.status === 'ACTIVE' ? 'APPROVED' : u.status;
+          }
+        } else if (
           u.status === 'PENDING_APPROVAL' ||
           u.status === 'PENDING_VERIFICATION' ||
           u.status === 'PENDING_REVIEW' ||
           u.status === 'PENDING'
         ) {
-          const appId = u.applicationId || `APP-USR-${u.id}`;
-          const exists = list.some(
-            (a) =>
-              a.id === appId ||
-              a.applicationId === appId ||
-              a.targetId === u.id ||
-              (a.applicantPhone && u.mobile && a.applicantPhone.replace(/\D/g, '') === u.mobile.replace(/\D/g, ''))
-          );
-          if (!exists) {
-            const appType =
-              u.role === 'PARTNER'
-                ? 'PARTNER_ONBOARDING'
-                : u.role === 'GOVERNMENT'
-                ? 'GOVERNMENT_ONBOARDING'
-                : 'FARMER_KYC';
-            const appTitle =
-              u.role === 'PARTNER'
-                ? `Partner Business Licensing - ${u.name || 'Partner'}`
-                : u.role === 'GOVERNMENT'
-                ? `Government Official Verification - ${u.name || 'Official'}`
-                : `Citizen Aadhaar KYC - ${u.name || 'Citizen Applicant'}`;
+          const appType =
+            u.role === 'PARTNER'
+              ? 'PARTNER_ONBOARDING'
+              : u.role === 'GOVERNMENT'
+              ? 'GOVERNMENT_ONBOARDING'
+              : 'FARMER_KYC';
+          const appTitle =
+            u.role === 'PARTNER'
+              ? `Partner Business Licensing - ${u.name || 'Partner'}`
+              : u.role === 'GOVERNMENT'
+              ? `Government Official Verification - ${u.name || 'Official'}`
+              : `Citizen Aadhaar KYC - ${u.name || 'Citizen Applicant'}`;
 
-            list.unshift({
-              id: appId,
-              applicationId: appId,
-              type: appType,
-              title: appTitle,
-              applicantName: u.name || 'Citizen Applicant',
-              applicantRole: u.role || 'FARMER',
-              applicantPhone: u.mobile || '',
-              submittedDate: 'Recently Submitted',
-              submittedAt: u.updatedAt || u.createdAt || new Date().toISOString(),
-              createdAt: u.updatedAt || u.createdAt || new Date().toISOString(),
-              timestamp: u.updatedAt || u.createdAt || new Date().toISOString(),
-              status: u.status || 'PENDING_VERIFICATION',
-              riskScore: 'LOW',
-              details: `Village: ${u.address?.village || u.village || 'Local'} • Mobile: ${u.mobile || ''}`,
-              targetId: u.id,
-            });
-          }
+          list.unshift({
+            id: appId,
+            applicationId: appId,
+            type: appType,
+            title: appTitle,
+            applicantName: u.name || 'Citizen Applicant',
+            applicantRole: u.role || 'FARMER',
+            applicantPhone: u.mobile || '',
+            submittedDate: 'Recently Submitted',
+            submittedAt: u.updatedAt || u.createdAt || new Date().toISOString(),
+            createdAt: u.updatedAt || u.createdAt || new Date().toISOString(),
+            timestamp: u.updatedAt || u.createdAt || new Date().toISOString(),
+            status: u.status || 'PENDING_VERIFICATION',
+            riskScore: 'LOW',
+            details: `Village: ${u.address?.village || u.village || 'Local'} • Mobile: ${u.mobile || ''}`,
+            targetId: u.id,
+          });
         }
       });
     } catch (e) {}
@@ -171,28 +222,79 @@ export const storageService = {
     try {
       const storedLands = storageService.getLands();
       storedLands.forEach((land) => {
-        if (land.status === 'PENDING_VERIFICATION' || land.status === 'PENDING_REVIEW') {
-          const appId = `APP-LND-${land.id || land.landId}`;
-          const exists = list.some((a) => a.id === appId || a.applicationId === appId || a.targetId === land.id || a.targetId === land.landId);
-          if (!exists) {
-            list.unshift({
-              id: appId,
-              applicationId: appId,
-              type: 'LAND_REGISTRATION',
-              title: `Land Title Registration - ${land.landName || 'Plot'} - Khasra ${land.khasraNumber || 'N/A'} (Survey ${land.surveyNumber || 'N/A'})`,
-              applicantName: land.ownerName || land.farmerName || 'Citizen Farmer',
-              applicantRole: 'FARMER',
-              applicantPhone: land.ownerMobile || land.mobile || '',
-              submittedDate: 'Just now',
-              submittedAt: land.createdAt || new Date().toISOString(),
-              createdAt: land.createdAt || new Date().toISOString(),
-              timestamp: land.createdAt || new Date().toISOString(),
-              status: land.status || 'PENDING_VERIFICATION',
-              riskScore: 'LOW',
-              details: `${land.area || land.areaAcres || 0} Acres in ${land.village || land.district || 'Local'}`,
-              targetId: land.id || land.landId,
-            });
+        const appId = `APP-LND-${land.id || land.landId}`;
+        const existingIndex = list.findIndex(
+          (a) =>
+            a.id === appId ||
+            a.applicationId === appId ||
+            a.targetId === land.id ||
+            a.targetId === land.landId ||
+            (a.type === 'LAND_REGISTRATION' && a.id === `APP-LND-${land.id}`)
+        );
+        
+        if (existingIndex >= 0) {
+          if (land.status === 'APPROVED' || land.status === 'REJECTED' || land.status === 'ACTIVE') {
+            list[existingIndex].status = land.status === 'ACTIVE' ? 'APPROVED' : land.status;
           }
+        } else if (land.status === 'PENDING_VERIFICATION' || land.status === 'PENDING_REVIEW' || !land.status) {
+          list.unshift({
+            id: appId,
+            applicationId: appId,
+            type: 'LAND_REGISTRATION',
+            title: `Land Title Registration - ${land.landName || 'Plot'} - Khasra ${land.khasraNumber || 'N/A'} (Survey ${land.surveyNumber || 'N/A'})`,
+            applicantName: land.ownerName || land.farmerName || 'Citizen Farmer',
+            applicantRole: 'FARMER',
+            applicantPhone: land.ownerMobile || land.mobile || '',
+            submittedDate: 'Just now',
+            submittedAt: land.createdAt || new Date().toISOString(),
+            createdAt: land.createdAt || new Date().toISOString(),
+            timestamp: land.createdAt || new Date().toISOString(),
+            status: land.status || 'PENDING_VERIFICATION',
+            riskScore: 'LOW',
+            details: `${land.area || land.areaAcres || 0} Acres in ${land.village || land.district || 'Local'}`,
+            targetId: land.id || land.landId,
+          });
+        }
+      });
+    } catch (e) {}
+
+    // Auto-inject any locally stored insurance claims that are pending verification
+    try {
+      const storedClaims = storageService.getClaims();
+      storedClaims.forEach((claim) => {
+        const appId = `APP-CLM-${claim.claimNumber || claim.id}`;
+        const existingIndex = list.findIndex(
+          (a) => a.id === appId || a.applicationId === appId || a.targetId === claim.id || a.id === claim.claimNumber
+        );
+
+        if (existingIndex >= 0) {
+          if (claim.status === 'APPROVED' || claim.status === 'SETTLED' || claim.status === 'REJECTED') {
+            list[existingIndex].status = claim.status === 'REJECTED' ? 'REJECTED' : 'APPROVED';
+          }
+        } else if (
+          claim.status === 'SUBMITTED' ||
+          claim.status === 'PENDING_VERIFICATION' ||
+          claim.status === 'PENDING' ||
+          claim.status === 'UNDER_REVIEW' ||
+          !claim.status
+        ) {
+          list.unshift({
+            id: appId,
+            applicationId: appId,
+            type: 'INSURANCE_CLAIM',
+            title: `Tree Loss Insurance Claim - ${claim.incidentType || 'Tree Loss'} (${claim.affectedTreeCount || 0} Trees)`,
+            applicantName: claim.applicantName || claim.userName || 'Insured Farmer',
+            applicantRole: 'FARMER',
+            applicantPhone: claim.applicantPhone || claim.userMobile || claim.mobile || '',
+            submittedDate: 'Recently Submitted',
+            submittedAt: claim.createdAt || new Date().toISOString(),
+            createdAt: claim.createdAt || new Date().toISOString(),
+            timestamp: claim.createdAt || new Date().toISOString(),
+            status: 'PENDING_VERIFICATION',
+            riskScore: 'LOW',
+            details: `Policy: ${claim.policyNumber || 'BC-POL'} • Estimated Loss: ₹${(Number(claim.estimatedLoss) || 0).toLocaleString('en-IN')}`,
+            targetId: claim.id || claim.claimNumber,
+          });
         }
       });
     } catch (e) {}
@@ -249,89 +351,204 @@ export const storageService = {
 
   updateApprovalStatus: (id, status, notes = '') => {
     const current = storageService.getApprovals();
-    const targetItem = current.find((a) => a.id === id || a.applicationId === id);
-    const updated = current.map((a) =>
-      a.id === id || a.applicationId === id ? { ...a, status, reviewNotes: notes } : a
+    const cleanPhoneFromId = String(id || '').replace(/\D/g, '');
+    let targetItem = current.find(
+      (a) =>
+        a.id === id ||
+        a.applicationId === id ||
+        a.targetId === id ||
+        (cleanPhoneFromId.length >= 10 && a.applicantPhone && a.applicantPhone.replace(/\D/g, '') === cleanPhoneFromId)
     );
+
+    let foundInCurrent = false;
+    const updated = current.map((a) => {
+      const aCleanPhone = (a.applicantPhone || '').replace(/\D/g, '');
+      const match =
+        a.id === id ||
+        a.applicationId === id ||
+        a.targetId === id ||
+        (cleanPhoneFromId.length >= 10 && aCleanPhone === cleanPhoneFromId);
+      if (match) {
+        foundInCurrent = true;
+        return { ...a, status, reviewNotes: notes };
+      }
+      return a;
+    });
+
+    if (!foundInCurrent && targetItem) {
+      updated.unshift({ ...targetItem, status, reviewNotes: notes });
+    } else if (!foundInCurrent && id) {
+      updated.unshift({ id, applicationId: id, status, reviewNotes: notes });
+    }
+
     localStorage.setItem(STORAGE_KEYS.APPROVALS, JSON.stringify(updated));
 
     // If land was approved, update the land in lands store too!
-    if (targetItem && (targetItem.type === 'LAND_REGISTRATION' || targetItem.id?.startsWith('APP-LND-'))) {
-      const rawId = targetItem.targetId || targetItem.id?.replace(/^APP-LND-/, '');
+    if (targetItem && (targetItem.type === 'LAND_REGISTRATION' || String(targetItem.id || '').startsWith('APP-LND-') || String(id || '').startsWith('APP-LND-'))) {
+      const rawId = targetItem?.targetId || targetItem?.id?.replace(/^APP-LND-/, '') || id?.replace(/^APP-LND-/, '');
       const lands = storageService.getLands();
       const targetLandStatus = status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'REJECTED' : 'QUERY_RAISED';
       const updatedLands = lands.map((l) =>
-        l.id === rawId || l.landId === rawId || `APP-LND-${l.id}` === targetItem.id || `APP-LND-${l.landId}` === targetItem.id
+        l.id === rawId || l.landId === rawId || `APP-LND-${l.id}` === targetItem?.id || `APP-LND-${l.landId}` === targetItem?.id || `APP-LND-${l.id}` === id || `APP-LND-${l.landId}` === id
           ? { ...l, status: targetLandStatus }
           : l
       );
       localStorage.setItem(STORAGE_KEYS.LANDS, JSON.stringify(updatedLands));
     }
 
-    // If Farmer KYC was approved, update the registered users list and current session
-    if (targetItem && targetItem.type === 'FARMER_KYC') {
-      try {
-        const users = storageService.getRegisteredUsers();
-        const targetCleanPhone = targetItem.applicantPhone?.replace(/\D/g, '');
-        const updatedUsers = users.map((u) => {
-          if (
-            u.id === targetItem.targetId ||
-            u.mobile?.replace(/\D/g, '') === targetCleanPhone ||
-            u.applicationId === targetItem.applicationId
-          ) {
-            return {
-              ...u,
-              status: status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'REJECTED' : 'QUERY_PENDING',
-              kycStatus: status === 'APPROVED' ? 'APPROVED' : 'PENDING',
-            };
-          }
-          return u;
-        });
-        localStorage.setItem('bhumicred_data_users', JSON.stringify(updatedUsers));
-
-        const currentUserData = localStorage.getItem('bhumicred_user_data');
-        if (currentUserData) {
-          const parsed = JSON.parse(currentUserData);
-          if (
-            parsed.id === targetItem.targetId ||
-            parsed.mobile?.replace(/\D/g, '') === targetCleanPhone ||
-            parsed.applicationId === targetItem.applicationId
-          ) {
-            const updatedUser = {
-              ...parsed,
-              status: status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'REJECTED' : 'QUERY_PENDING',
-              kycStatus: status === 'APPROVED' ? 'APPROVED' : 'PENDING',
-            };
-            localStorage.setItem('bhumicred_user_data', JSON.stringify(updatedUser));
-          }
+    // If insurance claim was approved/settled, update the claims store and add timeline milestone
+    if (
+      targetItem &&
+      (targetItem.type === 'INSURANCE_CLAIM' ||
+        String(targetItem.id || '').startsWith('APP-CLM-') ||
+        String(id || '').startsWith('APP-CLM-') ||
+        String(id || '').startsWith('CLM-'))
+    ) {
+      const rawClaimId = targetItem?.targetId || targetItem?.id?.replace(/^APP-CLM-/, '') || id?.replace(/^APP-CLM-/, '');
+      const claims = storageService.getClaims();
+      const targetClaimStatus = status === 'APPROVED' ? 'SETTLED' : status === 'REJECTED' ? 'REJECTED' : 'UNDER_REVIEW';
+      const updatedClaims = claims.map((c) => {
+        const isMatch =
+          c.id === rawClaimId ||
+          c.claimNumber === rawClaimId ||
+          `APP-CLM-${c.id}` === targetItem?.id ||
+          `APP-CLM-${c.claimNumber}` === targetItem?.id ||
+          `APP-CLM-${c.id}` === id ||
+          `APP-CLM-${c.claimNumber}` === id;
+        if (isMatch) {
+          return {
+            ...c,
+            status: targetClaimStatus,
+            timeline: [
+              ...(c.timeline || []),
+              {
+                title: status === 'APPROVED' ? 'DBT Direct Settlement Approved' : 'Claim Audit Decision',
+                timestamp: 'Just now',
+                completed: true,
+                remarks: notes || `Super Admin finalized claim settlement decision as ${status}`,
+              },
+            ],
+          };
         }
-      } catch (e) {
-        console.warn('Error syncing KYC user:', e);
+        return c;
+      });
+      localStorage.setItem(STORAGE_KEYS.CLAIMS, JSON.stringify(updatedClaims));
+    }
+
+    // Always synchronize User status across all user types (FARMER_KYC, GOVERNMENT_ONBOARDING, PARTNER_ONBOARDING, etc.)
+    try {
+      const users = storageService.getRegisteredUsers();
+      const targetCleanPhone = (targetItem?.applicantPhone || cleanPhoneFromId || '').replace(/\D/g, '');
+      const updatedUsers = users.map((u) => {
+        const uCleanPhone = (u.mobile || '').replace(/\D/g, '');
+        if (
+          (targetItem && u.id === targetItem.targetId) ||
+          u.id === id ||
+          u.applicationId === id ||
+          (targetItem && u.applicationId === targetItem.applicationId) ||
+          (targetCleanPhone && uCleanPhone === targetCleanPhone)
+        ) {
+          return {
+            ...u,
+            status: status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'REJECTED' : 'QUERY_PENDING',
+            kycStatus: status === 'APPROVED' ? 'APPROVED' : 'PENDING',
+          };
+        }
+        return u;
+      });
+      localStorage.setItem('bhumicred_data_users', JSON.stringify(updatedUsers));
+
+      const currentUserData = localStorage.getItem('bhumicred_user_data');
+      if (currentUserData) {
+        const parsed = JSON.parse(currentUserData);
+        const pCleanPhone = (parsed.mobile || '').replace(/\D/g, '');
+        if (
+          (targetItem && parsed.id === targetItem.targetId) ||
+          parsed.id === id ||
+          parsed.applicationId === id ||
+          (targetItem && parsed.applicationId === targetItem.applicationId) ||
+          (targetCleanPhone && pCleanPhone === targetCleanPhone)
+        ) {
+          const updatedUser = {
+            ...parsed,
+            status: status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'REJECTED' : 'QUERY_PENDING',
+            kycStatus: status === 'APPROVED' ? 'APPROVED' : 'PENDING',
+          };
+          localStorage.setItem('bhumicred_user_data', JSON.stringify(updatedUser));
+        }
       }
+    } catch (e) {
+      console.warn('Error syncing KYC user:', e);
     }
 
     return updated;
   },
 
   // Claims
-  getClaims: () => {
+  getClaims: (userIdOrMobile = null) => {
+    let list = [];
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.CLAIMS);
-      if (stored) return JSON.parse(stored);
+      if (stored) list = JSON.parse(stored);
     } catch (e) {}
-    return [];
+    if (!userIdOrMobile) return list;
+    const cleanMobile = String(userIdOrMobile).replace(/\D/g, '');
+    return list.filter((c) => {
+      const cMobile = (c.userMobile || c.mobile || c.applicantPhone || '').replace(/\D/g, '');
+      if (cleanMobile && cMobile && (cMobile === cleanMobile || cMobile.endsWith(cleanMobile) || cleanMobile.endsWith(cMobile))) return true;
+      if (c.userId && String(c.userId) === String(userIdOrMobile)) return true;
+      if (c.userName && String(c.userName).trim().toLowerCase() === String(userIdOrMobile).trim().toLowerCase()) return true;
+      return false;
+    });
   },
 
   saveClaim: (claim) => {
     const current = storageService.getClaims();
+
+    // Restriction: Only 1 claim allowed per policy
+    const targetPolicyNumber = claim.policyNumber;
+    const targetPolicyId = claim.policyId;
+    const existing = current.find(
+      (c) =>
+        (targetPolicyNumber && (c.policyNumber === targetPolicyNumber || c.policyId === targetPolicyNumber)) ||
+        (targetPolicyId && (c.policyId === targetPolicyId || c.policyNumber === targetPolicyId))
+    );
+    if (existing) {
+      return existing;
+    }
+
     const claimWithId = {
       ...claim,
       id: claim.id || `CLM-${Math.floor(1000 + Math.random() * 9000)}`,
+      claimNumber: claim.claimNumber || `BC-CLM-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
       status: 'SUBMITTED',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
     const updated = [claimWithId, ...current];
     localStorage.setItem(STORAGE_KEYS.CLAIMS, JSON.stringify(updated));
+
+    // Automatically inject into Super Admin approval queue immediately
+    try {
+      const appId = `APP-CLM-${claimWithId.claimNumber}`;
+      storageService.addApprovalItem({
+        id: appId,
+        applicationId: appId,
+        type: 'INSURANCE_CLAIM',
+        title: `Tree Loss Insurance Claim - ${claimWithId.incidentType || 'Tree Loss'} (${claimWithId.affectedTreeCount || 0} Trees)`,
+        applicantName: claimWithId.applicantName || claimWithId.userName || 'Insured Farmer',
+        applicantRole: 'FARMER',
+        applicantPhone: claimWithId.applicantPhone || claimWithId.userMobile || claimWithId.mobile || '',
+        submittedDate: 'Just now',
+        submittedAt: claimWithId.createdAt,
+        createdAt: claimWithId.createdAt,
+        timestamp: claimWithId.createdAt,
+        status: 'PENDING_VERIFICATION',
+        riskScore: 'LOW',
+        details: `Policy: ${claimWithId.policyNumber || 'BC-POL'} • Estimated Loss: ₹${(Number(claimWithId.estimatedLoss) || 0).toLocaleString('en-IN')}`,
+        targetId: claimWithId.id || claimWithId.claimNumber,
+      });
+    } catch (e) {}
+
     return claimWithId;
   },
 
@@ -359,21 +576,75 @@ export const storageService = {
 
   // Insurance Policies
   getPolicies: (userIdOrMobile = null) => {
+    let policies = [];
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.POLICIES);
-      const policies = stored ? JSON.parse(stored) : [];
-      if (!userIdOrMobile) return policies;
-      const cleanMobile = String(userIdOrMobile).replace(/\D/g, '');
-      return policies.filter((p) => {
-        const pMobile = (p.userMobile || p.ownerMobile || '').replace(/\D/g, '');
-        if (cleanMobile && pMobile && (pMobile === cleanMobile || cleanMobile.includes(pMobile))) return true;
-        if (p.userId && String(p.userId) === String(userIdOrMobile)) return true;
-        if (p.ownerId && String(p.ownerId) === String(userIdOrMobile)) return true;
-        return false;
-      });
+      policies = stored ? JSON.parse(stored) : [];
     } catch (e) {
-      return [];
+      policies = [];
     }
+
+    // Also auto-synthesize policies from any insured lands in local storage
+    try {
+      const lands = storageService.getLands(userIdOrMobile);
+      lands.forEach((l) => {
+        if (l.optInsurance || l.treesInsured) {
+          const landPolId = `BC-POL-${l.id || l.landId}`;
+          const exists = policies.some((p) => p.landId === l.id || p.landId === l.landId || p.id === landPolId);
+          if (!exists) {
+            const treeCount = Number(l.insuredTreeCount || l.standingTreeCount || l.treeCount || 50);
+            const sumInsured = treeCount * 8000;
+            const gross = Math.round(sumInsured * 0.0125 * 3 * 0.9);
+            const sub = Math.round(gross * 0.4);
+            policies.unshift({
+              id: landPolId,
+              policyNumber: landPolId,
+              userName: l.ownerName || l.farmerName || 'Citizen Farmer',
+              userMobile: l.ownerMobile || l.mobile || '',
+              userId: l.ownerId || l.userId || '',
+              landId: l.id || l.landId,
+              landName: l.landName || 'Registered Agricultural Parcel',
+              surveyNumber: l.surveyNumber || '108/A',
+              khasraNumber: l.khasraNumber || '412/9',
+              planName: l.insurancePlan || 'Parametric Indian Teak (Sagwan) Sovereign Cover',
+              category: 'Commercial Agroforestry',
+              insuredTreeCount: treeCount,
+              treeCount: treeCount,
+              speciesSummary: 'Indian Teak & High-Yield Agroforestry',
+              sumInsured: sumInsured,
+              annualPremium: Math.round(sumInsured * 0.0125),
+              grossPremium: gross,
+              governmentSubsidyPercent: 40,
+              governmentSubsidyAmount: sub,
+              farmerNetPayable: gross - sub,
+              durationMonths: 36,
+              startDate: l.createdAt || new Date().toISOString(),
+              endDate: new Date(Date.now() + 36 * 30 * 24 * 60 * 60 * 1000).toISOString(),
+              status: 'ACTIVE',
+              paymentStatus: 'PAID',
+              coverageDetails: [
+                'Storm, Cyclone & Windthrow (>70 km/h)',
+                'Forest & Agro Fire Perils',
+                'Stem Borer Infestation & Root Rot Outbreaks',
+                'Severe Drought Stress (Revenue Trigger)',
+                'Lightning Strike & Frost Damage',
+              ],
+            });
+          }
+        }
+      });
+    } catch (lErr) {}
+
+    if (!userIdOrMobile) return policies;
+    const cleanMobile = String(userIdOrMobile).replace(/\D/g, '');
+    return policies.filter((p) => {
+      const pMobile = (p.userMobile || p.ownerMobile || '').replace(/\D/g, '');
+      if (cleanMobile && pMobile && (pMobile === cleanMobile || pMobile.endsWith(cleanMobile) || cleanMobile.endsWith(pMobile))) return true;
+      if (p.userId && String(p.userId) === String(userIdOrMobile)) return true;
+      if (p.ownerId && String(p.ownerId) === String(userIdOrMobile)) return true;
+      if (p.userName && String(p.userName).trim().toLowerCase() === String(userIdOrMobile).trim().toLowerCase()) return true;
+      return false;
+    });
   },
 
   savePolicy: (policy) => {

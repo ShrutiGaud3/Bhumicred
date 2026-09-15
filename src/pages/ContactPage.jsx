@@ -376,7 +376,7 @@ export const ContactPage = () => {
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="e.g. Ramesh Patel"
+                      placeholder="e.g. Rajesh Kumar"
                     />
                     <FormInput
                       label="Mobile Number *"

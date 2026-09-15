@@ -93,10 +93,10 @@ export const TaxInvoiceQrCode = ({
   const cellSize = size / 21;
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center gap-2.5 shrink-0 ${className}`}>
       {/* SVG QR Code Frame */}
       <div
-        className="bg-white rounded border border-slate-300 p-1 flex items-center justify-center shrink-0 shadow-sm"
+        className="bg-white rounded-lg border border-slate-300 p-1 flex items-center justify-center shrink-0 shadow-sm"
         style={{ width: size + 8, height: size + 8 }}
       >
         <svg
@@ -124,22 +124,24 @@ export const TaxInvoiceQrCode = ({
       </div>
 
       {/* Label and description if enabled */}
-      {showLabel && (label || subLabel) && (
-        <div className="min-w-0">
+      {showLabel && (label || subLabel || badgeText) && (
+        <div className="shrink-0 flex flex-col justify-center text-left">
           {badgeText && (
-            <span
-              className={`inline-block px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider mb-0.5 ${badgeColor}`}
-            >
-              {badgeText}
-            </span>
+            <div className="mb-1">
+              <span
+                className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${badgeColor}`}
+              >
+                {badgeText}
+              </span>
+            </div>
           )}
           {label && (
-            <span className="font-bold text-slate-900 block text-[10px] leading-tight truncate">
+            <span className="font-bold text-slate-900 block text-xs leading-tight">
               {label}
             </span>
           )}
           {subLabel && (
-            <span className="text-[8px] text-slate-500 block leading-tight truncate max-w-[170px]">
+            <span className="text-[10px] text-slate-500 block leading-tight mt-0.5">
               {subLabel}
             </span>
           )}

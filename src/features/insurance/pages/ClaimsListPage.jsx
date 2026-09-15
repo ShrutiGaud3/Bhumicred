@@ -28,12 +28,35 @@ export const ClaimsListPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  const { user } = useSelector((state) => state.auth);
   const { claims, isLoading } = useSelector((state) => state.insurance);
   const [selectedClaim, setSelectedClaim] = useState(null);
 
   useEffect(() => {
     dispatch(fetchClaims());
   }, [dispatch]);
+
+  // User-wise strict filtering and deduplication
+  const userCleanPhone = (user?.mobile || '').replace(/\D/g, '');
+  const userClaims = (claims || []).filter((c) => {
+    if (user?.role === 'SUPER_ADMIN') return true;
+    const cPhone = (c.userMobile || c.mobile || c.applicantPhone || '').replace(/\D/g, '');
+    if (userCleanPhone && cPhone && (cPhone === userCleanPhone || cPhone.endsWith(userCleanPhone) || userCleanPhone.endsWith(cPhone))) return true;
+    if (user?.id && (c.userId === user.id || c.userId?._id === user.id)) return true;
+    if (user?._id && (c.userId === user._id || c.userId?._id === user._id)) return true;
+    if (user?.name && c.userName && c.userName.trim().toLowerCase() === user.name.trim().toLowerCase()) return true;
+    return false;
+  });
+
+  const uniqueUserClaims = [];
+  const seenClaimKeys = new Set();
+  userClaims.forEach((c) => {
+    const key = c.claimNumber || `${c.policyNumber}-${c.incidentType}`;
+    if (!seenClaimKeys.has(key)) {
+      seenClaimKeys.add(key);
+      uniqueUserClaims.push(c);
+    }
+  });
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
@@ -70,7 +93,7 @@ export const ClaimsListPage = () => {
       )}
 
       {/* Empty State */}
-      {!isLoading && claims.length === 0 && (
+      {!isLoading && uniqueUserClaims.length === 0 && (
         <Card className="p-12 text-center rounded-3xl border-dashed border-2 border-slate-300 bg-slate-50/50">
           <ShieldAlert className="w-14 h-14 text-emerald-300 mx-auto mb-3" />
           <h4 className="text-lg font-bold text-slate-900 mb-1">Zero Active Claims</h4>
@@ -93,9 +116,9 @@ export const ClaimsListPage = () => {
       )}
 
       {/* Claims List */}
-      {!isLoading && claims.length > 0 && (
+      {!isLoading && uniqueUserClaims.length > 0 && (
         <div className="space-y-4">
-          {claims.map((claim) => (
+          {uniqueUserClaims.map((claim) => (
             <Card
               key={claim._id || claim.id || claim.claimNumber}
               className="p-6 transition-all hover:shadow-md border border-slate-200/90 rounded-2xl bg-white"
