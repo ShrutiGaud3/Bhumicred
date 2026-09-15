@@ -14,9 +14,9 @@ const STORAGE_KEYS = {
   CARBON_AUDITS: 'bhumicred_data_carbon_audits',
 };
 
-// Automatic cleanup of legacy/dummy farmer entries in client browser localStorage
+// Automatic cleanup of legacy/dummy farmer entries & auth sessions in client browser localStorage
 try {
-  const isMigrated = typeof window !== 'undefined' && localStorage.getItem('bhumicred_storage_clean_v5');
+  const isMigrated = typeof window !== 'undefined' && localStorage.getItem('bhumicred_storage_clean_v6');
   if (!isMigrated && typeof window !== 'undefined') {
     localStorage.removeItem(STORAGE_KEYS.APPROVALS);
     localStorage.removeItem(STORAGE_KEYS.LANDS);
@@ -27,7 +27,11 @@ try {
     localStorage.removeItem(STORAGE_KEYS.WALLET);
     localStorage.removeItem(STORAGE_KEYS.SUPPORT_TICKETS);
     localStorage.removeItem('bhumicred_data_users');
-    localStorage.setItem('bhumicred_storage_clean_v5', 'true');
+    localStorage.removeItem('bhumicred_user_data');
+    localStorage.removeItem('bhumicred_access_token');
+    localStorage.removeItem('bhumicred_refresh_token');
+    localStorage.removeItem('bhumicred_token');
+    localStorage.setItem('bhumicred_storage_clean_v6', 'true');
   }
 } catch (e) {}
 
