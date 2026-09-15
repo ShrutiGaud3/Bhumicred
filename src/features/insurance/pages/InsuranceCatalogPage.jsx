@@ -141,10 +141,10 @@ export const InsuranceCatalogPage = () => {
             </div>
           </div>
           <div className="text-2xl font-black mt-2 tracking-tight">
-            ₹{(stats?.totalSumInsured || 1450000).toLocaleString('en-IN')}
+            ₹{(stats?.totalSumInsured ?? 0).toLocaleString('en-IN')}
           </div>
           <span className="text-[11px] text-emerald-300/80 mt-1 block">
-            {stats?.activePolicies || policies.length} Active Policies
+            {stats?.activePolicies ?? policies.length} Active Policies
           </span>
         </Card>
 
@@ -156,7 +156,7 @@ export const InsuranceCatalogPage = () => {
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900 mt-2 tracking-tight">
-            {stats?.totalInsuredTrees || 180} <span className="text-xs font-normal text-slate-500">Trees</span>
+            {stats?.totalInsuredTrees ?? 0} <span className="text-xs font-normal text-slate-500">Trees</span>
           </div>
           <span className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
             <Check className="w-3 h-3" /> 100% Geo-Tagged
@@ -171,7 +171,7 @@ export const InsuranceCatalogPage = () => {
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900 mt-2 tracking-tight">
-            ₹{(stats?.totalGovernmentSubsidyDisbursed || 21840).toLocaleString('en-IN')}
+            ₹{(stats?.totalGovernmentSubsidyDisbursed ?? 0).toLocaleString('en-IN')}
           </div>
           <span className="text-[11px] text-amber-800 font-medium mt-1 block">
             40% PM-KMY Agro Grant
