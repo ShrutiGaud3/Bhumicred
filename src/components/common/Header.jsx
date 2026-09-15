@@ -62,14 +62,14 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 py-2.5 sm:py-3 transition-all">
-        <div className="flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-neutral-800 px-3 sm:px-6 py-2 sm:py-2.5 transition-all">
+        <div className="flex items-center justify-between gap-2 max-w-full">
           {/* Left: Mobile Toggle & Brand/Role */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {user ? (
               <button
                 onClick={onToggleSidebar}
-                className="p-2 -ml-1 text-slate-600 hover:bg-slate-100 rounded-xl md:hidden"
+                className="p-1.5 sm:p-2 -ml-1 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl md:hidden transition-colors"
                 aria-label="Toggle Portal Menu"
               >
                 <Menu className="w-5 h-5" />
@@ -77,27 +77,27 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
             ) : (
               <button
                 onClick={() => setShowPublicMobileMenu(!showPublicMobileMenu)}
-                className="p-2 -ml-1 text-slate-600 hover:bg-slate-100 rounded-xl lg:hidden"
+                className="p-1.5 sm:p-2 -ml-1 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl lg:hidden transition-colors"
                 aria-label="Toggle Public Menu"
               >
                 {showPublicMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
             )}
 
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-emerald-800 to-emerald-600 flex items-center justify-center text-white font-black text-sm sm:text-base shadow-md shadow-emerald-900/10">
+            <Link to="/" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-tr from-emerald-800 to-emerald-600 flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-md shadow-emerald-900/10 shrink-0">
                 BC
               </div>
               <div>
-                <span className="font-extrabold text-base sm:text-lg text-emerald-950 tracking-tight">
-                  BHUMI<span className="text-emerald-600">CRED</span>
+                <span className="font-extrabold text-sm sm:text-base text-emerald-950 dark:text-white tracking-tight">
+                  BHUMI<span className="text-emerald-600 dark:text-emerald-400">CRED</span>
                 </span>
               </div>
             </Link>
 
             {user && (
-              <span className="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 ml-2">
-                <ShieldCheck className="w-3.5 h-3.5 mr-1" />
+              <span className="hidden lg:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 ml-1">
+                <ShieldCheck className="w-3 h-3 mr-1" />
                 {ROLE_LABELS[user.role] || user.role}
               </span>
             )}
@@ -105,13 +105,13 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
 
           {/* Center Public Links (on large screens for public visitors) */}
           {isPublicRoute && !user && (
-            <nav className="hidden xl:flex items-center gap-5 text-xs font-bold text-slate-600">
+            <nav className="hidden xl:flex items-center gap-5 text-xs font-bold text-slate-600 dark:text-neutral-300">
               {publicNavLinks.slice(0, 7).map((item, idx) => (
                 <Link
                   key={idx}
                   to={item.path}
-                  className={`hover:text-emerald-700 transition-colors ${
-                    location.pathname === item.path ? 'text-emerald-700 font-extrabold' : ''
+                  className={`hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors ${
+                    location.pathname === item.path ? 'text-emerald-700 dark:text-emerald-400 font-extrabold' : ''
                   }`}
                 >
                   {item.label}
@@ -121,28 +121,27 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
           )}
 
           {/* Right: Search, Bhumitra AI, Notifications, User Menu */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Command Palette Quick Search Button */}
             <button
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white text-xs transition-colors border border-slate-200/80 dark:border-neutral-700"
+              className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white text-xs transition-colors border border-slate-200/80 dark:border-neutral-700"
               title="Search Portal (Ctrl + K)"
             >
-              <Search className="w-3.5 h-3.5" />
-              <span className="hidden md:inline font-medium">Quick Search...</span>
-              <kbd className="hidden md:inline-block text-[10px] font-mono px-1.5 py-0.2 rounded bg-white dark:bg-neutral-700 text-slate-400 dark:text-neutral-300 border border-slate-200 dark:border-neutral-600">
+              <Search className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+              <span className="hidden md:inline font-medium text-xs">Search...</span>
+              <kbd className="hidden md:inline-block text-[10px] font-mono px-1 py-0.2 rounded bg-white dark:bg-neutral-700 text-slate-400 dark:text-neutral-300 border border-slate-200 dark:border-neutral-600">
                 ⌘K
               </kbd>
             </button>
 
-            {/* Bhumitra AI Assistant Quick Trigger */}
+            {/* Bhumitra AI Assistant Quick Trigger (Tablets & Desktops) */}
             <button
               onClick={onOpenAiModal}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-semibold shadow-md shadow-emerald-700/20 hover:from-emerald-700 hover:to-teal-700 transition-all transform hover:scale-[1.02]"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-semibold shadow-md shadow-emerald-700/20 hover:from-emerald-700 hover:to-teal-700 transition-all transform hover:scale-[1.02]"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-              <span className="hidden sm:inline">Ask Bhumitra AI</span>
-              <span className="sm:hidden">AI</span>
+              <span>Ask AI</span>
             </button>
 
             {/* Theme Toggle (Dark/Light) */}
@@ -155,12 +154,12 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
             {user && (
               <button
                 onClick={() => setIsNotificationOpen(true)}
-                className="relative p-2 text-slate-600 hover:text-emerald-800 hover:bg-emerald-50 dark:text-neutral-300 dark:hover:text-emerald-400 dark:hover:bg-neutral-800 rounded-xl transition-colors"
+                className="relative p-1.5 sm:p-2 text-slate-600 hover:text-emerald-800 hover:bg-emerald-50 dark:text-neutral-300 dark:hover:text-emerald-400 dark:hover:bg-neutral-800 rounded-xl transition-colors border border-slate-200/80 dark:border-neutral-700"
                 title="Open Notifications Drawer"
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 {unreadCount > 0 ? (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-neutral-900 shadow-sm animate-in zoom-in">
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-rose-500 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-neutral-900 shadow-sm animate-in zoom-in">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 ) : null}
@@ -172,40 +171,40 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
               <div className="relative">
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
-                  className="flex items-center gap-1.5 sm:gap-2 p-1 rounded-xl hover:bg-slate-100 transition-colors"
+                  className="flex items-center gap-1 sm:gap-2 p-0.5 sm:p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-emerald-700 text-white font-bold flex items-center justify-center text-xs">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-700 text-white font-bold flex items-center justify-center text-xs shadow-sm">
                     {user.name ? user.name[0].toUpperCase() : 'U'}
                   </div>
                   <div className="hidden lg:block text-left max-w-[120px]">
-                    <p className="text-xs font-bold text-slate-900 truncate leading-none">{user.name || user.mobile}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">{user.role}</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate leading-none">{user.name || user.mobile}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-neutral-400 mt-0.5 truncate">{user.role}</p>
                   </div>
-                  <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
                 </button>
 
                 {showDropdown && (
                   <div
-                    className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2"
+                    className="absolute right-0 mt-2 w-56 bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-slate-100 dark:border-neutral-800 py-2 z-50 animate-in fade-in slide-in-from-top-2"
                     onClick={() => setShowDropdown(false)}
                   >
-                    <div className="px-4 py-2.5 border-b border-slate-100">
-                      <p className="text-xs font-bold text-slate-900">{user.name || 'User'}</p>
-                      <p className="text-xs text-slate-500">{user.mobile}</p>
-                      <span className="mt-1 inline-block text-[10px] uppercase font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                    <div className="px-4 py-2.5 border-b border-slate-100 dark:border-neutral-800">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">{user.name || 'User'}</p>
+                      <p className="text-xs text-slate-500 dark:text-neutral-400">{user.mobile}</p>
+                      <span className="mt-1 inline-block text-[10px] uppercase font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded">
                         {user.status}
                       </span>
                     </div>
                     <Link
                       to="/profile"
-                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800"
                     >
                       <UserIcon className="w-4 h-4 text-slate-400" />
                       My Profile
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                      className="w-full text-left flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-neutral-800"
                     >
                       <LogOut className="w-4 h-4 text-rose-500" />
                       Sign Out
@@ -214,7 +213,7 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <Link
                   to="/register"
                   className="hidden sm:inline-flex px-3 py-1.5 rounded-xl border border-emerald-600/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all"
@@ -223,10 +222,10 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
                 </Link>
                 <Link
                   to="/role-select"
-                  className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 transition-all shadow-md shadow-emerald-900/15 flex items-center gap-1.5"
+                  className="px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 transition-all shadow-md shadow-emerald-900/15 flex items-center gap-1"
                 >
                   <UserIcon className="w-3.5 h-3.5" />
-                  Sign In
+                  <span>Sign In</span>
                 </Link>
               </div>
             )}

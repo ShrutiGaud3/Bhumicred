@@ -26,12 +26,12 @@ export const LanguageSelector = ({ className = '' }) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors border border-neutral-200 dark:border-neutral-700 shadow-sm"
+        className="flex items-center gap-1.5 p-2 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors border border-neutral-200 dark:border-neutral-700 shadow-sm"
         title="Change Language"
       >
-        <Globe className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-        <span className="font-semibold">{currentLang.nativeName}</span>
-        <span className="text-[10px] text-neutral-400 uppercase">({currentLang.code})</span>
+        <Globe className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
+        <span className="font-semibold hidden sm:inline">{currentLang.nativeName}</span>
+        <span className="text-[10px] text-neutral-400 uppercase hidden md:inline">({currentLang.code})</span>
       </button>
 
       {isOpen && (
