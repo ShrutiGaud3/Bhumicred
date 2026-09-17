@@ -183,47 +183,14 @@ export const PendingApproval = ({
             Access Full Farmer Dashboard
           </Button>
         ) : (
-          <>
-            {/* Interactive Demo Simulation Tools */}
-            <div className="p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/80 dark:to-teal-950/80 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-left space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-950 dark:text-emerald-300">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>Admin Approval Simulation (Frontend Demo)</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-normal">
-                In production, an Administrator reviews this application in the Admin Portal. For this demonstration, you can simulate instant approval or switch to Super Admin mode:
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                <Button
-                  onClick={handleSimulateAdminApproval}
-                  variant="primary"
-                  size="sm"
-                  className="bg-emerald-700 hover:bg-emerald-800 w-full sm:w-auto"
-                  icon={CheckCircle2}
-                >
-                  Simulate Admin Approval & Open Dashboard
-                </Button>
-                <Button
-                  onClick={handleGoToAdminQueue}
-                  variant="outline"
-                  size="sm"
-                  className="border-emerald-300 text-emerald-800 hover:bg-emerald-100 w-full sm:w-auto"
-                  icon={ShieldCheck}
-                >
-                  Open Admin Approvals Queue
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
-              <Button onClick={handleRefreshStatus} variant="outline" size="sm">
-                Refresh Status
-              </Button>
-              <Button onClick={() => navigate('/login')} variant="outline" size="sm">
-                Back to Sign In
-              </Button>
-            </div>
-          </>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+            <Button onClick={handleRefreshStatus} variant="primary" size="md" className="bg-emerald-700 hover:bg-emerald-800">
+              Refresh Status
+            </Button>
+            <Button onClick={() => navigate('/login')} variant="outline" size="md">
+              Back to Sign In
+            </Button>
+          </div>
         )}
       </div>
     </div>
