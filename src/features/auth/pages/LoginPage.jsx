@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { sendLoginOtp, setSelectedRole, setTargetMobile } from '../authSlice.js';
 import { FormInput } from '../../../components/forms/FormInput.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
-import { Phone, ArrowRight, Shield } from 'lucide-react';
+import { Phone, ArrowRight, ArrowLeft, Shield } from 'lucide-react';
 import { ROLES, ROLE_LABELS } from '../../../constants/roles.js';
 
 export const LoginPage = () => {
@@ -46,13 +46,27 @@ export const LoginPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-full uppercase tracking-wider mb-2 border border-emerald-100">
+      {/* Top Header Bar with Back to Role Selection Button */}
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-neutral-800">
+        <button
+          type="button"
+          onClick={() => navigate('/role-select')}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 transition-all group py-1.5 px-3 rounded-xl bg-slate-50 dark:bg-neutral-800/80 hover:bg-slate-100 dark:hover:bg-neutral-800 border border-slate-200/80 dark:border-neutral-700"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1 text-emerald-700 dark:text-emerald-400" />
+          <span>Change Role</span>
+        </button>
+
+        <span className="inline-flex items-center px-3 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[11px] font-extrabold rounded-full uppercase tracking-wider border border-emerald-200 dark:border-emerald-800">
           {ROLE_LABELS[activeRole] || activeRole}
         </span>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Mobile Verification</h2>
-        <p className="text-xs text-slate-500 mt-1">
-          Enter your 10-digit registered mobile number to receive a secure one-time passcode
+      </div>
+
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Mobile Verification</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          Enter your 10-digit registered mobile number to receive a secure one-time passcode for{' '}
+          <strong className="text-emerald-700 dark:text-emerald-400">{ROLE_LABELS[activeRole] || activeRole}</strong>
         </p>
       </div>
 

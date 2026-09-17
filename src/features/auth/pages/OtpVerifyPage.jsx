@@ -77,6 +77,26 @@ export const OtpVerifyPage = () => {
 
   return (
     <div className="space-y-6">
+      {/* Top Navigation Bar */}
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-neutral-800">
+        <button
+          type="button"
+          onClick={() => navigate(`/login?role=${selectedRole || 'FARMER'}`)}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 transition-all group py-1.5 px-3 rounded-xl bg-slate-50 dark:bg-neutral-800/80 hover:bg-slate-100 dark:hover:bg-neutral-800 border border-slate-200/80 dark:border-neutral-700"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1 text-emerald-700 dark:text-emerald-400" />
+          <span>Change Number</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('/role-select')}
+          className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
+        >
+          Change Role
+        </button>
+      </div>
+
       <div className="text-center">
         <div className="w-12 h-12 bg-emerald-100 text-emerald-800 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm">
           <ShieldCheck className="w-6 h-6" />
