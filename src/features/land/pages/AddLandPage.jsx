@@ -54,6 +54,7 @@ import { TaxInvoiceQrCode } from '../../../components/ui/TaxInvoiceQrCode.jsx';
 import { storageService } from '../../../services/storageService.js';
 import { landService } from '../services/landService.js';
 import { useToast } from '../../../components/ui/ToastContext.jsx';
+import { LiveCameraModal } from '../components/LiveCameraModal.jsx';
 
 const STEPS = [
   { title: 'Land Details', description: 'Survey & ownership' },
@@ -358,6 +359,70 @@ export const AddLandPage = () => {
     },
   ]);
 
+  // Live Camera Modal Viewfinder State
+  const [cameraModalConfig, setCameraModalConfig] = useState({
+    isOpen: false,
+    targetType: null, // 'FIELD_PHOTO' | 'FARMER_PHOTO' | 'TREE_PHOTO'
+    targetId: null,
+    title: '',
+    subtitle: '',
+    direction: '',
+    facingMode: 'environment',
+  });
+
+  const handleOpenLiveCamera = (type, id = null, title = '', direction = '', facingMode = 'environment') => {
+    setCameraModalConfig({
+      isOpen: true,
+      targetType: type,
+      targetId: id,
+      title: title || (type === 'FARMER_PHOTO' ? 'Farmer Biometric Portrait Photo' : 'Live Boundary Viewfinder'),
+      subtitle: type === 'FARMER_PHOTO' ? 'Position farmer face clearly inside viewfinder' : 'Align land boundary or tree subject inside grid frame',
+      direction: direction,
+      facingMode: facingMode,
+    });
+  };
+
+  const handleCaptureModalComplete = ({ imageUrl, lat, lng, timestamp }) => {
+    if (cameraModalConfig.targetType === 'FIELD_PHOTO') {
+      setFieldPhotos((prev) =>
+        prev.map((p) =>
+          p.id === cameraModalConfig.targetId
+            ? {
+                ...p,
+                captured: true,
+                imageUrl,
+                lat,
+                lng,
+                timestamp,
+              }
+            : p
+        )
+      );
+    } else if (cameraModalConfig.targetType === 'FARMER_PHOTO') {
+      setFarmerPhoto({
+        url: imageUrl,
+        mode: 'LIVE_CAPTURED',
+        timestamp,
+        name: 'Farmer_Live_Passport_Portrait.jpg',
+      });
+    } else if (cameraModalConfig.targetType === 'TREE_PHOTO') {
+      setTreeAnglePhotos((prev) =>
+        prev.map((p) =>
+          p.id === cameraModalConfig.targetId
+            ? {
+                ...p,
+                captured: true,
+                imageUrl,
+                lat,
+                lng,
+                timestamp,
+              }
+            : p
+        )
+      );
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name === 'areaUnit') {
@@ -477,27 +542,52 @@ export const AddLandPage = () => {
     toast.success('Live Geotagged Field photo captured with GPS coordinates!');
   };
 
-  const handleUploadPhotoFile = (id, e) => {
+  const handleUploadPhotoFile = (id, e, isLive = false) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setFieldPhotos((prev) =>
-        prev.map((p) =>
-          p.id === id
-            ? {
-                ...p,
-                captured: true,
-                imageUrl: url,
-                lat: Number((22.5630 + (Math.random() * 0.003 - 0.0015)).toFixed(4)),
-                lng: Number((72.9290 + (Math.random() * 0.003 - 0.0015)).toFixed(4)),
-                timestamp: `Attached ${file.name} at ${nowTime}`,
-              }
-            : p
-        )
-      );
-      toast.success(`Photo attached for ${file.name}`);
+
+      const updatePhoto = (lat, lng) => {
+        setFieldPhotos((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? {
+                  ...p,
+                  captured: true,
+                  imageUrl: url,
+                  lat: lat,
+                  lng: lng,
+                  timestamp: isLive ? `Live captured at ${nowTime}` : `Attached ${file.name} at ${nowTime}`,
+                }
+              : p
+          )
+        );
+      };
+
+      const defaultLat = Number((22.5630 + (Math.random() * 0.003 - 0.0015)).toFixed(4));
+      const defaultLng = Number((72.9290 + (Math.random() * 0.003 - 0.0015)).toFixed(4));
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const liveLat = Number(pos.coords.latitude.toFixed(6));
+            const liveLng = Number(pos.coords.longitude.toFixed(6));
+            updatePhoto(liveLat, liveLng);
+            toast.success(isLive ? `Live photo captured with GPS (${liveLat}° N, ${liveLng}° E)!` : `Photo attached: ${file.name}`);
+          },
+          () => {
+            updatePhoto(defaultLat, defaultLng);
+            toast.success(isLive ? 'Live photo captured!' : `Photo attached: ${file.name}`);
+          },
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      } else {
+        updatePhoto(defaultLat, defaultLng);
+        toast.success(isLive ? 'Live photo captured!' : `Photo attached: ${file.name}`);
+      }
     }
+    e.target.value = '';
   };
 
   const handleSimulateAllPhotos = () => {
@@ -580,19 +670,20 @@ export const AddLandPage = () => {
     toast.success('Live Farmer Passport Photo captured with biometric timestamp!');
   };
 
-  const handleUploadFarmerPhoto = (e) => {
+  const handleUploadFarmerPhoto = (e, isLive = false) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setFarmerPhoto({
         url: url,
-        mode: 'UPLOADED',
-        timestamp: `Attached ${file.name} • ${nowTime}`,
-        name: file.name,
+        mode: isLive ? 'LIVE_CAPTURED' : 'UPLOADED',
+        timestamp: isLive ? `Live captured • Today ${nowTime}` : `Attached ${file.name} • ${nowTime}`,
+        name: file.name || 'Farmer_Portrait.jpg',
       });
-      toast.success(`Farmer photo attached (${file.name})`);
+      toast.success(isLive ? 'Live Farmer Selfie/Portrait Photo captured!' : `Farmer photo attached (${file.name})`);
     }
+    e.target.value = '';
   };
 
   const handleRemoveFarmerPhoto = () => {
@@ -658,27 +749,52 @@ export const AddLandPage = () => {
     toast.success('Live tree angle photo captured with GPS verification!');
   };
 
-  const handleUploadTreePhoto = (id, e) => {
+  const handleUploadTreePhoto = (id, e, isLive = false) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setTreeAnglePhotos((prev) =>
-        prev.map((p) =>
-          p.id === id
-            ? {
-                ...p,
-                captured: true,
-                imageUrl: url,
-                lat: Number((22.5630 + (Math.random() * 0.003 - 0.0015)).toFixed(4)),
-                lng: Number((72.9290 + (Math.random() * 0.003 - 0.0015)).toFixed(4)),
-                timestamp: `Attached ${file.name} at ${nowTime}`,
-              }
-            : p
-        )
-      );
-      toast.success(`Tree angle photo attached for ${file.name}`);
+
+      const updateTree = (lat, lng) => {
+        setTreeAnglePhotos((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? {
+                  ...p,
+                  captured: true,
+                  imageUrl: url,
+                  lat: lat,
+                  lng: lng,
+                  timestamp: isLive ? `Live captured at ${nowTime}` : `Attached ${file.name} at ${nowTime}`,
+                }
+              : p
+          )
+        );
+      };
+
+      const defaultLat = Number((22.5630 + (Math.random() * 0.003 - 0.0015)).toFixed(4));
+      const defaultLng = Number((72.9290 + (Math.random() * 0.003 - 0.0015)).toFixed(4));
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const liveLat = Number(pos.coords.latitude.toFixed(6));
+            const liveLng = Number(pos.coords.longitude.toFixed(6));
+            updateTree(liveLat, liveLng);
+            toast.success(isLive ? `Live tree photo captured with GPS!` : `Tree photo attached for ${file.name}`);
+          },
+          () => {
+            updateTree(defaultLat, defaultLng);
+            toast.success(isLive ? `Live tree photo captured!` : `Tree photo attached for ${file.name}`);
+          },
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      } else {
+        updateTree(defaultLat, defaultLng);
+        toast.success(isLive ? `Live tree photo captured!` : `Tree photo attached for ${file.name}`);
+      }
     }
+    e.target.value = '';
   };
 
   const handleRemoveTreePhoto = (id) => {
@@ -1956,11 +2072,11 @@ export const AddLandPage = () => {
                     <div className="p-3 bg-white border-t border-slate-100 flex items-center justify-between gap-2">
                       <button
                         type="button"
-                        onClick={() => handleCaptureLivePhoto(photo.id)}
-                        className="flex-1 px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm"
+                        onClick={() => handleOpenLiveCamera('FIELD_PHOTO', photo.id, photo.title, photo.direction, 'environment')}
+                        className="flex-1 px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm active:scale-98 text-center"
                       >
                         <Camera className="w-3.5 h-3.5" />
-                        {photo.captured ? 'Retake Photo' : 'Live Capture'}
+                        <span>{photo.captured ? 'Retake Photo' : 'Live Capture'}</span>
                       </button>
 
                       <label className="cursor-pointer px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1">
@@ -1969,8 +2085,7 @@ export const AddLandPage = () => {
                         <input
                           type="file"
                           accept="image/*"
-                          capture="environment"
-                          onChange={(e) => handleUploadPhotoFile(photo.id, e)}
+                          onChange={(e) => handleUploadPhotoFile(photo.id, e, false)}
                           className="hidden"
                         />
                       </label>
@@ -2254,11 +2369,12 @@ export const AddLandPage = () => {
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={handleCaptureFarmerPhoto}
-                        className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all shadow-2xs"
+                        onClick={() => handleOpenLiveCamera('FARMER_PHOTO', null, 'Farmer Biometric Portrait Photo', '', 'user')}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all shadow-2xs flex items-center gap-1"
                         title="Retake live photo"
                       >
-                        Retake
+                        <Camera className="w-3 h-3" />
+                        <span>Retake</span>
                       </button>
                       <button
                         type="button"
@@ -2274,23 +2390,22 @@ export const AddLandPage = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <button
                       type="button"
-                      onClick={handleCaptureFarmerPhoto}
-                      className="px-3 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all shadow-md active:scale-98"
+                      onClick={() => handleOpenLiveCamera('FARMER_PHOTO', null, 'Farmer Biometric Portrait Photo', '', 'user')}
+                      className="px-3 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all shadow-md active:scale-98 text-center"
                     >
                       <Camera className="w-5 h-5 text-amber-300 animate-pulse" />
                       <span>Live Camera Capture</span>
                       <span className="text-[9px] text-emerald-200 font-normal">Real-time Biometric Photo</span>
                     </button>
 
-                    <label className="cursor-pointer px-3 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all">
+                    <label className="cursor-pointer px-3 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all text-center">
                       <Upload className="w-5 h-5 text-slate-300" />
                       <span>Upload from Device</span>
                       <span className="text-[9px] text-slate-300 font-normal">JPG, PNG Passport Photo</span>
                       <input
                         type="file"
                         accept="image/*"
-                        capture="user"
-                        onChange={handleUploadFarmerPhoto}
+                        onChange={(e) => handleUploadFarmerPhoto(e, false)}
                         className="hidden"
                       />
                     </label>
@@ -2679,10 +2794,11 @@ export const AddLandPage = () => {
                             <div className="flex items-center justify-between gap-1">
                               <button
                                 type="button"
-                                onClick={() => handleCaptureTreePhoto(angle.id)}
-                                className="flex-1 py-1 rounded-md bg-emerald-600/80 hover:bg-emerald-600 text-white text-[10px] font-bold transition-all text-center"
+                                onClick={() => handleOpenLiveCamera('TREE_PHOTO', angle.id, angle.angleName, angle.direction, 'environment')}
+                                className="flex-1 py-1 rounded-md bg-emerald-600/80 hover:bg-emerald-600 text-white text-[10px] font-bold transition-all text-center flex items-center justify-center gap-1"
                               >
-                                Retake
+                                <Camera className="w-3 h-3" />
+                                <span>Retake</span>
                               </button>
                               <button
                                 type="button"
@@ -2698,8 +2814,8 @@ export const AddLandPage = () => {
                           <div className="space-y-1.5 pt-1">
                             <button
                               type="button"
-                              onClick={() => handleCaptureTreePhoto(angle.id)}
-                              className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
+                              onClick={() => handleOpenLiveCamera('TREE_PHOTO', angle.id, angle.angleName, angle.direction, 'environment')}
+                              className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98 text-center"
                             >
                               <Camera className="w-3.5 h-3.5 text-amber-300" />
                               <span>Live Snap</span>
@@ -2711,7 +2827,7 @@ export const AddLandPage = () => {
                               <input
                                 type="file"
                                 accept="image/*"
-                                onChange={(e) => handleUploadTreePhoto(angle.id, e)}
+                                onChange={(e) => handleUploadTreePhoto(angle.id, e, false)}
                                 className="hidden"
                               />
                             </label>
@@ -3264,6 +3380,17 @@ export const AddLandPage = () => {
           </div>
         </div>
       )}
+
+      {/* Live Camera Viewfinder Modal */}
+      <LiveCameraModal
+        isOpen={cameraModalConfig.isOpen}
+        onClose={() => setCameraModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        onCapture={handleCaptureModalComplete}
+        title={cameraModalConfig.title}
+        subtitle={cameraModalConfig.subtitle}
+        direction={cameraModalConfig.direction}
+        facingMode={cameraModalConfig.facingMode}
+      />
     </div>
   );
 };
