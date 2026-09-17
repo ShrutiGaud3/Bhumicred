@@ -818,20 +818,25 @@ export const AddLandPage = () => {
 
       setInvoiceData(generatedInvoice);
 
+      const safeArea = Math.max(0.1, Number(parseFloat(acreageForCalc) || parseFloat(formData?.area) || parseFloat(formData?.areaAcres) || 1.0));
+      const resolvedOwnerName = (formData.ownerName || otherOwnerDetails.farmerCultivatorName || user?.fullName || user?.name || 'Citizen Farmer').trim();
+      const resolvedOwnerMobile = (formData.ownerMobile || otherOwnerDetails.farmerCultivatorMobile || user?.mobile || user?.phone || '').trim();
+
       const landPayload = {
-        landName: formData.landName || (formData.village ? `Agricultural Parcel (${formData.village})` : 'Agricultural Parcel'),
-        surveyNumber: formData.surveyNumber || '108/A',
-        khasraNumber: formData.khasraNumber || '412/9',
-        area: acreageForCalc,
-        areaAcres: acreageForCalc,
+        landName: (formData.landName && formData.landName.trim()) || (formData.village ? `Agricultural Parcel (${formData.village})` : 'Agricultural Parcel'),
+        surveyNumber: (formData.surveyNumber && formData.surveyNumber.trim()) || '108/A',
+        khasraNumber: (formData.khasraNumber && formData.khasraNumber.trim()) || '412/9',
+        area: safeArea,
+        areaAcres: safeArea,
         landType: formData.landType || 'Agricultural (Irrigated)',
         ownershipType: formData.ownershipType || 'Individual Owner',
-        ownerName: formData.ownerName || otherOwnerDetails.farmerCultivatorName || user?.fullName || user?.name || 'Citizen Farmer',
-        ownerMobile: formData.ownerMobile || otherOwnerDetails.farmerCultivatorMobile || user?.mobile || '',
+        ownerName: resolvedOwnerName,
+        ownerMobile: resolvedOwnerMobile,
+        userId: user?.id || user?._id,
         state: formData.state || 'Gujarat',
         district: formData.district || 'Anand',
         village: formData.village || 'Mogri',
-        address: formData.address || `${formData.village || 'Mogri'}, Anand, Gujarat`,
+        address: formData.address || `${formData.village || 'Mogri'}, ${formData.district || 'Anand'}, ${formData.state || 'Gujarat'}`,
         soilType: formData.soilType || 'Alluvial Loam',
         irrigationSource: formData.irrigationSource || 'Borewell & Drip Irrigation',
         treeCount: standingTreeCount,
@@ -876,14 +881,15 @@ export const AddLandPage = () => {
       let registeredId = null;
       try {
         const backendRes = await landService.registerLand(landPayload);
-        if (backendRes?.data?.landId || backendRes?.landId) {
-          const retId = backendRes?.data?.landId || backendRes?.landId;
+        const retLand = backendRes?.data || backendRes;
+        const retId = retLand?.landId || retLand?.id || retLand?._id;
+        if (retId) {
           landPayload.id = retId;
           landPayload.landId = retId;
           registeredId = retId;
         }
       } catch (apiErr) {
-        console.warn('Backend live registration synced to local cache fallback:', apiErr?.message);
+        console.error('Backend live registration error:', apiErr?.response?.data || apiErr?.message);
       }
 
       // 2. Persist to local storage service for instant caching & Approvals Queue

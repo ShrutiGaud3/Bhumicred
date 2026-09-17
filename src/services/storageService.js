@@ -81,7 +81,7 @@ export const storageService = {
       id: `APP-LND-${landWithMeta.id}`,
       applicationId: `APP-LND-${landWithMeta.id}`,
       type: 'LAND_REGISTRATION',
-      title: `Land Title Registration - Khasra ${landWithMeta.khasraNumber || '412/9'} (Survey ${landWithMeta.surveyNumber || '108/A'})`,
+      title: `Land Title Registration - ${landWithMeta.landName || 'Parcel'} - Khasra ${landWithMeta.khasraNumber || '412/9'} (Survey ${landWithMeta.surveyNumber || '108/A'})`,
       applicantName: landWithMeta.ownerName || landWithMeta.farmerName || landWithMeta.applicantName || 'Citizen Farmer',
       applicantRole: 'FARMER',
       applicantPhone: landWithMeta.ownerMobile || landWithMeta.mobile || '',
@@ -89,7 +89,7 @@ export const storageService = {
       submittedAt: new Date().toISOString(),
       createdAt: landWithMeta.createdAt || new Date().toISOString(),
       timestamp: landWithMeta.createdAt || new Date().toISOString(),
-      status: 'PENDING_VERIFICATION',
+      status: landWithMeta.status || 'PENDING_VERIFICATION',
       riskScore: 'LOW',
       details: `${landWithMeta.areaAcres || landWithMeta.area || 8.5} Acres in ${landWithMeta.village || 'Mogri'}, ${landWithMeta.district || 'Anand'}`,
       targetId: landWithMeta.id
@@ -219,26 +219,31 @@ export const storageService = {
     try {
       const storedLands = storageService.getLands();
       storedLands.forEach((land) => {
-        const appId = `APP-LND-${land.id || land.landId}`;
+        const rawLandId = land.id || land.landId || '';
+        const normalizedId = String(rawLandId).replace(/^LND-/, '');
+        const appId = String(rawLandId).startsWith('APP-LND-') ? rawLandId : `APP-LND-${rawLandId}`;
+
         const existingIndex = list.findIndex(
           (a) =>
             a.id === appId ||
             a.applicationId === appId ||
-            a.targetId === land.id ||
+            a.targetId === rawLandId ||
             a.targetId === land.landId ||
-            (a.type === 'LAND_REGISTRATION' && a.id === `APP-LND-${land.id}`)
+            a.id === `APP-LND-${normalizedId}` ||
+            a.applicationId === `APP-LND-${normalizedId}` ||
+            (a.type === 'LAND_REGISTRATION' && (a.id === appId || a.targetId === rawLandId))
         );
         
         if (existingIndex >= 0) {
-          if (land.status === 'APPROVED' || land.status === 'REJECTED' || land.status === 'ACTIVE') {
+          if (land.status) {
             list[existingIndex].status = land.status === 'ACTIVE' ? 'APPROVED' : land.status;
           }
-        } else if (land.status === 'PENDING_VERIFICATION' || land.status === 'PENDING_REVIEW' || !land.status) {
+        } else {
           list.unshift({
             id: appId,
             applicationId: appId,
             type: 'LAND_REGISTRATION',
-            title: `Land Title Registration - ${land.landName || 'Plot'} - Khasra ${land.khasraNumber || 'N/A'} (Survey ${land.surveyNumber || 'N/A'})`,
+            title: `Land Title Registration - ${land.landName || 'Parcel'} - Khasra ${land.khasraNumber || 'N/A'} (Survey ${land.surveyNumber || 'N/A'})`,
             applicantName: land.ownerName || land.farmerName || 'Citizen Farmer',
             applicantRole: 'FARMER',
             applicantPhone: land.ownerMobile || land.mobile || '',
@@ -249,7 +254,7 @@ export const storageService = {
             status: land.status || 'PENDING_VERIFICATION',
             riskScore: 'LOW',
             details: `${land.area || land.areaAcres || 0} Acres in ${land.village || land.district || 'Local'}`,
-            targetId: land.id || land.landId,
+            targetId: rawLandId,
           });
         }
       });

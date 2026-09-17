@@ -138,17 +138,50 @@ export const ApprovalsQueuePage = () => {
       if (backendLoaded) {
         const uniqueLiveItems = [];
         const seenAppIds = new Set();
+
+        const registerSeen = (it) => {
+          if (it.id) seenAppIds.add(String(it.id));
+          if (it.applicationId) seenAppIds.add(String(it.applicationId));
+          if (it.targetId) {
+            seenAppIds.add(String(it.targetId));
+            seenAppIds.add(`APP-LND-${it.targetId}`);
+            seenAppIds.add(`APP-CLM-${it.targetId}`);
+            seenAppIds.add(`APP-USR-${it.targetId}`);
+          }
+          const rawLnd = String(it.id || it.applicationId || '').replace(/^APP-LND-/, '');
+          if (rawLnd) {
+            seenAppIds.add(rawLnd);
+            seenAppIds.add(`APP-LND-${rawLnd}`);
+          }
+        };
+
         liveItems.forEach((it) => {
-          const k = it.applicationId || it.id || it.targetId;
-          if (!seenAppIds.has(k)) {
-            seenAppIds.add(k);
+          const k = String(it.applicationId || it.id || it.targetId || '');
+          if (k && !seenAppIds.has(k)) {
+            registerSeen(it);
             uniqueLiveItems.push(it);
           }
         });
 
+        // Also merge any local storage approvals / offline lands seamlessly
+        const localApprovals = storageService.getApprovals().filter((c) => !c.id?.startsWith('appr_'));
+        localApprovals.forEach((loc) => {
+          const k = String(loc.applicationId || loc.id || loc.targetId || '');
+          const rawLnd = String(loc.id || loc.applicationId || '').replace(/^APP-LND-/, '');
+          const isSeen =
+            (k && seenAppIds.has(k)) ||
+            (rawLnd && (seenAppIds.has(rawLnd) || seenAppIds.has(`APP-LND-${rawLnd}`))) ||
+            (loc.targetId && seenAppIds.has(String(loc.targetId)));
+
+          if (!isSeen) {
+            registerSeen(loc);
+            uniqueLiveItems.push(loc);
+          }
+        });
+
         uniqueLiveItems.sort((a, b) => {
-          const timeA = new Date(a.timestamp || 0).getTime();
-          const timeB = new Date(b.timestamp || 0).getTime();
+          const timeA = new Date(a.timestamp || a.submittedAt || a.createdAt || 0).getTime();
+          const timeB = new Date(b.timestamp || b.submittedAt || b.createdAt || 0).getTime();
           return timeB - timeA;
         });
 
@@ -159,7 +192,8 @@ export const ApprovalsQueuePage = () => {
       }
     } catch (err) {
       console.warn('Admin queue load error:', err);
-      setItems([]);
+      const localApprovals = storageService.getApprovals().filter((c) => !c.id?.startsWith('appr_'));
+      setItems(localApprovals);
     } finally {
       setLoading(false);
     }
@@ -178,14 +212,16 @@ export const ApprovalsQueuePage = () => {
     { id: 'INSURANCE_CLAIM', label: 'Insurance Claims' },
   ];
 
+  const isItemPending = (status) =>
+    status === 'PENDING_VERIFICATION' ||
+    status === 'PENDING_APPROVAL' ||
+    status === 'PENDING_REVIEW' ||
+    status === 'PENDING' ||
+    status === 'SUBMITTED' ||
+    status === 'UNDER_REVIEW';
+
   const totalCount = items.length;
-  const pendingCount = items.filter(
-    (i) =>
-      i.status === 'PENDING_VERIFICATION' ||
-      i.status === 'PENDING_APPROVAL' ||
-      i.status === 'SUBMITTED' ||
-      i.status === 'UNDER_REVIEW'
-  ).length;
+  const pendingCount = items.filter((i) => isItemPending(i.status)).length;
   const approvedCount = items.filter((i) => i.status === 'APPROVED' || i.status === 'ACTIVE').length;
   const queryCount = items.filter(
     (i) => i.status === 'QUERY_PENDING' || i.status === 'QUERY_RAISED' || i.status === 'REJECTED'
@@ -196,11 +232,7 @@ export const ApprovalsQueuePage = () => {
 
     let matchesStatus = true;
     if (statusFilter === 'PENDING') {
-      matchesStatus =
-        item.status === 'PENDING_VERIFICATION' ||
-        item.status === 'PENDING_APPROVAL' ||
-        item.status === 'SUBMITTED' ||
-        item.status === 'UNDER_REVIEW';
+      matchesStatus = isItemPending(item.status);
     } else if (statusFilter === 'APPROVED') {
       matchesStatus = item.status === 'APPROVED' || item.status === 'ACTIVE';
     } else if (statusFilter === 'QUERY_REJECT') {
@@ -479,11 +511,7 @@ export const ApprovalsQueuePage = () => {
           </div>
         ) : filteredItems.length > 0 ? (
           filteredItems.map((item) => {
-            const isPending =
-              item.status === 'PENDING_VERIFICATION' ||
-              item.status === 'PENDING_APPROVAL' ||
-              item.status === 'SUBMITTED' ||
-              item.status === 'UNDER_REVIEW';
+            const isPending = isItemPending(item.status);
 
             return (
               <Card
