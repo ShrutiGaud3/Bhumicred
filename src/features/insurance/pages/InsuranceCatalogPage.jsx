@@ -126,11 +126,15 @@ export const InsuranceCatalogPage = () => {
   });
 
   // Dynamically compute live stats from actual user policies array
-  const activePoliciesList = uniqueUserPolicies.filter((p) => p.status === 'ACTIVE' || !p.status);
-  const totalSumInsured = (stats?.totalSumInsured > 0 ? stats.totalSumInsured : activePoliciesList.reduce((sum, p) => sum + (Number(p.sumInsured) || 0), 0));
-  const activePoliciesCount = (stats?.activePolicies > 0 ? stats.activePolicies : (activePoliciesList.length || uniqueUserPolicies.length));
-  const totalInsuredTrees = (stats?.totalInsuredTrees > 0 ? stats.totalInsuredTrees : activePoliciesList.reduce((sum, p) => sum + (Number(p.insuredTreeCount || p.treeCount) || 0), 0));
-  const totalSubsidy = (stats?.totalGovernmentSubsidyDisbursed > 0 ? stats.totalGovernmentSubsidyDisbursed : activePoliciesList.reduce((sum, p) => sum + (Number(p.governmentSubsidyAmount) || 0), 0));
+  const activePoliciesList = uniqueUserPolicies.filter((p) => p.status !== 'CANCELLED' && p.status !== 'EXPIRED');
+  const computedSum = activePoliciesList.reduce((sum, p) => sum + (Number(p.sumInsured) || 0), 0);
+  const computedTrees = activePoliciesList.reduce((sum, p) => sum + (Number(p.insuredTreeCount || p.treeCount) || 0), 0);
+  const computedSubsidy = activePoliciesList.reduce((sum, p) => sum + (Number(p.governmentSubsidyAmount) || 0), 0);
+
+  const totalSumInsured = (stats?.totalSumInsured > 0 ? stats.totalSumInsured : computedSum) || computedSum;
+  const activePoliciesCount = (stats?.activePolicies > 0 ? stats.activePolicies : (activePoliciesList.length || uniqueUserPolicies.length)) || uniqueUserPolicies.length;
+  const totalInsuredTrees = (stats?.totalInsuredTrees > 0 ? stats.totalInsuredTrees : computedTrees) || computedTrees;
+  const totalSubsidy = (stats?.totalGovernmentSubsidyDisbursed > 0 ? stats.totalGovernmentSubsidyDisbursed : computedSubsidy) || computedSubsidy;
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">

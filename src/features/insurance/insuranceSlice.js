@@ -161,18 +161,19 @@ const insuranceSlice = createSlice({
       .addCase(fetchPolicies.fulfilled, (state, action) => {
         state.isLoading = false;
         state.policies = action.payload || [];
-        const activePols = (action.payload || []).filter((p) => p.status === 'ACTIVE' || !p.status);
+        const polList = action.payload || [];
+        const activePols = polList.filter((p) => p.status !== 'CANCELLED' && p.status !== 'EXPIRED');
         const totalSum = activePols.reduce((acc, curr) => acc + (Number(curr.sumInsured) || 0), 0);
         const totalTrees = activePols.reduce((acc, curr) => acc + (Number(curr.insuredTreeCount || curr.treeCount) || 0), 0);
         const totalSubsidy = activePols.reduce((acc, curr) => acc + (Number(curr.governmentSubsidyAmount) || 0), 0);
         
         state.stats = {
           ...state.stats,
-          totalPolicies: (action.payload || []).length,
-          activePolicies: activePols.length,
-          totalSumInsured: totalSum,
-          totalInsuredTrees: totalTrees,
-          totalGovernmentSubsidyDisbursed: totalSubsidy,
+          totalPolicies: polList.length,
+          activePolicies: activePols.length > 0 ? activePols.length : polList.length,
+          totalSumInsured: totalSum > 0 ? totalSum : (state.stats.totalSumInsured || 0),
+          totalInsuredTrees: totalTrees > 0 ? totalTrees : (state.stats.totalInsuredTrees || 0),
+          totalGovernmentSubsidyDisbursed: totalSubsidy > 0 ? totalSubsidy : (state.stats.totalGovernmentSubsidyDisbursed || 0),
         };
       })
       .addCase(fetchPolicies.rejected, (state, action) => {
@@ -216,7 +217,14 @@ const insuranceSlice = createSlice({
       })
       .addCase(fetchClaims.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.claims = action.payload;
+        const claimsList = action.payload || [];
+        state.claims = claimsList;
+        const settled = claimsList.filter((c) => c.status === 'SETTLED' || c.status === 'APPROVED').length;
+        state.stats.totalClaims = claimsList.length > 0 ? claimsList.length : state.stats.totalClaims;
+        state.stats.settledClaims = settled > 0 ? settled : state.stats.settledClaims;
+        if (claimsList.length > 0) {
+          state.stats.claimsSettlementRatio = settled > 0 ? `${((settled / claimsList.length) * 100).toFixed(1)}%` : '100%';
+        }
       })
       .addCase(fetchClaims.rejected, (state, action) => {
         state.isLoading = false;
@@ -245,7 +253,7 @@ const insuranceSlice = createSlice({
 
       // Insurance Stats
       .addCase(fetchInsuranceStats.fulfilled, (state, action) => {
-        if (action.payload && (action.payload.totalSumInsured > 0 || action.payload.activePolicies > 0)) {
+        if (action.payload) {
           state.stats = { ...state.stats, ...action.payload };
         }
       });
