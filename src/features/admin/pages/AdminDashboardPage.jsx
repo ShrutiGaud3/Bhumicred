@@ -125,7 +125,6 @@ export const AdminDashboardPage = () => {
 
     storageService.updateApprovalStatus(targetAppId, 'APPROVED', 'Quick approved via Super Admin Dashboard');
     toast.showSuccess(`Approved application for ${item.applicantName || 'Citizen'}`);
-    loadData();
 
     try {
       await onboardingService.reviewKyc(targetAppId, {
@@ -138,6 +137,8 @@ export const AdminDashboardPage = () => {
     } catch (err) {
       console.warn('Quick approve backend sync warning:', err?.message);
     }
+
+    await loadData();
   };
 
   if (isLoading && !stats) {

@@ -34,7 +34,7 @@ export const BhumitraAiDrawer = ({ isOpen, onClose }) => {
 
       {/* Drawer Panel */}
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 pointer-events-none">
-        <div className="w-screen max-w-full sm:max-w-lg pointer-events-auto bg-white shadow-2xl flex flex-col border-l border-slate-200">
+        <div className="w-screen max-w-full sm:max-w-lg pointer-events-auto bg-white dark:bg-neutral-900 shadow-2xl flex flex-col border-l border-slate-200 dark:border-neutral-800">
           {/* Header */}
           <div className="px-5 py-4 bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 text-white flex items-center justify-between shadow-md">
             <div className="flex items-center gap-3">

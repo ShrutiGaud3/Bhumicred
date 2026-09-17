@@ -58,7 +58,7 @@ export const AiMessageBubble = ({ message, onActionClick }) => {
         <div
           className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
             isAi
-              ? 'bg-white border border-slate-200/80 text-slate-800 rounded-tl-none shadow-sm'
+              ? 'bg-white dark:bg-neutral-800 border border-slate-200/80 dark:border-neutral-700 text-slate-800 dark:text-neutral-100 rounded-tl-none shadow-sm'
               : 'bg-emerald-800 text-white rounded-tr-none shadow-md shadow-emerald-900/10'
           }`}
         >
@@ -72,12 +72,12 @@ export const AiMessageBubble = ({ message, onActionClick }) => {
 
           {/* Optional Direct Deep-Link Action Button */}
           {message.suggestedAction && (
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-500">Suggested Action:</span>
+            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-neutral-700 flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-neutral-400">Suggested Action:</span>
               <Link
                 to={message.suggestedAction.path}
                 onClick={onActionClick}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors border border-emerald-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-colors border border-emerald-200 dark:border-emerald-800"
               >
                 <span>{message.suggestedAction.label}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -88,18 +88,18 @@ export const AiMessageBubble = ({ message, onActionClick }) => {
 
         {/* AI Action Toolbar (Copy, Thumbs Up/Down, Speak Mock) */}
         {isAi && (
-          <div className="flex items-center gap-1 mt-1.5 px-1 text-slate-400 text-xs">
+          <div className="flex items-center gap-1 mt-1.5 px-1 text-slate-400 dark:text-neutral-500 text-xs">
             <button
               onClick={handleCopy}
-              className="p-1 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+              className="p-1 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-700 rounded-md transition-colors"
               title="Copy message"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
             <button
               onClick={() => setFeedback(feedback === 'up' ? null : 'up')}
               className={`p-1 rounded-md transition-colors ${
-                feedback === 'up' ? 'text-emerald-600 bg-emerald-50' : 'hover:text-slate-700 hover:bg-slate-100'
+                feedback === 'up' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60' : 'hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-700'
               }`}
               title="Helpful"
             >
@@ -108,7 +108,7 @@ export const AiMessageBubble = ({ message, onActionClick }) => {
             <button
               onClick={() => setFeedback(feedback === 'down' ? null : 'down')}
               className={`p-1 rounded-md transition-colors ${
-                feedback === 'down' ? 'text-rose-600 bg-rose-50' : 'hover:text-slate-700 hover:bg-slate-100'
+                feedback === 'down' ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60' : 'hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-700'
               }`}
               title="Not helpful"
             >

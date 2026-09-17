@@ -23,7 +23,7 @@ export const RoleSelectPage = () => {
       description: 'Register and verify farm land, obtain tree & plantation insurance, book soil laboratory testing, and access government subsidy schemes.',
       icon: Leaf,
       badge: 'Citizen Portal',
-      colorClass: 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-500',
+      colorClass: 'bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/70 hover:border-emerald-500',
       iconBg: 'bg-emerald-600 text-white',
     },
     {
@@ -32,7 +32,7 @@ export const RoleSelectPage = () => {
       description: 'For Gram Panchayats, Nagar Palikas, Nagar Nigams, and Vidhan Sabha authorities to manage public green assets and mobilize farmer campaigns.',
       icon: Building2,
       badge: 'Institutional Desk',
-      colorClass: 'bg-teal-50 text-teal-800 border-teal-200 hover:border-teal-500',
+      colorClass: 'bg-teal-50/80 dark:bg-teal-950/40 text-teal-900 dark:text-teal-300 border-teal-300 dark:border-teal-700/70 hover:border-teal-500',
       iconBg: 'bg-teal-700 text-white',
     },
     {
@@ -41,7 +41,7 @@ export const RoleSelectPage = () => {
       description: 'Authorized field inspection partners, soil laboratories, survey teams, and project execution specialists.',
       icon: Users,
       badge: 'Operations Desk',
-      colorClass: 'bg-amber-50 text-amber-800 border-amber-200 hover:border-amber-500',
+      colorClass: 'bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700/70 hover:border-amber-500',
       iconBg: 'bg-amber-600 text-white',
     },
   ];
@@ -49,10 +49,10 @@ export const RoleSelectPage = () => {
   return (
     <div className="space-y-6 text-left">
       <div className="text-center">
-        <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+        <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           Select Your Portal Role
         </h2>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
           Choose the role that best matches your organization or identity on BHUMICRED
         </p>
       </div>
@@ -71,29 +71,29 @@ export const RoleSelectPage = () => {
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-bold text-sm text-slate-900">{item.title}</h3>
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/80 border border-current">
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">{item.title}</h3>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/80 dark:bg-neutral-900/80 border border-current text-inherit">
                     {item.badge}
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">{item.description}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{item.description}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+      <div className="pt-3 border-t border-slate-100 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
         <Link
           to="/register"
-          className="font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
+          className="font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
         >
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+          <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           First-time User? Register Here
         </Link>
         <button
           onClick={() => handleSelectRole(ROLES.SUPER_ADMIN)}
-          className="text-xs font-semibold text-slate-600 hover:text-emerald-800 underline"
+          className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 underline"
         >
           Admin Login
         </button>

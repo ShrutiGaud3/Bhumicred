@@ -84,10 +84,12 @@ export const WalletPage = () => {
   const availableBal = wallet?.availableBalance || 0;
   const escrowBal = wallet?.escrowBalance || 0;
   const totalEarn = wallet?.totalEarnings || 0;
-  const bankAcc = wallet?.bankAccount || {
-    bankName: 'HDFC Bank',
-    accountNumber: 'XXXXXX2901',
-    ifscCode: 'HDFC0001044',
+  const rewardPoints = wallet?.rewardPoints || 0;
+  const bankAcc = {
+    bankName: wallet?.bankAccount?.bankName || 'Aadhaar Seeded DBT Account',
+    accountNumber: wallet?.bankAccount?.accountNumber || (user?.mobile ? `****${user.mobile.slice(-4)}` : '****2901'),
+    ifscCode: wallet?.bankAccount?.ifscCode || 'NPCI-DBT-DIRECT',
+    upiId: wallet?.bankAccount?.upiId || (user?.mobile ? `${user.mobile}@upi` : ''),
   };
 
   return (
@@ -106,7 +108,7 @@ export const WalletPage = () => {
               variant="outline"
               onClick={() => navigate('/rewards')}
             >
-              Referrals & Rewards ({wallet?.rewardPoints || 3200} Pts)
+              Referrals & Rewards ({rewardPoints} Pts)
             </Button>
             <Button
               variant="primary"

@@ -19,13 +19,13 @@ export const SearchInput = ({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="block w-full rounded-xl border border-slate-200/90 bg-white pl-10 pr-9 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-600 transition-all shadow-sm"
+        className="block w-full rounded-xl border border-slate-200/90 dark:border-neutral-700 bg-white dark:bg-neutral-800 pl-10 pr-9 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-950/40 focus:border-emerald-600 dark:focus:border-emerald-500 transition-all shadow-sm"
       />
       {value && (
         <button
           type="button"
           onClick={onClear || (() => onChange({ target: { value: '' } }))}
-          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 transition-colors"
+          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

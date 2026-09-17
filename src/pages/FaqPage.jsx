@@ -31,10 +31,10 @@ export const FaqPage = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
       <div className="text-center space-y-2">
-        <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
+        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
           Frequently Asked Questions
         </span>
-        <h1 className="text-3xl font-extrabold text-slate-900">Help & Support Knowledgebase</h1>
+        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Help & Support Knowledgebase</h1>
       </div>
 
       <div className="space-y-4">
@@ -42,20 +42,20 @@ export const FaqPage = () => {
           <Card key={idx} className="overflow-hidden">
             <button
               onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
-              className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-slate-900 hover:bg-slate-50 transition-colors"
+              className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-neutral-800/60 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <HelpCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <HelpCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                 <span>{faq.q}</span>
               </div>
               <ChevronDown
-                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
-                  openIndex === idx ? 'rotate-180 text-emerald-600' : ''
+                className={`w-4 h-4 text-slate-400 dark:text-neutral-500 transition-transform duration-200 ${
+                  openIndex === idx ? 'rotate-180 text-emerald-600 dark:text-emerald-400' : ''
                 }`}
               />
             </button>
             {openIndex === idx && (
-              <div className="px-5 pb-5 pt-1 text-xs text-slate-600 leading-relaxed border-t border-slate-100 bg-slate-50/50">
+              <div className="px-5 pb-5 pt-1 text-xs text-slate-600 dark:text-neutral-300 leading-relaxed border-t border-slate-100 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/50">
                 {faq.a}
               </div>
             )}

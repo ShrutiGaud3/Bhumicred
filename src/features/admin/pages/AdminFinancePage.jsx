@@ -27,36 +27,11 @@ export const AdminFinancePage = () => {
     dispatch(fetchAdminTreasury());
   }, [dispatch]);
 
-  const escrowReserves = treasury?.escrowReservesINR || 4850000;
-  const monthlyPayouts = treasury?.monthlyPayoutsINR || 845000;
-  const marketplaceGMV = treasury?.marketplaceGMVINR || 1420000;
-  const pendingClearances = treasury?.pendingClearancesINR || 118000;
-  const batches = treasury?.settlementBatches || [
-    {
-      id: 'BAT-2026-081',
-      desc: 'August Farmer Agroforestry Subsidy Direct Credit (42 Beneficiaries)',
-      amount: 420000,
-      date: '01 Sep 2026',
-      status: 'COMPLETED',
-      channel: 'NPCI DBT Gateway',
-    },
-    {
-      id: 'BAT-2026-082',
-      desc: 'Enterprise Partner Field Survey Fee Clearing Batch',
-      amount: 18450,
-      date: '02 Sep 2026',
-      status: 'COMPLETED',
-      channel: 'ICICI Commercial Corporate IMPS',
-    },
-    {
-      id: 'BAT-2026-083',
-      desc: 'Quarterly Carbon Sequestration Reward Distribution (Anand & Kheda)',
-      amount: 888000,
-      date: '05 Sep 2026',
-      status: 'COMPLETED',
-      channel: 'Sovereign Smart Escrow Pool',
-    },
-  ];
+  const escrowReserves = Number(treasury?.escrowReservesINR || 0);
+  const monthlyPayouts = Number(treasury?.monthlyPayoutsINR || 0);
+  const marketplaceGMV = Number(treasury?.marketplaceGMVINR || 0);
+  const pendingClearances = Number(treasury?.pendingClearancesINR || 0);
+  const batches = Array.isArray(treasury?.settlementBatches) ? treasury.settlementBatches : [];
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
@@ -137,27 +112,33 @@ export const AdminFinancePage = () => {
           </Badge>
         </div>
 
-        <div className="divide-y divide-gray-100 text-xs">
-          {batches.map((bat, idx) => (
-            <div key={idx} className="py-3.5 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded mr-2">
-                  {bat.id}
-                </span>
-                <span className="font-semibold text-gray-900">{bat.desc}</span>
-                <span className="text-gray-400 block mt-0.5">Processed on {bat.date} via {bat.channel || 'NPCI DBT Gateway'}</span>
-              </div>
-              <div className="text-right">
-                <span className="font-bold text-gray-900 text-sm">
-                  ₹{typeof bat.amount === 'number' ? bat.amount.toLocaleString('en-IN') : bat.amount}
-                </span>
-                <div className="mt-0.5">
-                  <StatusBadge status={bat.status} />
+        {batches.length > 0 ? (
+          <div className="divide-y divide-gray-100 text-xs">
+            {batches.map((bat, idx) => (
+              <div key={idx} className="py-3.5 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded mr-2">
+                    {bat.id}
+                  </span>
+                  <span className="font-semibold text-gray-900">{bat.desc}</span>
+                  <span className="text-gray-400 block mt-0.5">Processed on {bat.date} via {bat.channel || 'NPCI DBT Gateway'}</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-gray-900 text-sm">
+                    ₹{typeof bat.amount === 'number' ? bat.amount.toLocaleString('en-IN') : bat.amount}
+                  </span>
+                  <div className="mt-0.5">
+                    <StatusBadge status={bat.status} />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-8 text-center text-gray-500 text-xs">
+            No treasury settlement batches recorded yet in the database.
+          </div>
+        )}
       </Card>
     </div>
   );

@@ -35,13 +35,13 @@ export const SolutionsPage = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
       <div className="text-center space-y-3">
-        <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
+        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
           Integrated Platform Capabilities
         </span>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           BHUMICRED Solutions
         </h1>
-        <p className="text-sm text-slate-600 max-w-2xl mx-auto">
+        <p className="text-sm text-slate-600 dark:text-neutral-300 max-w-2xl mx-auto">
           Built according to strict operational workflows and multi-role sovereign standards.
         </p>
       </div>
@@ -52,15 +52,15 @@ export const SolutionsPage = () => {
           return (
             <Card key={idx} className="p-8 flex flex-col justify-between">
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mb-4">
                   <Icon className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">{sol.title}</h3>
-                <p className="text-xs text-slate-600 mb-6 leading-relaxed">{sol.description}</p>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{sol.title}</h3>
+                <p className="text-xs text-slate-600 dark:text-neutral-300 mb-6 leading-relaxed">{sol.description}</p>
                 <ul className="space-y-2.5 mb-6">
                   {sol.points.map((pt, pIdx) => (
-                    <li key={pIdx} className="flex items-center gap-2 text-xs text-slate-700 font-medium">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <li key={pIdx} className="flex items-center gap-2 text-xs text-slate-700 dark:text-neutral-200 font-medium">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                       <span>{pt}</span>
                     </li>
                   ))}

@@ -68,15 +68,15 @@ export const FarmerDashboardPage = () => {
     return <ErrorState message={error} onRetry={() => dispatch(fetchFarmerDashboard())} />;
   }
 
-  const wallet = dashboardData?.wallet || { availableBalance: 14850, pendingBalance: 2900, rewards: 1250 };
+  const wallet = dashboardData?.wallet || { availableBalance: 0, pendingBalance: 0, rewards: 0 };
   const overview = dashboardData?.overview || {
-    registeredLands: 1,
-    activePolicies: 1,
-    soilTestRequests: 1,
-    carbonOpportunities: 1,
-    totalTrees: 33,
-    totalCarbonTons: 4.1,
-    carbonValuation: 5981,
+    registeredLands: 0,
+    activePolicies: 0,
+    soilTestRequests: 0,
+    carbonOpportunities: 0,
+    totalTrees: 0,
+    totalCarbonTons: 0,
+    carbonValuation: 0,
   };
   const activities = dashboardData?.recentActivities || [];
   const lands = dashboardData?.lands || [];
@@ -106,9 +106,9 @@ export const FarmerDashboardPage = () => {
             <button
               type="button"
               onClick={() => setDashboardTab('REPORTS_INVOICES')}
-              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-white text-emerald-950 font-bold text-xs hover:bg-emerald-50 transition-all shadow-md flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 text-emerald-950 dark:text-white font-bold text-xs hover:bg-emerald-50 dark:hover:bg-neutral-700 transition-all shadow-md flex items-center justify-center gap-2 border border-slate-200/60 dark:border-neutral-700"
             >
-              <Receipt className="w-4 h-4 text-emerald-700" />
+              <Receipt className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
               Tax Invoices & Reports
             </button>
             <Link to="/farmer/lands/add" className="flex-1 sm:flex-initial">

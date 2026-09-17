@@ -23,8 +23,6 @@ import { Badge } from '../../../components/ui/Badge.jsx';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { MapPlaceholder } from '../../../components/ui/MapPlaceholder.jsx';
 import { useEffect } from 'react';
-import { MOCK_POLICIES } from '../../../services/mockData/insuranceMock.js';
-import { MOCK_SOIL_REQUESTS } from '../../../services/mockData/soilMock.js';
 import { storageService } from '../../../services/storageService.js';
 import { landService } from '../services/landService.js';
 import { insuranceService } from '../../insurance/services/insuranceService.js';

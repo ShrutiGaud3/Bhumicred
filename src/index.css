@@ -29,6 +29,17 @@
   background: #94a3b8;
 }
 
+.dark ::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #404040;
+}
+
 /* Glassmorphism card styles */
 .glass-panel {
   background: rgba(255, 255, 255, 0.85);
@@ -42,6 +53,222 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(51, 65, 85, 0.8);
+}
+
+/* ==========================================================================
+   UNIVERSAL DARK MODE OVERRIDES (PREVENT WHITE BOXES & FIX TEXT CONTRAST)
+   ========================================================================== */
+html.dark {
+  color-scheme: dark;
+  background-color: #09090b !important;
+  color: #ffffff !important;
+}
+
+html.dark body {
+  background-color: #09090b !important;
+  color: #ffffff !important;
+}
+
+/* 1. Universal Dark Card & Container Backgrounds */
+html.dark [class*="bg-white"]:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]):not([class*="bg-white/"]),
+html.dark .bg-white:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]) {
+  background-color: #121212 !important;
+  color: #ffffff !important;
+  border-color: #27272a !important;
+}
+
+html.dark [class*="bg-slate-50"]:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]),
+html.dark [class*="bg-gray-50"]:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]),
+html.dark [class*="bg-neutral-50"]:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]),
+html.dark .bg-slate-50:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]),
+html.dark .bg-gray-50:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]),
+html.dark .bg-neutral-50:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]) {
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+}
+
+html.dark [class*="bg-slate-100"]:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]),
+html.dark [class*="bg-gray-100"]:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]),
+html.dark [class*="bg-neutral-100"]:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]),
+html.dark .bg-slate-100:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]),
+html.dark .bg-gray-100:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]),
+html.dark .bg-neutral-100:not(.allow-light):not([class*="print:"]):not([class*="dark:bg-"]) {
+  background-color: #27272a !important;
+  color: #f4f4f5 !important;
+}
+
+/* Tinted cards & badges in dark mode become subtle dark highlights */
+html.dark [class*="bg-emerald-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-emerald-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-green-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-green-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-emerald-50:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-emerald-100:not([class*="dark:bg-"]):not([class*="print:"]) {
+  background-color: rgba(6, 78, 59, 0.45) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  color: #6ee7b7 !important;
+}
+
+html.dark [class*="bg-amber-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-amber-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-yellow-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-yellow-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-amber-50:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-amber-100:not([class*="dark:bg-"]):not([class*="print:"]) {
+  background-color: rgba(120, 53, 15, 0.45) !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+  color: #fde68a !important;
+}
+
+html.dark [class*="bg-sky-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-sky-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-blue-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-blue-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-sky-50:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-sky-100:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-blue-50:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-blue-100:not([class*="dark:bg-"]):not([class*="print:"]) {
+  background-color: rgba(12, 74, 110, 0.45) !important;
+  border-color: rgba(14, 165, 233, 0.45) !important;
+  color: #bae6fd !important;
+}
+
+html.dark [class*="bg-rose-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-rose-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-red-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-red-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-rose-50:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-rose-100:not([class*="dark:bg-"]):not([class*="print:"]) {
+  background-color: rgba(136, 19, 55, 0.45) !important;
+  border-color: rgba(244, 63, 94, 0.45) !important;
+  color: #fecdd3 !important;
+}
+
+html.dark [class*="bg-teal-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-teal-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-cyan-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-cyan-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-teal-50:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-teal-100:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-cyan-50:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-cyan-100:not([class*="dark:bg-"]):not([class*="print:"]) {
+  background-color: rgba(19, 78, 74, 0.45) !important;
+  border-color: rgba(20, 184, 166, 0.45) !important;
+  color: #5eead4 !important;
+}
+
+html.dark [class*="bg-lime-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-lime-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-lime-50:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-lime-100:not([class*="dark:bg-"]):not([class*="print:"]) {
+  background-color: rgba(54, 83, 20, 0.45) !important;
+  border-color: rgba(132, 204, 22, 0.45) !important;
+  color: #bef264 !important;
+}
+
+html.dark [class*="bg-indigo-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-indigo-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-indigo-50:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-indigo-100:not([class*="dark:bg-"]):not([class*="print:"]) {
+  background-color: rgba(49, 46, 129, 0.45) !important;
+  border-color: rgba(99, 102, 241, 0.45) !important;
+  color: #c7d2fe !important;
+}
+
+html.dark [class*="bg-purple-50"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark [class*="bg-purple-100"]:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-purple-50:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark .bg-purple-100:not([class*="dark:bg-"]):not([class*="print:"]) {
+  background-color: rgba(88, 28, 135, 0.45) !important;
+  border-color: rgba(168, 85, 247, 0.45) !important;
+  color: #e9d5ff !important;
+}
+
+/* 2. Universal Dark Text & Headings (Proper Pure White & High Contrast) */
+html.dark .text-slate-900:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-slate-800:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-slate-700:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-gray-900:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-gray-800:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-gray-700:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-neutral-900:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-neutral-800:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-neutral-700:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-black:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark h1:not([class*="print:"]):not([class*="text-"]),
+html.dark h2:not([class*="print:"]):not([class*="text-"]),
+html.dark h3:not([class*="print:"]):not([class*="text-"]),
+html.dark h4:not([class*="print:"]):not([class*="text-"]),
+html.dark strong:not([class*="print:"]):not([class*="text-"]) {
+  color: #ffffff !important;
+}
+
+/* Lighten dark colored text so it pops against dark background */
+html.dark .text-emerald-950:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-emerald-900:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-emerald-800:not([class*="dark:text-"]):not([class*="print:"]) {
+  color: #34d399 !important;
+}
+
+html.dark .text-teal-950:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-teal-900:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-teal-800:not([class*="dark:text-"]):not([class*="print:"]) {
+  color: #2dd4bf !important;
+}
+
+html.dark .text-amber-950:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-amber-900:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-amber-800:not([class*="dark:text-"]):not([class*="print:"]) {
+  color: #fbbf24 !important;
+}
+
+html.dark .text-slate-600:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-slate-500:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-gray-600:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-gray-500:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-neutral-600:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-neutral-500:not([class*="dark:text-"]):not([class*="print:"]) {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-400:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-gray-400:not([class*="dark:text-"]):not([class*="print:"]),
+html.dark .text-neutral-400:not([class*="dark:text-"]):not([class*="print:"]) {
+  color: #94a3b8 !important;
+}
+
+/* 3. Universal Dark Borders & Dividers */
+html.dark [class*="border-slate-100"]:not([class*="dark:border-"]):not([class*="print:"]),
+html.dark [class*="border-slate-200"]:not([class*="dark:border-"]):not([class*="print:"]),
+html.dark [class*="border-slate-300"]:not([class*="dark:border-"]):not([class*="print:"]),
+html.dark [class*="border-gray-100"]:not([class*="dark:border-"]):not([class*="print:"]),
+html.dark [class*="border-gray-200"]:not([class*="dark:border-"]):not([class*="print:"]),
+html.dark [class*="border-gray-300"]:not([class*="dark:border-"]):not([class*="print:"]),
+html.dark [class*="border-neutral-100"]:not([class*="dark:border-"]):not([class*="print:"]),
+html.dark [class*="border-neutral-200"]:not([class*="dark:border-"]):not([class*="print:"]),
+html.dark [class*="border-neutral-300"]:not([class*="dark:border-"]):not([class*="print:"]) {
+  border-color: #27272a !important;
+}
+
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #27272a !important;
+}
+
+/* 4. Form inputs and dropdown selects */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark select:not([class*="dark:bg-"]):not([class*="print:"]),
+html.dark textarea:not([class*="dark:bg-"]):not([class*="print:"]) {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+  border-color: #3f3f46 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #71717a !important;
 }
 
 /* ==========================================================================
@@ -132,6 +359,34 @@
     padding: 6px 8px !important;
   }
 
+  /* Target Soil Health Card specifically for pristine, centered single A4 page printing */
+  #soil-health-card-printable {
+    box-shadow: none !important;
+    border: 3px double #065f46 !important;
+    border-radius: 12px !important;
+    padding: 16px 20px !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 680px !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+  }
+
+  #soil-health-card-printable table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 11px !important;
+  }
+
+  #soil-health-card-printable th,
+  #soil-health-card-printable td {
+    padding: 4px 8px !important;
+  }
+
   /* Keep colors vivid on printed documents */
   .bg-slate-900 {
     background-color: #0f172a !important;
@@ -148,9 +403,15 @@
     color: #ffffff !important;
   }
 
+  .bg-emerald-100\/80,
   .bg-emerald-100\/70,
   .bg-emerald-100 {
     background-color: #d1fae5 !important;
+    color: #064e3b !important;
+  }
+
+  .bg-emerald-50 {
+    background-color: #ecfdf5 !important;
     color: #064e3b !important;
   }
 

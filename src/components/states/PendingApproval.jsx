@@ -185,12 +185,12 @@ export const PendingApproval = ({
         ) : (
           <>
             {/* Interactive Demo Simulation Tools */}
-            <div className="p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200 text-left space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-950">
+            <div className="p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/80 dark:to-teal-950/80 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-left space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-950 dark:text-emerald-300">
                 <Sparkles className="w-4 h-4 text-amber-500" />
                 <span>Admin Approval Simulation (Frontend Demo)</span>
               </div>
-              <p className="text-[11px] text-slate-600 leading-normal">
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-normal">
                 In production, an Administrator reviews this application in the Admin Portal. For this demonstration, you can simulate instant approval or switch to Super Admin mode:
               </p>
               <div className="flex flex-col sm:flex-row gap-2 pt-1">

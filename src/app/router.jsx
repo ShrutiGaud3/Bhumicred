@@ -155,16 +155,21 @@ export const router = createBrowserRouter([
 
   // Auth Routes (Role Select, Login, Register, OTP, Pending, Query, Session Expired)
   {
-    element: <AuthLayout />,
+    element: <PublicRoute />,
     children: [
-      { path: '/role-select', element: <RoleSelectPage /> },
-      { path: '/login', element: <LoginPage /> },
-      { path: '/register', element: <RegisterPage /> },
-      { path: '/onboarding', element: <RegisterPage /> },
-      { path: '/otp-verify', element: <OtpVerifyPage /> },
-      { path: '/verification-pending', element: <VerificationPendingPage /> },
-      { path: '/query-correction', element: <QueryCorrectionPage /> },
-      { path: '/session-expired', element: <SessionExpiredPage /> },
+      {
+        element: <AuthLayout />,
+        children: [
+          { path: '/role-select', element: <RoleSelectPage /> },
+          { path: '/login', element: <LoginPage /> },
+          { path: '/register', element: <RegisterPage /> },
+          { path: '/onboarding', element: <RegisterPage /> },
+          { path: '/otp-verify', element: <OtpVerifyPage /> },
+          { path: '/verification-pending', element: <VerificationPendingPage /> },
+          { path: '/query-correction', element: <QueryCorrectionPage /> },
+          { path: '/session-expired', element: <SessionExpiredPage /> },
+        ],
+      },
     ],
   },
 
@@ -267,6 +272,7 @@ export const router = createBrowserRouter([
               { path: '/admin/dashboard', element: <AdminDashboardPage /> },
               { path: '/admin/approvals', element: <ApprovalsQueuePage /> },
               { path: '/admin/lands', element: <AdminLandsPage /> },
+              { path: '/admin/gis', element: <GisCadastralExplorerPage /> },
               { path: '/admin/insurance', element: <AdminInsurancePage /> },
               { path: '/admin/soil', element: <AdminSoilPage /> },
               { path: '/admin/marketplace', element: <AdminMarketplacePage /> },

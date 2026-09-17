@@ -27,7 +27,7 @@ export const QuickActionCards = ({ actions = [], onActionClick }) => {
 
   return (
     <div className="space-y-2.5 my-4">
-      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
+      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-400">
         <Zap className="w-3.5 h-3.5 text-amber-500" />
         <span>Direct Actions</span>
       </div>
@@ -39,27 +39,27 @@ export const QuickActionCards = ({ actions = [], onActionClick }) => {
               key={idx}
               to={act.path}
               onClick={onActionClick}
-              className="p-3 rounded-2xl bg-white hover:bg-emerald-50/70 border border-slate-200/80 hover:border-emerald-300 shadow-sm transition-all group flex items-start justify-between gap-2.5"
+              className="p-3 rounded-2xl bg-white dark:bg-neutral-800/90 hover:bg-emerald-50/70 dark:hover:bg-neutral-700/60 border border-slate-200/80 dark:border-neutral-700 hover:border-emerald-300 dark:hover:border-emerald-600 shadow-sm transition-all group flex items-start justify-between gap-2.5"
             >
               <div className="flex items-start gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                   <Icon className="w-4 h-4" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h4 className="font-bold text-xs text-slate-900 group-hover:text-emerald-950">
+                    <h4 className="font-bold text-xs text-slate-900 dark:text-white group-hover:text-emerald-950 dark:group-hover:text-emerald-300">
                       {act.title}
                     </h4>
                     {act.badge && (
-                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-100 dark:bg-neutral-700 text-slate-600 dark:text-neutral-300">
                         {act.badge}
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{act.description}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 leading-snug">{act.description}</p>
                 </div>
               </div>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-1" />
+              <ArrowRight className="w-3.5 h-3.5 text-slate-300 dark:text-neutral-500 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-1" />
             </Link>
           );
         })}

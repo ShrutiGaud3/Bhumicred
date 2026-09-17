@@ -18,14 +18,18 @@ import {
   ExternalLink,
   Activity,
   FileCode,
+  FileText,
+  Building,
+  RefreshCw,
 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
 import { Badge } from '../../../components/ui/Badge.jsx';
+import { StatusBadge } from '../../../components/ui/StatusBadge.jsx';
 import { PageHeader } from '../../../components/ui/PageHeader.jsx';
 import { SovereignGisMap } from '../../../components/gis/SovereignGisMap.jsx';
 import { useToast } from '../../../components/ui/ToastContext.jsx';
-import { fetchGisLayers, fetchMacroMetrics, fetchParcelSpatialData } from '../gisSlice.js';
+import { fetchGisLayers, fetchMacroMetrics } from '../gisSlice.js';
 import { landService } from '../../land/services/landService.js';
 import { storageService } from '../../../services/storageService.js';
 
@@ -34,64 +38,103 @@ export const GisCadastralExplorerPage = () => {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const { layers, macroMetrics, isLoading } = useSelector((state) => state.gis);
+  const { layers, macroMetrics, isLoading: isGisLoading } = useSelector((state) => state.gis);
   const { user } = useSelector((state) => state.auth);
+
+  const isAdmin =
+    user?.role === 'SUPER_ADMIN' ||
+    user?.role === 'OPERATIONS_ADMIN' ||
+    user?.role === 'ADMIN_STAFF' ||
+    user?.role === 'GOVERNMENT' ||
+    user?.role === 'GOVERNMENT_OFFICIAL';
 
   const [lands, setLands] = useState([]);
   const [selectedParcel, setSelectedParcel] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterTaluka, setFilterTaluka] = useState('ALL');
+  const [loadingLands, setLoadingLands] = useState(true);
 
-  useEffect(() => {
+  const loadLandsData = async () => {
+    setLoadingLands(true);
     dispatch(fetchGisLayers());
     dispatch(fetchMacroMetrics('Anand'));
 
-    // Fetch real lands from backend or local storage for the user
-    const loadLands = async () => {
-      const userIdentifier = user?._id || user?.id || user?.phone || user?.mobile || user?.name;
-      let userLands = [];
-      try {
+    let liveLands = [];
+    try {
+      if (isAdmin) {
+        // Admin views all registered cadastral parcels in registry
+        const res = await landService.getAllLands();
+        const list = Array.isArray(res?.data) ? res.data : res?.data?.lands || [];
+        liveLands = list;
+      } else {
+        // Farmer views their registered parcels
         const res = await landService.getMyLands();
-        if (res.data && res.data.length > 0) {
-          userLands = res.data;
-        }
-      } catch (e) {
-        console.warn('GIS explorer land load error:', e);
+        const list = Array.isArray(res?.data) ? res.data : res?.data?.lands || [];
+        liveLands = list;
       }
-      if (userLands.length === 0) {
-        userLands = storageService.getLands(userIdentifier);
+    } catch (e) {
+      console.warn('Live GIS land query error:', e);
+    }
+
+    // Merge with local storage for instant offline resiliency
+    const userIdentifier = user?._id || user?.id || user?.phone || user?.mobile || user?.name;
+    const localLands = isAdmin ? storageService.getLands() : storageService.getLands(userIdentifier);
+    const combined = [...liveLands];
+
+    localLands.forEach((loc) => {
+      const exists = combined.some(
+        (c) =>
+          c.landId === loc.id ||
+          c.landId === loc.landId ||
+          c._id === loc.id ||
+          (c.surveyNumber === loc.surveyNumber && c.khasraNumber === loc.khasraNumber)
+      );
+      if (!exists) {
+        combined.push(loc);
       }
-      setLands(userLands);
-      if (userLands.length > 0) {
-        setSelectedParcel(userLands[0]);
-      }
-    };
-    loadLands();
-  }, [dispatch, user]);
+    });
+
+    setLands(combined);
+    if (combined.length > 0) {
+      setSelectedParcel(combined[0]);
+    }
+    setLoadingLands(false);
+  };
+
+  useEffect(() => {
+    loadLandsData();
+  }, [dispatch, user, isAdmin]);
 
   // Transform lands to GIS Map parcel items
-  const mapParcels = lands.map((l, idx) => {
-    const coords = l.boundaries?.simpleCoordinates;
-    // Map coords to SVG canvas coordinate space
-    const baseOffset = (idx % 4) * 160;
-    const svgPoly = coords && coords.length >= 3
-      ? `${120 + baseOffset},${100 + (idx % 2) * 120} ${300 + baseOffset},${115 + (idx % 2) * 120} ${330 + baseOffset},${270 + (idx % 2) * 120} ${110 + baseOffset},${250 + (idx % 2) * 120}`
-      : undefined;
+  const mapParcels = lands.map((l) => {
+    const rawCoords =
+      l.coordinates ||
+      l.boundaries?.coordinates?.[0] ||
+      l.boundaries?.simpleCoordinates ||
+      l.simpleCoordinates ||
+      [];
+
+    const treeCount = Number(l.agronomicDetails?.treeCount ?? l.treeCount ?? 0);
+    const baseNdvi = treeCount > 50 ? 0.82 : treeCount > 20 ? 0.74 : 0.65;
 
     return {
-      id: l.landId || l._id,
-      landId: l.landId,
-      surveyNumber: l.surveyNumber,
-      khasraNumber: l.khasraNumber,
-      landName: l.landName,
+      id: l.landId || l._id || l.id,
+      landId: l.landId || l._id || l.id,
+      surveyNumber: l.surveyNumber || '108/A',
+      khasraNumber: l.khasraNumber || '412/1',
+      landName: l.landName || `Plot ${l.khasraNumber || ''}`,
       ownerName: l.ownerName || user?.name || 'Citizen Farmer',
-      area: l.area || l.areaAcres || 10.5,
-      soilType: l.agronomicDetails?.soilType || 'Alluvial Loam',
-      treeCount: l.agronomicDetails?.treeCount || 60,
-      ndviScore: l.agronomicDetails?.treeCount > 50 ? 0.82 : 0.71,
+      ownerMobile: l.ownerMobile || user?.mobile || '',
+      area: Number(l.area || l.areaAcres || 10),
+      areaUnit: l.areaUnit || 'Acres',
+      soilType: l.agronomicDetails?.soilType || l.soilType || 'Alluvial Loam',
+      treeCount,
+      treesInsured: Boolean(l.agronomicDetails?.treesInsured || l.treesInsured),
+      ndviScore: baseNdvi,
       status: l.status || 'APPROVED',
-      svgPolygon: svgPoly,
-      centroid: [220 + baseOffset, 180 + (idx % 2) * 120],
+      village: l.location?.village || l.village || 'Anand',
+      district: l.location?.district || l.district || 'Anand',
+      state: l.location?.state || l.state || 'Gujarat',
+      coordinates: rawCoords,
     };
   });
 
@@ -99,14 +142,20 @@ export const GisCadastralExplorerPage = () => {
     (p) =>
       !searchQuery ||
       p.landName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.khasraNumber?.includes(searchQuery) ||
-      p.surveyNumber?.includes(searchQuery)
+      p.khasraNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.surveyNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.ownerName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleExportGeoJson = () => {
+    if (mapParcels.length === 0) {
+      toast.error('No cadastral parcels available to export.');
+      return;
+    }
+
     const geoJsonData = {
       type: 'FeatureCollection',
-      name: 'BHUMICRED_Cadastral_Spatial_Export',
+      name: `BHUMICRED_Cadastral_Spatial_Export_${isAdmin ? 'Admin' : 'Farmer'}`,
       crs: { type: 'name', properties: { name: 'urn:ogc:def:crs:OGC:1.3:CRS84' } },
       features: mapParcels.map((p) => ({
         type: 'Feature',
@@ -115,22 +164,30 @@ export const GisCadastralExplorerPage = () => {
           khasraNumber: p.khasraNumber,
           surveyNumber: p.surveyNumber,
           ownerName: p.ownerName,
+          ownerMobile: p.ownerMobile,
+          village: p.village,
+          district: p.district,
+          state: p.state,
           areaAcres: p.area,
           soilType: p.soilType,
           treeCount: p.treeCount,
+          treesInsured: p.treesInsured,
           ndviScore: p.ndviScore,
+          status: p.status,
           attestationAuthority: 'BHUMICRED Sovereign Agro-GIS Desk',
         },
         geometry: {
           type: 'Polygon',
           coordinates: [
-            [
-              [72.924, 22.561],
-              [72.932, 22.563],
-              [72.934, 22.571],
-              [72.922, 22.568],
-              [72.924, 22.561],
-            ],
+            Array.isArray(p.coordinates) && p.coordinates.length >= 3
+              ? p.coordinates
+              : [
+                  [72.924, 22.561],
+                  [72.932, 22.563],
+                  [72.934, 22.571],
+                  [72.922, 22.568],
+                  [72.924, 22.561],
+                ],
           ],
         },
       })),
@@ -140,7 +197,7 @@ export const GisCadastralExplorerPage = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `BHUMICRED_Cadastral_Layer_Anand_${Date.now()}.geojson`;
+    link.download = `BHUMICRED_Cadastral_Layer_${Date.now()}.geojson`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -148,20 +205,39 @@ export const GisCadastralExplorerPage = () => {
     toast.success('GeoJSON spatial layer exported successfully!');
   };
 
-  const userTotalAcres = lands.reduce((acc, l) => acc + Number(l.area || l.areaAcres || 0), 0);
-  const userTotalTrees = lands.reduce((acc, l) => acc + Number(l.agronomicDetails?.treeCount || l.treeCount || 0), 0);
-  const displayAcres = lands.length > 0 ? userTotalAcres.toFixed(1) : (macroMetrics?.totalMappedAcres ?? 0);
-  const displayTrees = lands.length > 0 ? userTotalTrees : (macroMetrics?.totalStandingTrees ?? 0);
-  const displayNdvi = lands.length > 0 ? (macroMetrics?.macroNdviAverage || 0.72) : (macroMetrics?.macroNdviAverage ?? 0);
+  const totalCalculatedAcres = lands.reduce((acc, l) => acc + Number(l.area || l.areaAcres || 0), 0);
+  const totalCalculatedTrees = lands.reduce(
+    (acc, l) => acc + Number(l.agronomicDetails?.treeCount ?? l.treeCount ?? 0),
+    0
+  );
+
+  const displayAcres =
+    lands.length > 0
+      ? totalCalculatedAcres.toFixed(1)
+      : (macroMetrics?.totalMappedAcres ?? 0);
+  const displayTrees =
+    lands.length > 0 ? totalCalculatedTrees : (macroMetrics?.totalStandingTrees ?? 0);
+  const displayNdvi =
+    lands.length > 0
+      ? (macroMetrics?.macroNdviAverage || 0.74)
+      : (macroMetrics?.macroNdviAverage ?? 0);
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
       <PageHeader
-        title="Sovereign Cadastral GIS Engine & Satellite Explorer"
-        subtitle="Interactive GeoJSON spatial boundaries, NDVI multispectral vegetation heatmaps, and cadastral survey parcel topology."
-        backTo="/farmer/dashboard"
+        title={
+          isAdmin
+            ? 'Master Cadastral GIS & Sovereign Satellite Registry'
+            : 'Sovereign Cadastral GIS Engine & Satellite Explorer'
+        }
+        subtitle={
+          isAdmin
+            ? 'Global district oversight of agricultural plots, CAD/GIS vertex boundaries, multispectral NDVI canopy, and verified 7/12 land records.'
+            : 'Interactive GeoJSON spatial boundaries, NDVI multispectral vegetation heatmaps, and cadastral survey parcel topology.'
+        }
+        backTo={isAdmin ? '/admin/dashboard' : '/farmer/dashboard'}
         breadcrumbs={[
-          { label: 'Farmer Portal', path: '/farmer/dashboard' },
+          { label: isAdmin ? 'Admin Portal' : 'Farmer Portal', path: isAdmin ? '/admin/dashboard' : '/farmer/dashboard' },
           { label: 'Cadastral GIS Explorer' },
         ]}
         actions={
@@ -170,18 +246,30 @@ export const GisCadastralExplorerPage = () => {
               variant="outline"
               size="sm"
               className="flex items-center gap-1.5 bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+              onClick={loadLandsData}
+              disabled={loadingLands}
+            >
+              <RefreshCw className={`w-4 h-4 text-emerald-700 ${loadingLands ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1.5 bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
               onClick={handleExportGeoJson}
             >
               <FileCode className="w-4 h-4 text-emerald-700" /> Export GeoJSON
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 shadow-md"
-              onClick={() => navigate('/farmer/lands/add')}
-            >
-              <Plus className="w-4 h-4" /> Map New Parcel
-            </Button>
+            {!isAdmin && (
+              <Button
+                variant="primary"
+                size="sm"
+                className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 shadow-md"
+                onClick={() => navigate('/farmer/lands/add')}
+              >
+                <Plus className="w-4 h-4" /> Map New Parcel
+              </Button>
+            )}
           </div>
         }
       />
@@ -212,7 +300,8 @@ export const GisCadastralExplorerPage = () => {
             {displayNdvi} <span className="text-xs font-semibold text-emerald-700">/ 1.0</span>
           </div>
           <span className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> {Number(displayNdvi) > 0 ? 'Optimal Canopy Density' : 'Awaiting Parcel Data'}
+            <CheckCircle2 className="w-3 h-3" />{' '}
+            {Number(displayNdvi) > 0 ? 'Optimal Canopy Density' : 'Awaiting Parcel Data'}
           </span>
         </Card>
 
@@ -236,9 +325,7 @@ export const GisCadastralExplorerPage = () => {
               <Activity className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-base font-black text-slate-900 mt-2 truncate">
-            Sentinel-2 MSI
-          </div>
+          <div className="text-base font-black text-slate-900 mt-2 truncate">Sentinel-2 MSI</div>
           <span className="text-[11px] text-slate-500 mt-1 block">10m Ground Resolution</span>
         </Card>
       </div>
@@ -252,7 +339,9 @@ export const GisCadastralExplorerPage = () => {
               <div>
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <span>Interactive Cadastral Spatial Engine</span>
-                  <Badge variant="success" className="text-[10px]">Live Orbit Sync</Badge>
+                  <Badge variant="success" className="text-[10px]">
+                    Live Orbit Sync
+                  </Badge>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Click on any parcel boundary to inspect cadastral revenue particulars and NDVI health.
@@ -263,7 +352,7 @@ export const GisCadastralExplorerPage = () => {
                 <div className="flex items-center gap-2 text-xs bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
                   <span className="text-slate-500">Inspecting:</span>
                   <span className="font-bold text-emerald-800">
-                    Survey #{selectedParcel.surveyNumber}
+                    Survey #{selectedParcel.surveyNumber || selectedParcel.survey}
                   </span>
                 </div>
               )}
@@ -273,7 +362,7 @@ export const GisCadastralExplorerPage = () => {
             <SovereignGisMap
               height="min-h-[480px] h-[520px]"
               parcels={mapParcels}
-              activeParcelId={selectedParcel?.id}
+              activeParcelId={selectedParcel?.id || selectedParcel?.landId || selectedParcel?._id}
               onSelectParcel={(p) => setSelectedParcel(p)}
               allowDrawing={true}
               onPolygonDrawn={(data) => {
@@ -289,20 +378,121 @@ export const GisCadastralExplorerPage = () => {
                 <span className="font-bold text-slate-700">NDVI Canopy Spectrum:</span>
                 <div className="flex items-center gap-1">
                   <div className="w-4 h-3 bg-amber-500 rounded-sm" title="Arid / Barren (<0.4)" />
-                  <div className="w-4 h-3 bg-lime-500 rounded-sm" title="Moderate Foliage (0.5 - 0.7)" />
-                  <div className="w-4 h-3 bg-emerald-600 rounded-sm" title="Dense Healthy Canopy (>0.75)" />
+                  <div
+                    className="w-4 h-3 bg-lime-500 rounded-sm"
+                    title="Moderate Foliage (0.5 - 0.7)"
+                  />
+                  <div
+                    className="w-4 h-3 bg-emerald-600 rounded-sm"
+                    title="Dense Healthy Canopy (>0.75)"
+                  />
                 </div>
               </div>
 
               <div className="flex items-center gap-3 text-slate-500 text-[11px]">
-                <span>Near-Infrared: <strong>842 nm</strong></span>
+                <span>
+                  Near-Infrared: <strong>842 nm</strong>
+                </span>
                 <span>•</span>
-                <span>Red Absorption: <strong>665 nm</strong></span>
+                <span>
+                  Red Absorption: <strong>665 nm</strong>
+                </span>
                 <span>•</span>
-                <span>Chlorophyll Index: <strong className="text-emerald-700 font-bold">Optimal</strong></span>
+                <span>
+                  Chlorophyll Index:{' '}
+                  <strong className="text-emerald-700 font-bold">Optimal</strong>
+                </span>
               </div>
             </div>
           </Card>
+
+          {/* Detailed Selected Parcel Inspector Card */}
+          {selectedParcel && (
+            <Card className="p-5 border border-slate-200/90 rounded-3xl bg-white shadow-sm space-y-4 animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 font-black font-mono text-sm">
+                    CAD
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm">
+                      {selectedParcel.landName || `Parcel #${selectedParcel.khasraNumber}`}
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Owner: <strong className="text-slate-800">{selectedParcel.ownerName}</strong>
+                      {selectedParcel.ownerMobile && (
+                        <span> • Mobile: {selectedParcel.ownerMobile}</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={selectedParcel.status || 'APPROVED'} />
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {selectedParcel.area || selectedParcel.areaAcres} {selectedParcel.areaUnit || 'Acres'}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <span className="text-slate-400 block text-[11px]">Survey Number</span>
+                  <span className="font-bold text-slate-800 font-mono mt-0.5 block">
+                    #{selectedParcel.surveyNumber}
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <span className="text-slate-400 block text-[11px]">Khasra Number</span>
+                  <span className="font-bold text-emerald-800 font-mono mt-0.5 block">
+                    #{selectedParcel.khasraNumber}
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <span className="text-slate-400 block text-[11px]">Soil Classification</span>
+                  <span className="font-semibold text-slate-800 mt-0.5 block truncate">
+                    {selectedParcel.soilType || 'Alluvial Loam'}
+                  </span>
+                </div>
+                <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-100">
+                  <span className="text-emerald-600 block text-[11px] font-medium">Tree Census</span>
+                  <span className="font-bold text-emerald-900 mt-0.5 block">
+                    🌲 {selectedParcel.treeCount || 0} Standing Trees
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <span>
+                    {selectedParcel.village}, {selectedParcel.district}, {selectedParcel.state}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    onClick={() => navigate(`/farmer/lands/${selectedParcel.landId || selectedParcel.id}`)}
+                  >
+                    <FileText className="w-3.5 h-3.5 mr-1" /> View Full Deed
+                  </Button>
+                  {!isAdmin && !selectedParcel.treesInsured && (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      className="text-xs bg-emerald-700 hover:bg-emerald-800"
+                      onClick={() => navigate('/farmer/insurance/apply')}
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Protect Trees
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
 
         {/* Right 1 Col: Cadastral Parcels Directory & Inspection Drawer */}
@@ -310,7 +500,7 @@ export const GisCadastralExplorerPage = () => {
           <div className="flex items-center justify-between">
             <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-emerald-700" />
-              <span>Registered Parcels</span>
+              <span>{isAdmin ? 'Master Registry Parcels' : 'Your Land Parcels'}</span>
             </h4>
             <span className="text-xs font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">
               {filteredLands.length} Plots
@@ -322,7 +512,7 @@ export const GisCadastralExplorerPage = () => {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search Survey # or Plot Name..."
+              placeholder="Search Survey #, Khasra, Owner or Plot..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/30"
@@ -331,67 +521,89 @@ export const GisCadastralExplorerPage = () => {
 
           {/* Parcels List */}
           <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">
-            {filteredLands.length === 0 ? (
+            {loadingLands ? (
+              <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center space-y-2">
+                <RefreshCw className="w-6 h-6 text-emerald-600 animate-spin" />
+                <p className="text-xs font-semibold text-slate-600">Loading cadastral database...</p>
+              </div>
+            ) : filteredLands.length === 0 ? (
               <div className="p-6 text-center bg-slate-50 border border-slate-200 rounded-2xl">
                 <MapPin className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                 <p className="text-xs font-bold text-slate-700">No Cadastral Parcels</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Register a land parcel to inspect cadastral boundaries.</p>
-                <Button size="sm" className="mt-3 text-xs" onClick={() => navigate('/farmer/lands/add')}>
-                  Add Land
-                </Button>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {isAdmin
+                    ? 'No registered plots found in master registry.'
+                    : 'Register a land parcel to inspect cadastral boundaries.'}
+                </p>
+                {!isAdmin && (
+                  <Button size="sm" className="mt-3 text-xs" onClick={() => navigate('/farmer/lands/add')}>
+                    Add Land
+                  </Button>
+                )}
               </div>
             ) : (
               filteredLands.map((parcel) => {
-                const isSelected = selectedParcel?.id === parcel.id;
+                const isSelected =
+                  selectedParcel?.id === parcel.id ||
+                  selectedParcel?.landId === parcel.landId ||
+                  selectedParcel?._id === parcel.id;
 
-              return (
-                <div
-                  key={parcel.id}
-                  onClick={() => setSelectedParcel(parcel)}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                    isSelected
-                      ? 'border-emerald-600 bg-emerald-50/50 shadow-md ring-2 ring-emerald-600/10'
-                      : 'border-slate-200 bg-white hover:border-emerald-300 hover:shadow-sm'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs font-black text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded">
-                        Khasra #{parcel.khasraNumber}
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-medium">
-                        Survey #{parcel.surveyNumber}
+                return (
+                  <div
+                    key={parcel.id || parcel.landId}
+                    onClick={() => setSelectedParcel(parcel)}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                      isSelected
+                        ? 'border-emerald-600 bg-emerald-50/50 shadow-md ring-2 ring-emerald-600/10'
+                        : 'border-slate-200 bg-white hover:border-emerald-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono text-xs font-black text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded">
+                          Khasra #{parcel.khasraNumber}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          Survey #{parcel.surveyNumber}
+                        </span>
+                      </div>
+                      <Badge variant="success" className="text-[10px]">
+                        {parcel.area} {parcel.areaUnit || 'Acres'}
+                      </Badge>
+                    </div>
+
+                    <h5 className="font-bold text-xs text-slate-900 truncate mb-1">
+                      {parcel.landName}
+                    </h5>
+
+                    {isAdmin && (
+                      <p className="text-[11px] text-slate-500 mb-2 truncate">
+                        Owner: <strong className="text-slate-800">{parcel.ownerName}</strong>
+                      </p>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 border-t border-slate-100 pt-2">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Soil Type:</span>
+                        <span className="font-semibold text-slate-800 truncate block">
+                          {parcel.soilType}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Standing Trees:</span>
+                        <span className="font-semibold text-emerald-800">
+                          🌲 {parcel.treeCount} Trees
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-2.5 flex items-center justify-between text-[11px] bg-slate-50 p-2 rounded-xl border border-slate-100">
+                      <span className="text-slate-500">NDVI Health:</span>
+                      <span className="font-bold text-emerald-700 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        {parcel.ndviScore} (Optimal)
                       </span>
                     </div>
-                    <Badge variant="success" className="text-[10px]">
-                      {parcel.area} Acres
-                    </Badge>
-                  </div>
-
-                  <h5 className="font-bold text-xs text-slate-900 truncate mb-2">
-                    {parcel.landName}
-                  </h5>
-
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 border-t border-slate-100 pt-2">
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Soil Type:</span>
-                      <span className="font-semibold text-slate-800">{parcel.soilType}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Standing Trees:</span>
-                      <span className="font-semibold text-emerald-800">
-                        🌲 {parcel.treeCount} Trees
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-2.5 flex items-center justify-between text-[11px] bg-slate-50 p-2 rounded-xl border border-slate-100">
-                    <span className="text-slate-500">NDVI Health:</span>
-                    <span className="font-bold text-emerald-700 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      {parcel.ndviScore} (High Canopy)
-                    </span>
-                  </div>
                   </div>
                 );
               })

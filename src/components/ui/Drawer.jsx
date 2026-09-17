@@ -35,18 +35,18 @@ export const Drawer = ({
       />
       <div className={`fixed ${positions[position]} flex pl-0 sm:pl-10 max-w-full pointer-events-none`}>
         <div
-          className={`w-screen ${maxWidth} pointer-events-auto bg-white shadow-2xl flex flex-col`}
+          className={`w-screen ${maxWidth} pointer-events-auto bg-white dark:bg-neutral-900 border-l border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white shadow-2xl flex flex-col`}
         >
-          <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
-            <h3 className="text-base font-bold text-slate-900">{title}</h3>
+          <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/50">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{title}</h3>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="flex-1 p-6 overflow-y-auto">{children}</div>
+          <div className="flex-1 p-6 overflow-y-auto text-slate-900 dark:text-neutral-100">{children}</div>
         </div>
       </div>
     </div>

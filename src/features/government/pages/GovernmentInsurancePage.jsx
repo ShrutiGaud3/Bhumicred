@@ -67,10 +67,10 @@ export const GovernmentInsurancePage = () => {
             Total Insured Trees
           </span>
           <p className="text-2xl font-black text-slate-900 font-mono">
-            {stats?.totalInsuredTrees || 4280} <span className="text-xs font-normal text-slate-500">Trees</span>
+            {(stats?.totalInsuredTrees ?? policies.reduce((acc, p) => acc + (Number(p.insuredTreeCount) || 0), 0)).toLocaleString('en-IN')} <span className="text-xs font-normal text-slate-500">Trees</span>
           </p>
           <span className="text-xs text-emerald-600 font-semibold mt-1 block">
-            {stats?.activePolicies || policies.length} Active Policies
+            {stats?.activePolicies ?? policies.length} Active Policies
           </span>
         </Card>
 
@@ -79,7 +79,7 @@ export const GovernmentInsurancePage = () => {
             State Subsidy Paid
           </span>
           <p className="text-2xl font-black text-emerald-700 font-mono">
-            ₹{(stats?.totalGovernmentSubsidyDisbursed || 845000).toLocaleString('en-IN')}
+            ₹{(stats?.totalGovernmentSubsidyDisbursed ?? policies.reduce((acc, p) => acc + (Number(p.governmentSubsidyAmount) || 0), 0)).toLocaleString('en-IN')}
           </p>
           <span className="text-xs text-slate-500 mt-1 block">40% Agroforestry Rebate</span>
         </Card>
@@ -89,7 +89,7 @@ export const GovernmentInsurancePage = () => {
             Total Sum Insured
           </span>
           <p className="text-2xl font-black text-slate-900 font-mono">
-            ₹{(stats?.totalSumInsured || 1830000).toLocaleString('en-IN')}
+            ₹{(stats?.totalSumInsured ?? policies.reduce((acc, p) => acc + (Number(p.sumInsured) || 0), 0)).toLocaleString('en-IN')}
           </p>
           <span className="text-xs text-blue-600 font-semibold mt-1 block">PM-KMY Risk Pool</span>
         </Card>

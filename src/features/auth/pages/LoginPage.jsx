@@ -57,6 +57,30 @@ export const LoginPage = () => {
       </div>
 
       <form onSubmit={handleSendOtp} className="space-y-4">
+        {(formError || error) && (
+          <div className="p-3.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 rounded-2xl text-xs space-y-2 animate-in fade-in duration-200 text-left">
+            <div className="font-bold flex items-center gap-1.5">
+              <Shield className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+              <span>Portal Access Notice</span>
+            </div>
+            <p className="leading-relaxed">{formError || error}</p>
+            <div className="pt-1 flex items-center gap-3">
+              <Link
+                to="/role-select"
+                className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-bold hover:underline"
+              >
+                Switch Portal Role →
+              </Link>
+              <Link
+                to={`/register?role=${activeRole}`}
+                className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-bold hover:underline"
+              >
+                Register as {ROLE_LABELS[activeRole] || activeRole} →
+              </Link>
+            </div>
+          </div>
+        )}
+
         <FormInput
           label="Mobile Number"
           name="mobile"
@@ -72,7 +96,6 @@ export const LoginPage = () => {
           placeholder="98765 43210"
           icon={Phone}
           required
-          error={formError || error}
           helperText="We will send a 6-digit OTP to verify your identity"
         />
 
@@ -88,10 +111,10 @@ export const LoginPage = () => {
         </Button>
       </form>
 
-      <div className="pt-4 border-t border-slate-100 flex flex-col items-center gap-2 text-xs text-slate-500">
+      <div className="pt-4 border-t border-slate-100 dark:border-neutral-800 flex flex-col items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
         <div>
           New to BHUMICRED?{' '}
-          <Link to={`/register?role=${activeRole}`} className="font-bold text-emerald-700 hover:underline">
+          <Link to={`/register?role=${activeRole}`} className="font-bold text-emerald-700 dark:text-emerald-400 hover:underline">
             Register / Create Profile
           </Link>
         </div>

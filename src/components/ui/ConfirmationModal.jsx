@@ -30,11 +30,11 @@ export const ConfirmationModal = ({
           <IconComponent className="w-6 h-6" />
         </div>
         <div>
-          <h3 className="text-base font-bold text-slate-900">{title}</h3>
-          <p className="text-xs text-slate-600 mt-1 leading-relaxed">{message}</p>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">{title}</h3>
+          <p className="text-xs text-slate-600 dark:text-neutral-300 mt-1 leading-relaxed">{message}</p>
         </div>
       </div>
-      <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+      <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-neutral-800">
         <Button variant="ghost" size="sm" onClick={onClose} disabled={isLoading}>
           {cancelText}
         </Button>

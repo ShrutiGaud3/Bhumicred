@@ -27,15 +27,15 @@ export const BhumitraAiPage = () => {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-800 transition-colors"
+          className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-neutral-300 hover:text-emerald-800 dark:hover:text-emerald-400 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Portal
         </button>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 font-medium">Active Portal Role:</span>
-          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold text-xs border border-emerald-200">
+          <span className="text-xs text-slate-500 dark:text-neutral-400 font-medium">Active Portal Role:</span>
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800">
             {ROLE_LABELS[activeRole] || activeRole}
           </span>
         </div>
@@ -70,7 +70,7 @@ export const BhumitraAiPage = () => {
       </div>
 
       {/* Main Full-page Chat Interface Card */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden h-[680px] flex flex-col">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-slate-200/80 dark:border-neutral-800 shadow-xl overflow-hidden h-[680px] flex flex-col">
         <BhumitraAiChat />
       </div>
     </div>

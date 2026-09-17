@@ -84,7 +84,20 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
               </button>
             )}
 
-            <Link to="/" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <Link
+              to={
+                user
+                  ? user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_STAFF'
+                    ? '/admin/dashboard'
+                    : user.role === 'GOVERNMENT'
+                    ? '/government/dashboard'
+                    : user.role === 'PARTNER'
+                    ? '/partner/dashboard'
+                    : '/farmer/dashboard'
+                  : '/'
+              }
+              className="flex items-center gap-1.5 sm:gap-2 shrink-0"
+            >
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-tr from-emerald-800 to-emerald-600 flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-md shadow-emerald-900/10 shrink-0">
                 BC
               </div>
@@ -235,21 +248,21 @@ export const Header = ({ onToggleSidebar, onOpenAiModal }) => {
 
       {/* Public Mobile Navigation Drawer */}
       {showPublicMobileMenu && !user && (
-        <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-2 shadow-lg animate-in slide-in-from-top-2">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2">Explore BHUMICRED</p>
+        <div className="lg:hidden bg-white dark:bg-neutral-900 border-b border-slate-200 dark:border-neutral-800 px-4 py-4 space-y-2 shadow-lg animate-in slide-in-from-top-2">
+          <p className="text-[11px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider px-2">Explore BHUMICRED</p>
           <div className="grid grid-cols-2 gap-2 pt-1">
             {publicNavLinks.map((link, idx) => (
               <Link
                 key={idx}
                 to={link.path}
                 onClick={() => setShowPublicMobileMenu(false)}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-emerald-50 text-xs font-semibold text-slate-700 hover:text-emerald-900 transition-colors"
+                className="p-2 rounded-lg bg-slate-50 dark:bg-neutral-800 hover:bg-emerald-50 dark:hover:bg-neutral-700 text-xs font-semibold text-slate-700 dark:text-neutral-200 hover:text-emerald-900 dark:hover:text-emerald-300 transition-colors"
               >
                 {link.label}
               </Link>
             ))}
           </div>
-          <div className="pt-3 border-t border-slate-100 flex gap-2">
+          <div className="pt-3 border-t border-slate-100 dark:border-neutral-800 flex gap-2">
             <Link
               to="/role-select"
               onClick={() => setShowPublicMobileMenu(false)}

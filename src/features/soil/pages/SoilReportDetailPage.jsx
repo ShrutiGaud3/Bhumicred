@@ -146,10 +146,10 @@ export const SoilReportDetailPage = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 text-emerald-800 border-emerald-300 hover:bg-emerald-50"
                 onClick={() => setShowCertificate(true)}
               >
-                <Printer className="w-4 h-4" /> Official Certificate Preview
+                <Download className="w-4 h-4 text-emerald-700" /> Download Soil Health Card (PDF)
               </Button>
               <Button
                 variant="primary"
@@ -269,9 +269,9 @@ export const SoilReportDetailPage = () => {
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <button
                 onClick={() => setShowCertificate(true)}
-                className="w-full sm:w-auto text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2.5 rounded-xl border border-emerald-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                className="w-full sm:w-auto text-xs font-bold text-white bg-emerald-800 hover:bg-emerald-900 px-4 py-2.5 rounded-xl border border-emerald-900 transition-colors flex items-center justify-center gap-2 shadow-sm"
               >
-                <FileText className="w-4 h-4" /> View Signed Certificate
+                <Download className="w-4 h-4" /> Download Official PDF Card
               </button>
             </div>
           </div>

@@ -138,26 +138,26 @@ export const BhumitraAiChat = ({ onNavigateAction, initialRole = null }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50">
+    <div className="flex flex-col h-full bg-slate-50/50 dark:bg-neutral-950/50">
       {/* Role Context Bar & Switcher */}
-      <div className="p-3 bg-white border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+      <div className="p-3 bg-white dark:bg-neutral-900 border-b border-slate-200/80 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="text-xs font-bold text-slate-800">
+          <span className="text-xs font-bold text-slate-800 dark:text-white">
             {roleContext.title}
           </span>
         </div>
 
         {/* Role Selector Tabs for UI demonstration */}
-        <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-[11px] font-semibold">
+        <div className="flex items-center bg-slate-100 dark:bg-neutral-800 p-0.5 rounded-xl text-[11px] font-semibold">
           {Object.keys(ROLE_AI_CONTEXTS).map((rKey) => (
             <button
               key={rKey}
               onClick={() => handleRoleChange(rKey)}
               className={`px-2 py-1 rounded-lg transition-all ${
                 activeRole === rKey
-                  ? 'bg-white text-emerald-800 shadow-sm font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white dark:bg-neutral-700 text-emerald-800 dark:text-emerald-300 shadow-sm font-bold'
+                  : 'text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-white'
               }`}
             >
               {rKey === 'SUPER_ADMIN' ? 'Admin' : rKey.charAt(0) + rKey.slice(1).toLowerCase()}
@@ -201,7 +201,7 @@ export const BhumitraAiChat = ({ onNavigateAction, initialRole = null }) => {
             <div className="w-8 h-8 rounded-2xl bg-gradient-to-tr from-emerald-800 to-teal-700 text-white flex items-center justify-center text-xs shadow-sm">
               <Sparkles className="w-4 h-4 text-amber-300 animate-spin" />
             </div>
-            <div className="p-3.5 bg-white rounded-2xl rounded-tl-none border border-slate-200/80 shadow-sm flex items-center gap-2 text-xs text-slate-500 font-medium">
+            <div className="p-3.5 bg-white dark:bg-neutral-800 rounded-2xl rounded-tl-none border border-slate-200/80 dark:border-neutral-700 shadow-sm flex items-center gap-2 text-xs text-slate-500 dark:text-neutral-300 font-medium">
               <span>Bhumitra AI is typing</span>
               <span className="flex gap-1 items-center pt-1">
                 <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
@@ -214,7 +214,7 @@ export const BhumitraAiChat = ({ onNavigateAction, initialRole = null }) => {
 
         {/* Suggested Question Chips (Always readily accessible at bottom of conversation) */}
         {!isTyping && (
-          <div className="pt-2 border-t border-slate-100">
+          <div className="pt-2 border-t border-slate-100 dark:border-neutral-800">
             <RoleSuggestionChips
               questions={roleContext.suggestedQuestions}
               onSelectQuestion={handleSendMessage}
@@ -230,9 +230,9 @@ export const BhumitraAiChat = ({ onNavigateAction, initialRole = null }) => {
       </div>
 
       {/* Input Bar */}
-      <div className="p-3 sm:p-4 bg-white border-t border-slate-200/80 shadow-lg">
+      <div className="p-3 sm:p-4 bg-white dark:bg-neutral-900 border-t border-slate-200/80 dark:border-neutral-800 shadow-lg">
         {isListeningMock && (
-          <div className="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center gap-2 animate-pulse">
+          <div className="mb-2 p-2 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2 animate-pulse">
             <Mic className="w-4 h-4 text-amber-600" />
             <span>Listening to speech input... (Mock Voice Recognition)</span>
           </div>
@@ -248,7 +248,7 @@ export const BhumitraAiChat = ({ onNavigateAction, initialRole = null }) => {
           <button
             type="button"
             onClick={handleClearChat}
-            className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+            className="p-2.5 text-slate-400 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl transition-colors"
             title="Clear Chat"
           >
             <RotateCcw className="w-4 h-4" />
@@ -257,7 +257,7 @@ export const BhumitraAiChat = ({ onNavigateAction, initialRole = null }) => {
           <button
             type="button"
             onClick={handleVoiceMock}
-            className="p-2.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-colors"
+            className="p-2.5 text-slate-400 dark:text-neutral-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-neutral-800 rounded-xl transition-colors"
             title="Voice Input (Mock)"
           >
             <Mic className="w-4 h-4" />
@@ -268,7 +268,7 @@ export const BhumitraAiChat = ({ onNavigateAction, initialRole = null }) => {
             value={inputQuery}
             onChange={(e) => setInputQuery(e.target.value)}
             placeholder={`Ask Bhumitra AI about ${activeRole === 'FARMER' ? 'lands, insurance, soil...' : 'jurisdiction, campaigns...'}`}
-            className="flex-1 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-600 transition-all"
+            className="flex-1 bg-slate-50 dark:bg-neutral-800 hover:bg-slate-100/80 dark:hover:bg-neutral-750 focus:bg-white dark:focus:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-950/40 focus:border-emerald-600 dark:focus:border-emerald-500 transition-all"
           />
 
           <button
@@ -281,7 +281,7 @@ export const BhumitraAiChat = ({ onNavigateAction, initialRole = null }) => {
           </button>
         </form>
 
-        <div className="mt-2 text-center text-[10px] text-slate-400">
+        <div className="mt-2 text-center text-[10px] text-slate-400 dark:text-neutral-500">
           Bhumitra AI provides informational guidance. Inquiries adhere to sovereign RBAC and jurisdiction boundaries.
         </div>
       </div>

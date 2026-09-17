@@ -37,7 +37,7 @@ export const AuthLayout = () => {
       <div className={`mx-auto w-full z-10 transition-all duration-300 ${
         isWideAuthPage ? 'max-w-3xl' : 'max-w-md'
       }`}>
-        <div className="bg-white/95 backdrop-blur-xl py-6 px-4 sm:py-8 sm:px-8 md:px-10 shadow-2xl rounded-2xl sm:rounded-3xl border border-white/20">
+        <div className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl py-6 px-4 sm:py-8 sm:px-8 md:px-10 shadow-2xl rounded-2xl sm:rounded-3xl border border-white/20 dark:border-neutral-800 text-slate-900 dark:text-white">
           <Outlet />
         </div>
         <p className="mt-4 sm:mt-6 text-center text-xs text-slate-400 flex items-center justify-center gap-1.5">

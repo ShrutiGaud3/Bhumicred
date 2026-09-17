@@ -2,13 +2,13 @@ import React from 'react';
 
 export const Badge = ({ children, variant = 'default', size = 'md', className = '' }) => {
   const variants = {
-    default: 'bg-slate-100 text-slate-700 border-slate-200',
-    primary: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    success: 'bg-green-50 text-green-700 border-green-200',
-    warning: 'bg-amber-50 text-amber-800 border-amber-200',
-    danger: 'bg-rose-50 text-rose-700 border-rose-200',
-    info: 'bg-sky-50 text-sky-700 border-sky-200',
-    purple: 'bg-purple-50 text-purple-700 border-purple-200',
+    default: 'bg-slate-100 dark:bg-neutral-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-neutral-700 font-semibold',
+    primary: 'bg-emerald-50 dark:bg-emerald-950/90 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-600/70 font-semibold',
+    success: 'bg-green-50 dark:bg-emerald-950/90 text-green-800 dark:text-emerald-300 border-green-300 dark:border-emerald-600/70 font-semibold',
+    warning: 'bg-amber-50 dark:bg-amber-950/90 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-600/70 font-semibold',
+    danger: 'bg-rose-50 dark:bg-rose-950/90 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-600/70 font-semibold',
+    info: 'bg-sky-50 dark:bg-sky-950/90 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-600/70 font-semibold',
+    purple: 'bg-purple-50 dark:bg-purple-950/90 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-600/70 font-semibold',
   };
 
   const sizes = {

@@ -8,7 +8,7 @@ export const PublicLayout = () => {
   const [isAiOpen, setIsAiOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-neutral-950 text-slate-900 dark:text-white transition-colors">
       <Header onToggleSidebar={() => {}} onOpenAiModal={() => setIsAiOpen(true)} />
       <main className="flex-1">
         <Outlet />

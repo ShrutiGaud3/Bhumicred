@@ -100,6 +100,24 @@ export const OtpVerifyPage = () => {
       )}
 
       <form onSubmit={handleVerify} className="space-y-6">
+        {error && (
+          <div className="p-3.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 rounded-2xl text-xs space-y-2 animate-in fade-in duration-200 text-left">
+            <div className="font-bold flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+              <span>Authentication Notice</span>
+            </div>
+            <p className="leading-relaxed">{error}</p>
+            <div className="pt-1">
+              <Link
+                to="/role-select"
+                className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-bold hover:underline"
+              >
+                Switch Portal Role →
+              </Link>
+            </div>
+          </div>
+        )}
+
         <OtpInput
           length={6}
           value={otp}

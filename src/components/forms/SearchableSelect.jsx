@@ -95,7 +95,7 @@ export const SearchableSelect = ({
   return (
     <div className={`w-full relative ${className}`} ref={containerRef}>
       {label && (
-        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-200 mb-1.5">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
       )}
@@ -103,28 +103,28 @@ export const SearchableSelect = ({
       {/* Main Trigger Button */}
       <div
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between rounded-xl border bg-white px-3.5 py-2.5 text-sm cursor-pointer transition-all ${
+        className={`w-full flex items-center justify-between rounded-xl border bg-white dark:bg-neutral-800 px-3.5 py-2.5 text-sm cursor-pointer transition-all ${
           error
-            ? 'border-rose-400 ring-2 ring-rose-100'
+            ? 'border-rose-400 ring-2 ring-rose-100 dark:ring-rose-950/40'
             : isOpen
-            ? 'border-emerald-600 ring-2 ring-emerald-100 shadow-sm'
-            : 'border-slate-300 hover:border-slate-400'
-        } ${disabled ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}`}
+            ? 'border-emerald-600 dark:border-emerald-500 ring-2 ring-emerald-100 dark:ring-emerald-950/40 shadow-sm'
+            : 'border-slate-300 dark:border-neutral-700 hover:border-slate-400 dark:hover:border-neutral-600'
+        } ${disabled ? 'bg-slate-100 dark:bg-neutral-900 text-slate-400 dark:text-neutral-500 cursor-not-allowed' : ''}`}
       >
         <span
           className={`truncate pr-2 ${
-            displayLabel ? 'text-slate-900 font-medium' : 'text-slate-400'
+            displayLabel ? 'text-slate-900 dark:text-white font-medium' : 'text-slate-400 dark:text-neutral-400'
           }`}
         >
           {displayLabel || placeholder}
         </span>
 
-        <div className="flex items-center gap-1.5 shrink-0 text-slate-400">
+        <div className="flex items-center gap-1.5 shrink-0 text-slate-400 dark:text-neutral-400">
           {displayLabel && !disabled && (
             <button
               type="button"
               onClick={handleClear}
-              className="p-0.5 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+              className="p-0.5 hover:text-slate-600 dark:hover:text-neutral-200 rounded-full hover:bg-slate-100 dark:hover:bg-neutral-700 transition-colors"
               title="Clear selection"
             >
               <X className="w-3.5 h-3.5" />
@@ -132,7 +132,7 @@ export const SearchableSelect = ({
           )}
           <ChevronDown
             className={`w-4 h-4 transition-transform duration-200 ${
-              isOpen ? 'rotate-180 text-emerald-600' : ''
+              isOpen ? 'rotate-180 text-emerald-600 dark:text-emerald-400' : ''
             }`}
           />
         </div>
@@ -140,11 +140,11 @@ export const SearchableSelect = ({
 
       {/* Dropdown Menu Popup */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-neutral-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Search Bar inside popover */}
-          <div className="p-2.5 border-b border-slate-100 bg-slate-50/80">
+          <div className="p-2.5 border-b border-slate-100 dark:border-neutral-800 bg-slate-50/80 dark:bg-neutral-850/80">
             <div className="relative flex items-center">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-neutral-500 absolute left-3 pointer-events-none" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -163,13 +163,13 @@ export const SearchableSelect = ({
                   }
                 }}
                 placeholder={searchPlaceholder}
-                className="w-full pl-9 pr-8 py-2 bg-white rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                className="w-full pl-9 pr-8 py-2 bg-white dark:bg-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:ring-1 focus:ring-emerald-600"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 p-1 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2.5 p-1 text-slate-400 dark:text-neutral-400 hover:text-slate-600 dark:hover:text-white"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -189,17 +189,17 @@ export const SearchableSelect = ({
                     onClick={() => handleSelect(opt.value)}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs text-left transition-colors ${
                       isSelected
-                        ? 'bg-emerald-50 text-emerald-900 font-bold'
-                        : 'text-slate-700 hover:bg-slate-100'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-bold'
+                        : 'text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800'
                     }`}
                   >
                     <span className="truncate">{opt.label}</span>
-                    {isSelected && <Check className="w-4 h-4 text-emerald-600 shrink-0 ml-2" />}
+                    {isSelected && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 ml-2" />}
                   </button>
                 );
               })
             ) : (
-              <div className="p-3 text-center text-xs text-slate-400">
+              <div className="p-3 text-center text-xs text-slate-400 dark:text-neutral-500">
                 No matching options found
               </div>
             )}
@@ -209,9 +209,9 @@ export const SearchableSelect = ({
               <button
                 type="button"
                 onClick={handleUseCustomQuery}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 font-semibold transition-colors mt-1 border border-emerald-200/60"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-semibold transition-colors mt-1 border border-emerald-200/60 dark:border-emerald-800"
               >
-                <Plus className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <Plus className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span className="truncate">Use custom: "{searchQuery.trim()}"</span>
               </button>
             )}
@@ -219,8 +219,8 @@ export const SearchableSelect = ({
         </div>
       )}
 
-      {error && <p className="mt-1 text-xs text-rose-600 font-medium">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-[11px] text-slate-500">{helperText}</p>}
+      {error && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</p>}
+      {helperText && !error && <p className="mt-1 text-[11px] text-slate-500 dark:text-neutral-400">{helperText}</p>}
     </div>
   );
 };

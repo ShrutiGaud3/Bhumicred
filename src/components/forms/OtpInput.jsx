@@ -65,15 +65,15 @@ export const OtpInput = ({ length = 6, value = '', onChange, disabled = false, e
             onChange={(e) => handleChange(e, idx)}
             onKeyDown={(e) => handleKeyDown(e, idx)}
             disabled={disabled}
-            className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-xl border bg-white focus:outline-none transition-all ${
+            className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-xl border bg-white dark:bg-neutral-800 focus:outline-none transition-all ${
               error
-                ? 'border-rose-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 text-rose-700'
-                : 'border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 text-slate-900'
-            } ${disabled ? 'bg-slate-100 cursor-not-allowed opacity-60' : 'shadow-sm'}`}
+                ? 'border-rose-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-900/40 text-rose-700 dark:text-rose-400'
+                : 'border-slate-300 dark:border-neutral-700 focus:border-emerald-600 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-950/40 text-slate-900 dark:text-white'
+            } ${disabled ? 'bg-slate-100 dark:bg-neutral-900 cursor-not-allowed opacity-60 text-slate-400 dark:text-neutral-500' : 'shadow-sm'}`}
           />
         ))}
       </div>
-      {error && <p className="mt-2 text-xs font-semibold text-rose-600">{error}</p>}
+      {error && <p className="mt-2 text-xs font-semibold text-rose-600 dark:text-rose-400">{error}</p>}
     </div>
   );
 };

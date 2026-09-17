@@ -25,44 +25,20 @@ import { FormInput } from '../../../components/forms/FormInput.jsx';
 import { FormSelect } from '../../../components/forms/FormSelect.jsx';
 import { fetchWallet, requestWithdrawal } from '../../wallet/walletSlice.js';
 
-const INITIAL_INVOICES = [
-  {
-    id: 'inv_01',
-    invoiceNumber: 'INV-2026-PT-042',
-    date: '31 Aug 2026',
-    description: 'August Field Inspections & Soil Sampling Batch (14 Tasks)',
-    amount: 18450,
-    status: 'PAID',
-    disbursedTo: 'State Bank of India (****8102)',
-    category: 'SOIL_SAMPLING',
-  },
-  {
-    id: 'inv_02',
-    invoiceNumber: 'INV-2026-PT-043',
-    date: '07 Sep 2026',
-    description: 'Tree Damage Drone Orthomosaic Surveys (3 Claims)',
-    amount: 3750,
-    status: 'PENDING',
-    disbursedTo: 'State Bank of India (****8102)',
-    category: 'DRONE_SURVEY',
-  },
-];
-
 export const PartnerInvoicesPage = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { wallet } = useSelector((state) => state.wallet);
 
-  // Invoices persistent state
+  // Invoices persistent state - initialized from database / storage, zero mock defaults
   const [invoices, setInvoices] = useState(() => {
     const saved = localStorage.getItem('bhumicred_partner_invoices');
-    return saved ? JSON.parse(saved) : INITIAL_INVOICES;
+    return saved ? JSON.parse(saved) : [];
   });
 
-  // Available Payout Balance state
+  // Available Payout Balance state from live wallet balance
   const [availablePayout, setAvailablePayout] = useState(() => {
-    const saved = localStorage.getItem('bhumicred_partner_available_payout');
-    return saved ? Number(saved) : 14250;
+    return Number(wallet?.balance || wallet?.availableBalance || 0);
   });
 
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -83,11 +59,17 @@ export const PartnerInvoicesPage = () => {
     dispatch(fetchWallet());
   }, [dispatch]);
 
+  // Sync available payout with live wallet balance
+  useEffect(() => {
+    if (wallet && typeof wallet.availableBalance === 'number') {
+      setAvailablePayout(wallet.availableBalance);
+    }
+  }, [wallet]);
+
   // Save to localStorage whenever updated
   useEffect(() => {
     localStorage.setItem('bhumicred_partner_invoices', JSON.stringify(invoices));
-    localStorage.setItem('bhumicred_partner_available_payout', String(availablePayout));
-  }, [invoices, availablePayout]);
+  }, [invoices]);
 
   // Dynamically calculate KPIs
   const totalEarned = invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
@@ -110,14 +92,13 @@ export const PartnerInvoicesPage = () => {
       await dispatch(
         requestWithdrawal({
           amount,
-          accountNumber: '9912048102',
-          ifscCode: 'SBIN0001044',
-          accountHolderName: user?.name || 'Aman Singh (Partner)',
+          destinationBank: 'State Bank of India',
+          upiId: user?.mobile ? `${user.mobile}@upi` : 'partner@upi',
         })
-      );
+      ).unwrap();
 
-      // Deduct from available payout
-      setAvailablePayout((prev) => Math.max(0, prev - amount));
+      // Refresh live wallet
+      dispatch(fetchWallet());
 
       // Add payout transaction to invoices list
       const payoutInvoice = {

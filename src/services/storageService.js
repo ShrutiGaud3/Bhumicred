@@ -16,7 +16,7 @@ const STORAGE_KEYS = {
 
 // Automatic cleanup of legacy/dummy farmer entries & auth sessions in client browser localStorage
 try {
-  const isMigrated = typeof window !== 'undefined' && localStorage.getItem('bhumicred_storage_clean_v8');
+  const isMigrated = typeof window !== 'undefined' && localStorage.getItem('bhumicred_storage_clean_v10');
   if (!isMigrated && typeof window !== 'undefined') {
     localStorage.removeItem(STORAGE_KEYS.APPROVALS);
     localStorage.removeItem(STORAGE_KEYS.LANDS);
@@ -27,11 +27,8 @@ try {
     localStorage.removeItem(STORAGE_KEYS.WALLET);
     localStorage.removeItem(STORAGE_KEYS.SUPPORT_TICKETS);
     localStorage.removeItem('bhumicred_data_users');
-    localStorage.removeItem('bhumicred_user_data');
-    localStorage.removeItem('bhumicred_access_token');
-    localStorage.removeItem('bhumicred_refresh_token');
-    localStorage.removeItem('bhumicred_token');
-    localStorage.setItem('bhumicred_storage_clean_v8', 'true');
+    localStorage.removeItem('bhumicred_storage_clean_v9');
+    localStorage.setItem('bhumicred_storage_clean_v10', 'true');
   }
 } catch (e) {}
 
@@ -825,44 +822,6 @@ export const storageService = {
           fileSize: '3.8 MB PDF',
         });
 
-        // 2. Comprehensive Soil Nutrient & Laboratory Report
-        reports.push({
-          id: `REP-SOIL-${cleanId}`,
-          certId: `BC-SHC-2026-${cleanId}`,
-          title: `Comprehensive 12-Parameter Soil Health Diagnostic Card - ${landName}`,
-          category: 'Soil Health',
-          issuedDate: dateStr,
-          parcel: `Survey ${surveyNo} (${acres} Acres)`,
-          landName: landName,
-          surveyNumber: surveyNo,
-          khasraNumber: khasraNo,
-          ownerName: farmerName,
-          fatherName: fatherName,
-          location: locationStr,
-          areaAcres: acres,
-          currentCrop: currentCrop,
-          soilType: soilType,
-          authority: 'NABL Accredited Regional Agricultural Chemistry Laboratory',
-          labRegNo: 'NABL/TC-9042/2026',
-          status: l.status === 'APPROVED' ? 'CERTIFIED & NABL VALIDATED' : 'SAMPLE ANALYZED & MAPPED',
-          score: '86/100 (Optimal Fertility Index)',
-          parameters: {
-            ph: '7.1 (Optimal Neutral)',
-            ec: '0.42 dS/m (Normal Non-Saline)',
-            oc: '0.79% (High / Carbon Rich)',
-            nitrogen: '285 kg/ha (Medium Adequate)',
-            phosphorus: '24 kg/ha (High Fertility)',
-            potassium: '320 kg/ha (High)',
-            zinc: '0.85 ppm (Adequate)',
-            iron: '5.2 ppm (Adequate)',
-            copper: '0.48 ppm (Normal)',
-            manganese: '3.8 ppm (Optimal)',
-            boron: '0.65 ppm (Normal)',
-            moisture: '64% Field Capacity'
-          },
-          recommendation: `Apply 45kg Neem-Coated Urea and 15kg Bio-NPK consortium per acre prior to ${currentCrop} sowing. Micronutrient profile is well balanced.`,
-          fileSize: '2.8 MB PDF',
-        });
 
         // 3. Carbon Credit & Agroforestry Sequestration Audit
         const annualCarbon = Number((acres * 0.95 + treeCount * 0.08).toFixed(1));

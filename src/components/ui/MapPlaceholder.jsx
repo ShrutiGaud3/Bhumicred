@@ -14,6 +14,7 @@ import { Button } from '../ui/Button.jsx';
 export const MapPlaceholder = ({
   height = 'min-h-[380px] h-96',
   initialArea = 4.8,
+  polygonCoords = null,
   onPolygonChange,
   showControls = true,
   className = '',
@@ -28,14 +29,42 @@ export const MapPlaceholder = ({
   const heightClass = isCssValue ? '' : height;
   const heightStyle = isCssValue ? { height, minHeight: height } : {};
 
+  // Project polygonCoords to SVG [400x300] space if available
+  const projectedPoints = React.useMemo(() => {
+    if (Array.isArray(polygonCoords) && polygonCoords.length >= 3) {
+      if (polygonCoords.every(pt => Array.isArray(pt) && pt[0] > 60 && pt[0] < 100)) {
+        let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+        polygonCoords.forEach(([lng, lat]) => {
+          if (lng < minLng) minLng = lng;
+          if (lng > maxLng) maxLng = lng;
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+        });
+        const lngSpan = Math.max(maxLng - minLng, 0.005);
+        const latSpan = Math.max(maxLat - minLat, 0.004);
+        return polygonCoords.map(([lng, lat]) => {
+          const x = Math.round(50 + ((lng - (minLng - lngSpan * 0.1)) / (lngSpan * 1.2)) * 300);
+          const y = Math.round(250 - ((lat - (minLat - latSpan * 0.1)) / (latSpan * 1.2)) * 200);
+          return [x, y];
+        });
+      } else if (polygonCoords.every(pt => Array.isArray(pt) && pt[0] <= 400 && pt[1] <= 300)) {
+        return polygonCoords;
+      }
+    }
+    return [[100, 60], [320, 80], [340, 240], [80, 210]];
+  }, [polygonCoords]);
+
+  const pointsString = projectedPoints.map(p => `${p[0]},${p[1]}`).join(' ');
+
   const handleSimulateDraw = () => {
     setIsDrawing(true);
     setTimeout(() => {
       setIsDrawing(false);
       setPolygonDrawn(true);
-      setCalculatedArea((Math.random() * 3 + 2).toFixed(2));
-      if (onPolygonChange) onPolygonChange({ area: 4.85, status: 'VALID_GEOMETRY' });
-    }, 800);
+      const newArea = (Math.random() * 3 + 2).toFixed(2);
+      setCalculatedArea(newArea);
+      if (onPolygonChange) onPolygonChange({ area: Number(newArea), status: 'VALID_GEOMETRY' });
+    }, 600);
   };
 
   const handleClear = () => {
@@ -67,25 +96,24 @@ export const MapPlaceholder = ({
         />
       </div>
 
-      {/* Simulated Drawn GIS Polygon Shape */}
+      {/* Drawn GIS Polygon Shape */}
       {polygonDrawn && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
           <svg className="w-full h-full max-w-[340px] max-h-[220px] animate-in fade-in zoom-in-95 duration-300" viewBox="0 0 400 300">
             {/* Polygon Area Fill */}
             <polygon
-              points="100,60 320,80 340,240 80,210"
+              points={pointsString}
               fill="rgba(34, 197, 94, 0.25)"
               stroke="#22c55e"
               strokeWidth="3"
               strokeDasharray="6 4"
             />
             {/* Vertex Nodes */}
-            <circle cx="100" cy="60" r="6" fill="#ffffff" stroke="#16a34a" strokeWidth="3" />
-            <circle cx="320" cy="80" r="6" fill="#ffffff" stroke="#16a34a" strokeWidth="3" />
-            <circle cx="340" cy="240" r="6" fill="#ffffff" stroke="#16a34a" strokeWidth="3" />
-            <circle cx="80" cy="210" r="6" fill="#ffffff" stroke="#16a34a" strokeWidth="3" />
+            {projectedPoints.map(([vx, vy], idx) => (
+              <circle key={idx} cx={vx} cy={vy} r="6" fill="#ffffff" stroke="#16a34a" strokeWidth="3" />
+            ))}
             <text x="200" y="150" fill="#ffffff" fontSize="13" fontWeight="bold" textAnchor="middle">
-              GIS Polygon ({calculatedArea} Acres)
+              GIS Polygon ({calculatedArea || initialArea} Acres)
             </text>
           </svg>
         </div>

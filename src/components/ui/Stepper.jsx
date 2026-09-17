@@ -20,15 +20,15 @@ export const Stepper = ({ steps, currentStep, className = '' }) => {
                     isCompleted
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
                       : isCurrent
-                      ? 'bg-emerald-800 text-white ring-4 ring-emerald-100 shadow-md'
-                      : 'bg-slate-100 text-slate-400 border border-slate-200'
+                      ? 'bg-emerald-800 dark:bg-emerald-700 text-white ring-4 ring-emerald-100 dark:ring-emerald-950 shadow-md'
+                      : 'bg-slate-100 dark:bg-neutral-800 text-slate-400 dark:text-neutral-500 border border-slate-200 dark:border-neutral-700'
                   }`}
                 >
                   {isCompleted ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : index + 1}
                 </div>
                 <span
                   className={`text-[11px] sm:text-xs mt-2 font-medium text-center hidden md:block max-w-[110px] truncate ${
-                    isCurrent ? 'text-emerald-900 font-bold' : 'text-slate-500'
+                    isCurrent ? 'text-emerald-900 dark:text-emerald-300 font-bold' : 'text-slate-500 dark:text-neutral-400'
                   }`}
                 >
                   {step.title || step}
@@ -37,7 +37,7 @@ export const Stepper = ({ steps, currentStep, className = '' }) => {
               {index < steps.length - 1 && (
                 <div
                   className={`flex-1 h-1 mx-1.5 sm:mx-3 rounded-full transition-colors duration-300 ${
-                    index < normalizedIndex ? 'bg-emerald-600' : 'bg-slate-200'
+                    index < normalizedIndex ? 'bg-emerald-600' : 'bg-slate-200 dark:bg-neutral-800'
                   }`}
                 />
               )}
@@ -47,12 +47,12 @@ export const Stepper = ({ steps, currentStep, className = '' }) => {
       </div>
 
       {/* Mobile Step Title Banner */}
-      <div className="md:hidden text-center mt-3 pt-2 border-t border-slate-100">
-        <span className="text-xs font-bold text-emerald-800">
+      <div className="md:hidden text-center mt-3 pt-2 border-t border-slate-100 dark:border-neutral-800">
+        <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400">
           Step {normalizedIndex + 1} of {steps.length}: {steps[normalizedIndex]?.title || steps[normalizedIndex]}
         </span>
         {steps[normalizedIndex]?.description && (
-          <p className="text-[10px] text-slate-500 mt-0.5">{steps[normalizedIndex].description}</p>
+          <p className="text-[10px] text-slate-500 dark:text-neutral-400 mt-0.5">{steps[normalizedIndex].description}</p>
         )}
       </div>
     </div>

@@ -133,8 +133,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
           </div>
 
           {/* Role Sub-banner */}
-          <div className="my-3 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center justify-between">
-            <span className="text-[11px] font-bold text-emerald-800 tracking-wide uppercase">
+          <div className="my-3 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-between">
+            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 tracking-wide uppercase">
               {role.replace(/_/g, ' ')}
             </span>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
@@ -154,8 +154,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
                       isActive
                         ? 'bg-emerald-700 text-white shadow-sm shadow-emerald-800/20'
                         : item.highlight
-                        ? 'bg-emerald-50/70 text-emerald-900 border border-emerald-200/60 hover:bg-emerald-100'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        ? 'bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+                        : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-white'
                     }`
                   }
                 >
@@ -171,7 +171,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
           </nav>
 
           {/* Footer note */}
-          <div className="pt-4 border-t border-slate-100 text-[11px] text-slate-400 text-center">
+          <div className="pt-4 border-t border-slate-100 dark:border-neutral-800 text-[11px] text-slate-400 dark:text-neutral-500 text-center">
             BHUMICRED v1.0 • Connect. Grow. Sustain.
           </div>
         </div>

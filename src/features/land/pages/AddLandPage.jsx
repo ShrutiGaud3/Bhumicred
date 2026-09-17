@@ -1296,7 +1296,7 @@ export const AddLandPage = () => {
       />
 
       {/* Wizard Stepper */}
-      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-gray-100 dark:border-neutral-800 shadow-sm">
         <Stepper steps={STEPS} currentStep={activeStep} />
       </div>
 
@@ -1570,9 +1570,9 @@ export const AddLandPage = () => {
                 </div>
 
                 {/* Card A: Actual Legal Land Owner Particulars */}
-                <div className="bg-white p-4 sm:p-5 rounded-xl border border-amber-200/90 shadow-sm space-y-3">
-                  <span className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
-                    <ShieldCheck className="w-4 h-4 text-amber-600" />
+                <div className="bg-white dark:bg-neutral-800 p-4 sm:p-5 rounded-xl border border-amber-200/90 dark:border-neutral-700 shadow-sm space-y-3">
+                  <span className="text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 dark:border-neutral-700 pb-2">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     Card A: Actual Legal Land Owner Details (as per Registry Title)
                   </span>
 
@@ -1646,9 +1646,9 @@ export const AddLandPage = () => {
                 </div>
 
                 {/* Card B: Cultivating Farmer / Representative Particulars */}
-                <div className="bg-white p-4 sm:p-5 rounded-xl border border-emerald-200 shadow-sm space-y-3">
-                  <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
-                    <User className="w-4 h-4 text-emerald-600" />
+                <div className="bg-white dark:bg-neutral-800 p-4 sm:p-5 rounded-xl border border-emerald-200 dark:border-neutral-700 shadow-sm space-y-3">
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 dark:border-neutral-700 pb-2">
+                    <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     Card B: Cultivating Farmer / Applicant Representative Particulars
                   </span>
 
@@ -2375,30 +2375,30 @@ export const AddLandPage = () => {
 
             {/* CUSTOM INSURED TREES COUNT SELECTOR WIDGET */}
             {formData.optInsurance && (
-              <div className="p-4 sm:p-5 bg-gradient-to-br from-emerald-50 to-teal-50/70 border-2 border-emerald-500 rounded-2xl shadow-sm space-y-3.5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200/80 pb-3">
+              <div className="p-4 sm:p-5 bg-gradient-to-br from-emerald-50 to-teal-50/70 dark:from-emerald-950/90 dark:to-teal-950/80 border-2 border-emerald-500 dark:border-emerald-600 rounded-2xl shadow-sm space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200/80 dark:border-emerald-800/60 pb-3">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs">
                       <Trees className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm sm:text-base text-emerald-950">
+                        <h4 className="font-bold text-sm sm:text-base text-emerald-950 dark:text-emerald-300">
                           Customize Insured Trees Quantity (@ ₹31 / Tree / Year)
                         </h4>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200 text-emerald-900 border border-emerald-300">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
                           Flexible Per-Tree Policy
                         </span>
                       </div>
-                      <p className="text-xs text-emerald-800 mt-0.5">
+                      <p className="text-xs text-emerald-800 dark:text-emerald-200 mt-0.5">
                         Parcel has <strong>{standingTreeCount} standing trees</strong>. You can insure all trees or choose a specific custom count (e.g. <strong>4 trees</strong>).
                       </p>
                     </div>
                   </div>
 
-                  <div className="text-right bg-white px-3.5 py-2 rounded-xl border border-emerald-300 shadow-xs shrink-0">
-                    <span className="text-[10px] text-slate-500 block uppercase font-mono">Custom Insurance Calculation</span>
-                    <span className="text-base sm:text-lg font-black text-emerald-900 font-mono">
+                  <div className="text-right bg-white dark:bg-neutral-900 px-3.5 py-2 rounded-xl border border-emerald-300 dark:border-emerald-700 shadow-xs shrink-0">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono">Custom Insurance Calculation</span>
+                    <span className="text-base sm:text-lg font-black text-emerald-900 dark:text-emerald-300 font-mono">
                       {insuredTreeCountForCalc} Trees × ₹{insuranceRatePerTree} = ₹{(insuredTreeCountForCalc * insuranceRatePerTree).toFixed(2)} / yr
                     </span>
                   </div>
@@ -2407,8 +2407,8 @@ export const AddLandPage = () => {
                 {/* Counter Stepper & Presets */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-xs font-bold text-slate-800">Insure Specific Trees:</span>
-                    <div className="flex items-center rounded-xl border-2 border-emerald-600 bg-white p-1 shadow-xs">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Insure Specific Trees:</span>
+                    <div className="flex items-center rounded-xl border-2 border-emerald-600 dark:border-emerald-500 bg-white dark:bg-neutral-900 p-1 shadow-xs">
                       <button
                         type="button"
                         onClick={() => {
@@ -2417,7 +2417,7 @@ export const AddLandPage = () => {
                           setFormData((prev) => ({ ...prev, insuredTreeCount: String(nextVal) }));
                           toast.info(`Updated to ${nextVal} insured trees (@ ₹31/tree/yr)`);
                         }}
-                        className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-black text-base flex items-center justify-center transition-all"
+                        className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-900 dark:text-emerald-300 font-black text-base flex items-center justify-center transition-all"
                       >
                         -
                       </button>
@@ -2428,7 +2428,7 @@ export const AddLandPage = () => {
                         name="insuredTreeCount"
                         value={formData.insuredTreeCount}
                         onChange={handleChange}
-                        className="w-16 text-center font-black font-mono text-sm text-emerald-950 focus:outline-none bg-transparent"
+                        className="w-16 text-center font-black font-mono text-sm text-emerald-950 dark:text-emerald-300 focus:outline-none bg-transparent"
                       />
                       <button
                         type="button"
@@ -2438,7 +2438,7 @@ export const AddLandPage = () => {
                           setFormData((prev) => ({ ...prev, insuredTreeCount: String(nextVal) }));
                           toast.info(`Updated to ${nextVal} insured trees (@ ₹31/tree/yr)`);
                         }}
-                        className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-black text-base flex items-center justify-center transition-all"
+                        className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-900 dark:text-emerald-300 font-black text-base flex items-center justify-center transition-all"
                       >
                         +
                       </button>
@@ -3076,7 +3076,7 @@ export const AddLandPage = () => {
       {/* SECURE PAYMENT GATEWAY MODAL */}
       {showPaymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200 space-y-0">
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-0">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 p-5 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -3099,16 +3099,16 @@ export const AddLandPage = () => {
             </div>
 
             {/* Fee Summary Banner */}
-            <div className="p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div className="p-5 bg-slate-50 dark:bg-neutral-800/60 border-b border-slate-200 dark:border-neutral-800 flex items-center justify-between">
               <div>
-                <span className="text-xs text-slate-500 block">Registration & Tree Insurance Fee:</span>
-                <span className="text-xs font-bold text-slate-900">
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">Registration & Tree Insurance Fee:</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
                   {acreageForCalc} Acres @ ₹149/ac {formData.optInsurance ? `+ ${insuredTreeCountForCalc} Trees @ ₹${insuranceRatePerTree}/tree` : ''} + 18% GST
                 </span>
               </div>
               <div className="text-right">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">Total Amount</span>
-                <span className="text-xl font-black text-emerald-800 font-mono">₹{grandTotalAmount.toFixed(2)}</span>
+                <span className="text-xl font-black text-emerald-800 dark:text-emerald-400 font-mono">₹{grandTotalAmount.toFixed(2)}</span>
               </div>
             </div>
 
@@ -3120,11 +3120,11 @@ export const AddLandPage = () => {
                   onClick={() => setPaymentMethod('UPI')}
                   className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1.5 ${
                     paymentMethod === 'UPI'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20 shadow-sm'
-                      : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                      ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20 shadow-sm'
+                      : 'border-slate-200 dark:border-neutral-700 hover:border-slate-300 text-slate-600 dark:text-slate-300'
                   }`}
                 >
-                  <QrCode className="w-5 h-5 text-emerald-600" />
+                  <QrCode className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   <span>UPI / QR</span>
                 </button>
 
@@ -3133,11 +3133,11 @@ export const AddLandPage = () => {
                   onClick={() => setPaymentMethod('CARD')}
                   className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1.5 ${
                     paymentMethod === 'CARD'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20 shadow-sm'
-                      : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                      ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20 shadow-sm'
+                      : 'border-slate-200 dark:border-neutral-700 hover:border-slate-300 text-slate-600 dark:text-slate-300'
                   }`}
                 >
-                  <CreditCard className="w-5 h-5 text-emerald-600" />
+                  <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   <span>Card / RuPay</span>
                 </button>
 
@@ -3146,57 +3146,57 @@ export const AddLandPage = () => {
                   onClick={() => setPaymentMethod('NETBANKING')}
                   className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1.5 ${
                     paymentMethod === 'NETBANKING'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20 shadow-sm'
-                      : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                      ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20 shadow-sm'
+                      : 'border-slate-200 dark:border-neutral-700 hover:border-slate-300 text-slate-600 dark:text-slate-300'
                   }`}
                 >
-                  <Landmark className="w-5 h-5 text-emerald-600" />
+                  <Landmark className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   <span>Net Banking</span>
                 </button>
               </div>
 
               {/* UPI Tab Content */}
               {paymentMethod === 'UPI' && (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-3">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-center space-y-3">
                   <div className="w-32 h-32 bg-white rounded-xl border-2 border-emerald-600 mx-auto p-2 flex items-center justify-center shadow-md">
                     <QrCode className="w-24 h-24 text-slate-900" />
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-slate-900 block">Scan QR Code with any UPI App</span>
-                    <span className="text-[11px] text-slate-500">GPay, PhonePe, Paytm, BHIM UPI • VPA: <strong>bhumicred@sbi</strong></span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block">Scan QR Code with any UPI App</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">GPay, PhonePe, Paytm, BHIM UPI • VPA: <strong>bhumicred@sbi</strong></span>
                   </div>
                 </div>
               )}
 
               {/* Card Tab Content */}
               {paymentMethod === 'CARD' && (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 space-y-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Card Number</label>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Card Number</label>
                     <input
                       type="text"
                       disabled
                       value="4532 •••• •••• 8912"
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl font-mono"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 rounded-xl font-mono text-slate-900 dark:text-white"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Valid Thru</label>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Valid Thru</label>
                       <input
                         type="text"
                         disabled
                         value="12/29"
-                        className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl font-mono"
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 rounded-xl font-mono text-slate-900 dark:text-white"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">CVV</label>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">CVV</label>
                       <input
                         type="password"
                         disabled
                         value="•••"
-                        className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl font-mono"
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 rounded-xl font-mono text-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
@@ -3205,19 +3205,19 @@ export const AddLandPage = () => {
 
               {/* Net Banking Tab Content */}
               {paymentMethod === 'NETBANKING' && (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                  <span className="text-xs font-bold text-slate-800 block">Select Primary Agricultural Bank:</span>
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 space-y-2">
+                  <span className="text-xs font-bold text-slate-800 dark:text-white block">Select Primary Agricultural Bank:</span>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <button type="button" className="p-2 rounded-lg border border-emerald-600 bg-emerald-50 text-emerald-950 font-semibold text-left">
+                    <button type="button" className="p-2 rounded-lg border border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-300 font-semibold text-left">
                       ✓ State Bank of India (SBI)
                     </button>
-                    <button type="button" className="p-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-emerald-300 text-left">
+                    <button type="button" className="p-2 rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-700 dark:text-slate-200 hover:border-emerald-300 text-left">
                       Bank of Baroda
                     </button>
-                    <button type="button" className="p-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-emerald-300 text-left">
+                    <button type="button" className="p-2 rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-700 dark:text-slate-200 hover:border-emerald-300 text-left">
                       HDFC Bank
                     </button>
-                    <button type="button" className="p-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-emerald-300 text-left">
+                    <button type="button" className="p-2 rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-700 dark:text-slate-200 hover:border-emerald-300 text-left">
                       ICICI Bank
                     </button>
                   </div>
@@ -3226,7 +3226,7 @@ export const AddLandPage = () => {
             </div>
 
             {/* Modal Actions */}
-            <div className="p-5 bg-slate-100/80 border-t border-slate-200 flex items-center justify-between gap-3">
+            <div className="p-5 bg-slate-100/80 dark:bg-neutral-800/80 border-t border-slate-200 dark:border-neutral-700 flex items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => setShowPaymentModal(false)}

@@ -51,7 +51,7 @@ export const MobileBottomNav = ({ onOpenAi }) => {
   if (role === ROLES.SUPER_ADMIN || role === ROLES.ADMIN_STAFF) links = adminLinks;
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-lg border-t border-slate-200/90 px-3 py-2 flex items-center justify-around shadow-2xl">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-lg border-t border-slate-200/90 dark:border-neutral-800 px-3 py-2 flex items-center justify-around shadow-2xl">
       {links.map((item, idx) => {
         const Icon = item.icon;
         return (
@@ -60,7 +60,7 @@ export const MobileBottomNav = ({ onOpenAi }) => {
             to={item.path}
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition-all ${
-                isActive ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800'
+                isActive ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-neutral-200'
               }`
             }
           >
@@ -73,7 +73,7 @@ export const MobileBottomNav = ({ onOpenAi }) => {
       {/* Center AI Trigger */}
       <button
         onClick={onOpenAi}
-        className="flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl text-emerald-800 hover:text-emerald-950 font-bold"
+        className="flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl text-emerald-800 dark:text-emerald-400 hover:text-emerald-950 dark:hover:text-emerald-300 font-bold"
       >
         <div className="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center shadow-sm">
           <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />

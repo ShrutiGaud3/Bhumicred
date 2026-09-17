@@ -1,5 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { ROLES } from '../constants/roles.js';
 import {
   ShieldCheck,
   MapPin,
@@ -17,6 +19,20 @@ import { Button } from '../components/ui/Button.jsx';
 import { Card } from '../components/ui/Card.jsx';
 
 export const HomePage = () => {
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  if (isAuthenticated && user) {
+    if (user.role === ROLES.SUPER_ADMIN || user.role === ROLES.ADMIN_STAFF) {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+    if (user.role === ROLES.GOVERNMENT) {
+      return <Navigate to="/government/dashboard" replace />;
+    }
+    if (user.role === ROLES.PARTNER) {
+      return <Navigate to="/partner/dashboard" replace />;
+    }
+    return <Navigate to="/farmer/dashboard" replace />;
+  }
   return (
     <div className="space-y-16 sm:space-y-24">
       {/* Hero Section */}
@@ -104,13 +120,13 @@ export const HomePage = () => {
       {/* Core Platform Pillars */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
+          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
             Sovereign Features
           </span>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-2">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white mt-2">
             Integrated Agricultural Capabilities
           </h2>
-          <p className="text-sm text-slate-600 mt-3">
+          <p className="text-sm text-slate-600 dark:text-neutral-300 mt-3">
             Every module is backed by immutable audit trails, strict RBAC authorization, and real-time backend intelligence.
           </p>
         </div>
@@ -118,44 +134,44 @@ export const HomePage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Feature 1 */}
           <Card hoverable className="p-6">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mb-4">
               <MapPin className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 mb-2">GIS Land Mapping</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <h3 className="font-bold text-base text-slate-900 dark:text-white mb-2">GIS Land Mapping</h3>
+            <p className="text-xs text-slate-600 dark:text-neutral-300 leading-relaxed">
               Polygon boundary drawing with server-side GeoJSON validation, survey verification, and beneficiary management.
             </p>
           </Card>
 
           {/* Feature 2 */}
           <Card hoverable className="p-6">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center mb-4">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 mb-2">Tree & Plantation Insurance</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <h3 className="font-bold text-base text-slate-900 dark:text-white mb-2">Tree & Plantation Insurance</h3>
+            <p className="text-xs text-slate-600 dark:text-neutral-300 leading-relaxed">
               Catalog protection for single trees, farm agro-forestry, and plantation crops with evidence-backed claim processing.
             </p>
           </Card>
 
           {/* Feature 3 */}
           <Card hoverable className="p-6">
-            <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 flex items-center justify-center mb-4">
               <FlaskConical className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 mb-2">Soil Health Lab Grid</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <h3 className="font-bold text-base text-slate-900 dark:text-white mb-2">Soil Health Lab Grid</h3>
+            <p className="text-xs text-slate-600 dark:text-neutral-300 leading-relaxed">
               End-to-end sample scheduling, lab partner assignment, N-P-K & organic carbon analysis with downloadable reports.
             </p>
           </Card>
 
           {/* Feature 4 */}
           <Card hoverable className="p-6">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 flex items-center justify-center mb-4">
               <TrendingUp className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 mb-2">Carbon Opportunities & Ledger</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <h3 className="font-bold text-base text-slate-900 dark:text-white mb-2">Carbon Opportunities & Ledger</h3>
+            <p className="text-xs text-slate-600 dark:text-neutral-300 leading-relaxed">
               Request-based verification for agroforestry carbon projects with authoritative double-entry wallet accounting.
             </p>
           </Card>

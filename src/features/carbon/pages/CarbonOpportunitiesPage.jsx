@@ -53,130 +53,60 @@ export const CarbonOpportunitiesPage = () => {
     dispatch(fetchCarbonStats());
 
     const fetchAllLands = async () => {
-      let backendList = [];
+      let backendAudits = [];
+
       try {
-        const res = await landService.getMyLands();
-        backendList = Array.isArray(res?.data) ? res.data : (res?.data?.lands || []);
+        const auditRes = await dispatch(fetchCarbonAudits()).unwrap();
+        backendAudits = Array.isArray(auditRes) ? auditRes : (auditRes?.data || []);
       } catch (err) {
-        console.warn('Backend lands fetch fallback in CarbonOpportunitiesPage:', err);
+        console.warn('Backend carbon audits fetch error in CarbonOpportunitiesPage:', err);
       }
 
       const userIdentifier = user?.mobile || user?.phone || user?.id || user?._id || user?.name;
       const cleanUserPhone = userIdentifier ? String(userIdentifier).replace(/\D/g, '') : '';
       const validUserId = user?.id || user?._id;
 
-      // Strictly get this user's local lands and audits
-      const localList = userIdentifier ? storageService.getLands(userIdentifier) : [];
-      const localAudits = userIdentifier ? storageService.getCarbonAudits(userIdentifier) : [];
+      let userAudits = backendAudits;
+      if (userAudits.length === 0 && userIdentifier) {
+        const localAudits = storageService.getCarbonAudits(userIdentifier);
+        userAudits = localAudits.filter((audit) => {
+          if (!audit) return false;
+          const auditPhone = (audit.userMobile || audit.ownerMobile || '').replace(/\D/g, '');
+          if (cleanUserPhone && auditPhone && (auditPhone === cleanUserPhone || cleanUserPhone.includes(auditPhone))) return true;
+          if (audit.ownerId && validUserId && String(audit.ownerId) === String(validUserId)) return true;
+          if (audit.userId && validUserId && String(audit.userId) === String(validUserId)) return true;
+          return false;
+        });
+      }
 
-      // Double check that lands in localList actually match the current user
-      const userOwnedLocalLands = localList.filter((l) => {
-        if (!l) return false;
-        if (l.ownerId && validUserId && String(l.ownerId) === String(validUserId)) return true;
-        if (l.userId && validUserId && String(l.userId) === String(validUserId)) return true;
-        if (cleanUserPhone && l.ownerMobile && l.ownerMobile.replace(/\D/g, '') === cleanUserPhone) return true;
-        if (cleanUserPhone && l.mobile && l.mobile.replace(/\D/g, '') === cleanUserPhone) return true;
-        if (user?.name && l.ownerName && l.ownerName.toLowerCase() === user.name.toLowerCase()) return true;
-        return false;
-      });
-
-      // Combine user's local and backend lands
-      const userLands = [...userOwnedLocalLands, ...backendList];
-      const userLandIds = new Set(userLands.map((l) => String(l.landId || l.id || l._id)));
-      const userSurveys = new Set(userLands.map((l) => (l.surveyNumber || '').trim()).filter(Boolean));
-
-      // 1. Every distinct MRV scan requested by this user
-      // Audit must either match the user directly or match one of their registered lands
-      const validAudits = localAudits.filter((audit) => {
-        if (!audit) return false;
-        const auditPhone = (audit.userMobile || audit.ownerMobile || '').replace(/\D/g, '');
-        if (cleanUserPhone && auditPhone && (auditPhone === cleanUserPhone || cleanUserPhone.includes(auditPhone))) return true;
-        if (audit.ownerId && validUserId && String(audit.ownerId) === String(validUserId)) return true;
-        if (audit.userId && validUserId && String(audit.userId) === String(validUserId)) return true;
-        if (audit.landId && userLandIds.has(String(audit.landId))) return true;
-        if (audit.surveyNumber && userSurveys.has(String(audit.surveyNumber).trim())) return true;
-        return false;
-      });
-
-      const auditCards = validAudits.map((audit, idx) => {
-        const trees = Number(audit.estimatedTreeCount || audit.treeCount || 33);
-        const area = Number(audit.areaAcres || audit.area || 5.95);
+      // Strictly map only actual requested MRV audits from database
+      const mappedCards = userAudits.map((audit, idx) => {
+        const trees = Number(audit.estimatedTreeCount || audit.treeCount || 0);
+        const area = Number(audit.areaAcres || audit.area || 0);
         return {
           id: audit.auditId || audit._id || `scan_audit_${idx}`,
-          _id: audit.auditId || audit._id || `scan_audit_${idx}`,
+          _id: audit._id || audit.auditId || `scan_audit_${idx}`,
           auditId: audit.auditId,
           landName: audit.landName || 'Registered Farm',
-          surveyNumber: audit.surveyNumber || '465',
-          khasraNumber: audit.khasraNumber || audit.surveyNumber || '465',
+          surveyNumber: audit.surveyNumber || 'N/A',
+          khasraNumber: audit.khasraNumber || audit.surveyNumber || 'N/A',
           area: area,
           areaUnit: 'Acres',
           treeCount: trees,
           mrvAuditId: audit.auditId,
           mrvStatus: audit.status || 'SATELLITE_SCANNING',
-          status: 'APPROVED',
-          isScanBatch: true,
+          hasScan: true,
           createdAt: audit.createdAt || new Date().toISOString(),
         };
       });
 
-      // 2. Base registered lands (add any registered parcel that hasn't been scanned yet)
-      const baseCards = [];
-      const seenBase = new Set();
+      setLandsList(mappedCards);
 
-      userLands.forEach((item) => {
-        if (!item) return;
-        const srv = (item.surveyNumber && item.surveyNumber !== 'N/A') ? item.surveyNumber.trim() : null;
-        const name = (item.landName || '').trim().toLowerCase();
-        const key = item.landId || item._id || item.id || (srv ? `srv_${srv}` : `name_${name}`);
-
-        if (key && !seenBase.has(key)) {
-          seenBase.add(key);
-
-          // Check if this land was already covered in auditCards
-          const alreadyHasAudit = auditCards.some(
-            (ac) =>
-              (srv && ac.surveyNumber === srv) ||
-              (name && ac.landName.trim().toLowerCase() === name) ||
-              ac.id === item.id ||
-              ac.id === item._id ||
-              ac.id === item.landId
-          );
-
-          if (!alreadyHasAudit) {
-            const areaNum = Number(item.area || item.areaAcres || 5.0);
-            const rawTrees = item.treeCount || item.standingTreeCount || item.agronomicDetails?.treeCount || (item.treesInsured ? 33 : 0);
-            const trees = rawTrees > 0 ? Number(rawTrees) : Math.max(15, Math.round(areaNum * 6));
-
-            baseCards.push({
-              id: item.landId || item._id || item.id,
-              _id: item._id || item.landId || item.id,
-              auditId: item.mrvAuditId || `MRV-SENTINEL-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-              landName: item.landName || 'Registered Farm',
-              surveyNumber: item.surveyNumber || item.khasraNumber || 'N/A',
-              khasraNumber: item.khasraNumber || item.surveyNumber || 'N/A',
-              area: areaNum,
-              areaUnit: item.areaUnit || 'Acres',
-              treeCount: trees,
-              mrvAuditId: item.mrvAuditId || `MRV-SENTINEL-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-              mrvStatus: item.mrvStatus || 'VERIFIED',
-              status: item.status || 'APPROVED',
-              isScanBatch: false,
-              createdAt: item.createdAt || new Date().toISOString(),
-            });
-          }
-        }
-      });
-
-      // Combine all: every scan batch is its own card + base unscanned lands
-      const allCards = [...auditCards, ...baseCards];
-
-      setLandsList(allCards);
-
-      if (allCards.length > 0) {
-        const totalTrees = allCards.reduce((acc, l) => acc + (Number(l.treeCount) || 0), 0);
-        setTreeCountSlider(totalTrees > 0 ? totalTrees : 95);
+      if (mappedCards.length > 0) {
+        const totalTrees = mappedCards.reduce((acc, l) => acc + (Number(l.treeCount) || 0), 0);
+        setTreeCountSlider(totalTrees > 0 ? totalTrees : 50);
       } else {
-        setTreeCountSlider(0);
+        setTreeCountSlider(50);
       }
     };
 
@@ -193,7 +123,7 @@ export const CarbonOpportunitiesPage = () => {
     displayLands.reduce((acc, l) => acc + ((Number(l.treeCount) || 0) * 0.125), 0).toFixed(1)
   ) : 0;
   const totalActualValuation = Math.round(totalActualCarbon * creditPriceInr);
-  const totalMintedBatches = displayLands.length;
+  const totalMintedBatches = credits?.length || 0;
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 pb-12">
@@ -317,9 +247,9 @@ export const CarbonOpportunitiesPage = () => {
             <Satellite className="w-4 h-4 text-blue-600" /> Active MRV Audits
           </div>
           <div className="text-2xl font-black text-gray-900">
-            {displayLands.length > 0 ? displayLands.length : (audits?.length || 1)} <span className="text-xs font-normal text-gray-500">Parcels</span>
+            {displayLands.length} <span className="text-xs font-normal text-gray-500">Parcels</span>
           </div>
-          <span className="text-xs text-blue-700 font-medium">Telemetry: 0.78 NDVI</span>
+          <span className="text-xs text-blue-700 font-medium">{displayLands.length > 0 ? 'Telemetry: 0.78 NDVI' : 'No Scans Active'}</span>
         </Card>
 
         <Card className="p-5 border border-gray-100 space-y-2">
@@ -361,8 +291,21 @@ export const CarbonOpportunitiesPage = () => {
                       Survey No: {land.surveyNumber || 'N/A'} • {land.area} {land.areaUnit || 'Acres'}
                     </span>
                   </div>
-                  <Badge variant={land.mrvStatus === 'SATELLITE_SCANNING' ? 'warning' : 'success'}>
-                    {land.mrvStatus === 'SATELLITE_SCANNING' ? 'Scan Scheduled' : 'Verified in Registry'}
+                  <Badge
+                    variant={
+                      !land.hasScan
+                        ? 'secondary'
+                        : land.mrvStatus === 'SATELLITE_SCANNING'
+                        ? 'warning'
+                        : 'success'
+                    }
+                    className={!land.hasScan ? 'bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-300' : ''}
+                  >
+                    {!land.hasScan
+                      ? 'Scan Pending'
+                      : land.mrvStatus === 'SATELLITE_SCANNING'
+                      ? 'Scan Scheduled'
+                      : 'Verified in Registry'}
                   </Badge>
                 </div>
 
@@ -386,37 +329,54 @@ export const CarbonOpportunitiesPage = () => {
                 </div>
 
                 <div className="pt-2 flex items-center justify-between text-xs text-gray-500 dark:text-neutral-400 border-t border-gray-100 dark:border-neutral-800">
-                  <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold truncate max-w-[210px]">
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                    {land.mrvAuditId ? land.mrvAuditId : 'Sentinel-2 Ground Verified'}
-                  </span>
-                  <span
-                    className="text-emerald-700 dark:text-emerald-400 font-bold hover:underline cursor-pointer shrink-0"
-                    onClick={() => {
-                      setSelectedCertificate({
-                        ...land,
-                        creditId: land.mrvAuditId || 'BC-CARB-2026-0092',
-                        treeSpecies: 'Sovereign Teak & Mixed Hardwood Agroforestry',
-                        tCO2e: Number(((land.treeCount || 0) * 0.125).toFixed(1)) || 4.1,
-                      });
-                      setShowCertificate(true);
-                    }}
-                  >
-                    View Certificate →
-                  </span>
+                  {land.hasScan && land.mrvAuditId ? (
+                    <>
+                      <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold truncate max-w-[210px]">
+                        <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                        {land.mrvAuditId}
+                      </span>
+                      <span
+                        className="text-emerald-700 dark:text-emerald-400 font-bold hover:underline cursor-pointer shrink-0"
+                        onClick={() => {
+                          setSelectedCertificate({
+                            ...land,
+                            creditId: land.mrvAuditId || 'BC-CARB-2026-0092',
+                            treeSpecies: 'Sovereign Teak & Mixed Hardwood Agroforestry',
+                            tCO2e: Number(((land.treeCount || 0) * 0.125).toFixed(1)) || 4.1,
+                          });
+                          setShowCertificate(true);
+                        }}
+                      >
+                        View Certificate →
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex items-center gap-1 text-gray-500 dark:text-neutral-400 font-medium">
+                        <Satellite className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                        MRV Telemetry Scan Pending
+                      </span>
+                      <span
+                        className="text-emerald-700 dark:text-emerald-400 font-bold hover:underline cursor-pointer shrink-0 flex items-center gap-1"
+                        onClick={() => navigate('/farmer/carbon/request-audit')}
+                      >
+                        Schedule Scan →
+                      </span>
+                    </>
+                  )}
                 </div>
               </Card>
             ))}
           </div>
         ) : (
           <Card className="p-8 text-center space-y-3 border border-dashed border-gray-300">
-            <Trees className="w-10 h-10 text-gray-400 mx-auto" />
-            <h4 className="font-bold text-gray-800">No Registered Lands Found</h4>
+            <Satellite className="w-10 h-10 text-gray-400 mx-auto" />
+            <h4 className="font-bold text-gray-800">No MRV Scanned Parcels Found</h4>
             <p className="text-xs text-gray-500 max-w-md mx-auto">
-              You haven't registered any land parcels yet. Register your agricultural or agroforestry land parcel to start remote satellite MRV scans.
+              You haven't requested any satellite MRV scans for your land parcels yet. Schedule a Sentinel-2 scan to detect tree biomass and start minting sovereign carbon credits.
             </p>
-            <Button variant="primary" size="sm" onClick={() => navigate('/farmer/lands/add')}>
-              Register Land Parcel
+            <Button variant="primary" size="sm" onClick={() => navigate('/farmer/carbon/request-audit')}>
+              Request Satellite MRV Scan
             </Button>
           </Card>
         )}
@@ -429,53 +389,63 @@ export const CarbonOpportunitiesPage = () => {
           <p className="text-xs text-gray-500">Government & community accredited agroforestry carbon batches open for corporate ESG off-take.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {opportunities.map((opp) => (
-            <Card key={opp.id} className="p-6 border border-gray-200 space-y-4 flex flex-col justify-between shadow-sm">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-emerald-800 border-emerald-300 bg-emerald-50">
-                    {opp.standard}
-                  </Badge>
-                  <span className="text-xs font-bold text-gray-500">Vintage {opp.vintageYear}</span>
-                </div>
-                <h4 className="font-bold text-base text-gray-900 leading-snug">{opp.title}</h4>
-                <p className="text-xs text-gray-600">{opp.location}</p>
+        {opportunities && opportunities.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {opportunities.map((opp) => (
+              <Card key={opp.id || opp._id} className="p-6 border border-gray-200 space-y-4 flex flex-col justify-between shadow-sm">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="text-emerald-800 border-emerald-300 bg-emerald-50">
+                      {opp.standard}
+                    </Badge>
+                    <span className="text-xs font-bold text-gray-500">Vintage {opp.vintageYear}</span>
+                  </div>
+                  <h4 className="font-bold text-base text-gray-900 leading-snug">{opp.title}</h4>
+                  <p className="text-xs text-gray-600">{opp.location}</p>
 
-                <div className="space-y-1.5 pt-2 text-xs text-gray-600 border-t border-gray-100">
-                  <div className="flex justify-between">
-                    <span>Available Offtake:</span>
-                    <strong className="text-gray-900">{opp.availableCreditsTons} tCO2e</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Satellite NDVI Score:</span>
-                    <strong className="text-emerald-700">{opp.ndviHealthRating}</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Issuing Authority:</span>
-                    <span className="text-gray-900 text-right truncate max-w-[150px]">{opp.issuingAgency}</span>
+                  <div className="space-y-1.5 pt-2 text-xs text-gray-600 border-t border-gray-100">
+                    <div className="flex justify-between">
+                      <span>Available Offtake:</span>
+                      <strong className="text-gray-900">{opp.availableCreditsTons} tCO2e</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Satellite NDVI Score:</span>
+                      <strong className="text-emerald-700">{opp.ndviHealthRating}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Issuing Authority:</span>
+                      <span className="text-gray-900 text-right truncate max-w-[150px]">{opp.issuingAgency}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-                <div>
-                  <span className="text-xs text-gray-500 block">Unit Price</span>
-                  <span className="text-lg font-black text-emerald-700">₹{opp.pricePerTonne.toLocaleString('en-IN')}</span>
-                  <span className="text-[10px] text-gray-500"> / tonne</span>
+                <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-gray-500 block">Unit Price</span>
+                    <span className="text-lg font-black text-emerald-700">₹{(opp.pricePerTonne || 1450).toLocaleString('en-IN')}</span>
+                    <span className="text-[10px] text-gray-500"> / tonne</span>
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => navigate('/carbon/request-audit')}
+                    className="flex items-center gap-1"
+                  >
+                    Enroll Parcel <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => navigate('/carbon/request-audit')}
-                  className="flex items-center gap-1"
-                >
-                  Enroll Parcel <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="p-8 text-center space-y-2 border border-dashed border-gray-300">
+            <Sparkles className="w-8 h-8 text-gray-400 mx-auto" />
+            <h4 className="font-bold text-gray-800 text-sm">No Active Carbon Projects Listed</h4>
+            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+              New community agroforestry & carbon sequestration projects are registered by district administration periodically.
+            </p>
+          </Card>
+        )}
       </div>
 
       {/* Carbon Offset Certificate Modal */}
