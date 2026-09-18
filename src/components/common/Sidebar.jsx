@@ -27,6 +27,11 @@ import { ROLES } from '../../constants/roles.js';
 export const Sidebar = ({ isOpen, onClose }) => {
   const { user } = useSelector((state) => state.auth);
   const role = user?.role || ROLES.FARMER;
+  const isApproved =
+    user?.role === ROLES.SUPER_ADMIN ||
+    user?.role === ROLES.ADMIN_STAFF ||
+    user?.status === 'APPROVED' ||
+    user?.status === 'ACTIVE';
 
   const farmerNavItems = [
     { label: 'Dashboard', path: '/farmer/dashboard', icon: LayoutDashboard },
@@ -133,38 +138,63 @@ export const Sidebar = ({ isOpen, onClose }) => {
           </div>
 
           {/* Role Sub-banner */}
-          <div className="my-3 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-between">
-            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 tracking-wide uppercase">
-              {role.replace(/_/g, ' ')}
-            </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-          </div>
+          {isApproved ? (
+            <div className="my-3 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-between">
+              <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 tracking-wide uppercase">
+                {role.replace(/_/g, ' ')}
+              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            </div>
+          ) : (
+            <div className="my-3 px-3 py-2 bg-amber-50 dark:bg-amber-950/50 rounded-xl border border-amber-200 dark:border-amber-900/50 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 tracking-wide uppercase block">
+                  {role.replace(/_/g, ' ')}
+                </span>
+                <span className="text-[9px] text-amber-700 dark:text-amber-400 font-bold">
+                  Pending Admin Approval
+                </span>
+              </div>
+              <span className="p-1 rounded bg-amber-100 text-amber-700 text-[10px] font-bold">LOCKED</span>
+            </div>
+          )}
 
           {/* Navigation Links */}
           <nav className="flex-1 space-y-1 mt-2">
             {navItems.map((item, idx) => {
               const Icon = item.icon;
+              const isLockedItem = !isApproved && item.label !== 'Dashboard' && item.label !== 'Support & Help';
+
               return (
                 <NavLink
                   key={idx}
                   to={item.path}
                   onClick={onClose}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                       isActive
                         ? 'bg-emerald-700 text-white shadow-sm shadow-emerald-800/20'
+                        : isLockedItem
+                        ? 'text-slate-400 dark:text-neutral-500 hover:bg-slate-50 dark:hover:bg-neutral-800/50 cursor-pointer opacity-75'
                         : item.highlight
                         ? 'bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
                         : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-white'
                     }`
                   }
                 >
-                  <Icon
-                    className={`w-4 h-4 flex-shrink-0 ${
-                      item.highlight ? 'text-amber-500' : ''
-                    }`}
-                  />
-                  <span className="truncate">{item.label}</span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Icon
+                      className={`w-4 h-4 flex-shrink-0 ${
+                        item.highlight ? 'text-amber-500' : ''
+                      }`}
+                    />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {isLockedItem && (
+                    <span className="text-[9px] text-amber-600 dark:text-amber-400 font-mono font-bold bg-amber-100/80 dark:bg-amber-950 px-1.5 py-0.5 rounded">
+                      Locked
+                    </span>
+                  )}
                 </NavLink>
               );
             })}
