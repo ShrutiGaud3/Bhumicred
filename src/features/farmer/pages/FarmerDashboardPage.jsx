@@ -49,12 +49,16 @@ export const FarmerDashboardPage = () => {
 
   // If farmer registration is pending review, show PendingApproval state
   if (user?.status === 'PENDING_APPROVAL' || user?.status === 'PENDING_VERIFICATION') {
+    const rawId = user?.applicationId || user?._id || user?.id || '883921';
+    const cleanId = String(rawId).replace(/\D/g, '').slice(-6) || '883921';
+    const displayAppId = user?.applicationId || `BC-APP-${cleanId}`;
+
     return (
       <div className="py-6">
         <PendingApproval
           roleTitle="Farmer Registration Profile"
-          applicationId={user?.applicationId || `BC-APP-${user?.id?.slice(-6) || '883921'}`}
-          submittedAt={user?.submittedAt || 'Recently Submitted'}
+          applicationId={displayAppId}
+          submittedAt={user?.submittedAt ? new Date(user.submittedAt).toLocaleDateString('en-IN') : 'Recently Submitted'}
         />
       </div>
     );

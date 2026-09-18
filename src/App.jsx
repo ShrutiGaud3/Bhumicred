@@ -6,6 +6,7 @@ import { fetchCurrentUser } from './features/auth/authSlice.js';
 import { tokenStorage } from './utils/tokenStorage.js';
 
 import { ToastProvider } from './components/ui/ToastContext.jsx';
+import { ErrorBoundary } from './components/common/ErrorBoundary.jsx';
 
 export function App() {
   const dispatch = useDispatch();
@@ -17,9 +18,11 @@ export function App() {
   }, [dispatch]);
 
   return (
-    <ToastProvider>
-      <RouterProvider router={router} />
-    </ToastProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

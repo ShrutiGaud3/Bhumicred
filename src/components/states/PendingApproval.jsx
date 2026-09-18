@@ -159,14 +159,25 @@ export const PendingApproval = ({
           <div className="pb-2 border-b border-slate-200 space-y-1">
             <span className="text-slate-500 block text-[11px]">Sovereign Geographic Hierarchy:</span>
             <p className="font-medium text-slate-800 bg-white p-2 rounded-xl border border-slate-200">
-              {user.address.gramPanchayat}, {user.address.city}, Dist: {user.address.district}, {user.address.state} — {user.address.pincode}, {user.address.country}
+              {typeof user.address === 'string'
+                ? user.address
+                : [
+                    user.address.gramPanchayat || user.address.village,
+                    user.address.city || user.address.taluka,
+                    user.address.district ? `Dist: ${user.address.district}` : null,
+                    user.address.state,
+                    user.address.pincode,
+                    user.address.country || 'India',
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
             </p>
           </div>
         )}
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-slate-500 pt-1">
           <span>Reviewing Authority: <strong>BHUMICRED National Nodal Desk</strong></span>
-          <span>Submitted: <strong>{submittedAt || user?.submittedAt || 'Today'}</strong></span>
+          <span>Submitted: <strong>{submittedAt || (user?.submittedAt ? new Date(user.submittedAt).toLocaleDateString('en-IN') : 'Today')}</strong></span>
         </div>
       </div>
 
